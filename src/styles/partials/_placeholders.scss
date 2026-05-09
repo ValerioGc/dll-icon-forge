@@ -1,0 +1,49 @@
+%fx_center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+%fx_between_center {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+%fx_start_center {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+%fx_inline_center {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}
+
+%grid_stack {
+  display: grid;
+}
+
+%grid_center {
+  display: grid;
+  place-items: center;
+}
+
+%visually_hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+%header_control {
+  min-width: 2.5rem;
+  height: 2.5rem;
+  gap: .35rem;
+  padding: 0 .65rem;
+  border-radius: .45rem;
+  font-weight: 800;
+}

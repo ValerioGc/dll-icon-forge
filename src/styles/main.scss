@@ -1,0 +1,79 @@
+@use './partials/_vars';
+@use './partials/_reset';
+@use './partials/placeholders' as *;
+
+html,
+body,
+#app {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+body {
+  background: var(--color-app-background);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.ui_icon {
+  width: 1.25rem;
+  height: 1.25rem;
+  display: inline-block;
+  flex: 0 0 auto;
+  object-fit: contain;
+  vertical-align: middle;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app__content {
+  @extend %fx_center;
+  width: 100%;
+  flex: 1;
+  align-items: flex-start;
+  padding: clamp(1.25rem, 4vw, 3rem);
+}
+
+.surface {
+  border: 1px solid var(--color-border);
+  border-radius: .5rem;
+  background: var(--color-surface);
+}
+
+.action_button {
+  @extend %fx_inline_center;
+  gap: .45rem;
+  border: 1px solid var(--color-border);
+  border-radius: .4rem;
+  background: var(--color-control-background);
+  color: var(--color-text);
+  cursor: pointer;
+
+  &:hover:not(:disabled),
+  &:focus-visible:not(:disabled) {
+    border-color: var(--color-accent);
+    outline: none;
+  }
+
+  &:disabled {
+    color: var(--color-muted);
+    cursor: not-allowed;
+    opacity: .55;
+  }
+}
+
+.themed_icon {
+  filter: var(--icon-filter);
+}

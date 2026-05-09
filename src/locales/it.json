@@ -1,0 +1,43 @@
+{
+  "homeView": "Win DLL Packer",
+  "homeViewDesc": "Crea e modifica librerie DLL di icone per Windows.",
+  "homeViewChooseMode": "Scegli una modalita",
+  "homeViewCreateHint": "Importa icone e prepara una nuova DLL.",
+  "homeViewEditHint": "Riapri un progetto esistente quando sara disponibile.",
+  "itemViewCreateDesc": "Aggiungi file ICO o PNG, controlla la preview e prepara il build della DLL.",
+  "itemViewEditDesc": "Carica un progetto o una DLL esistente prima di modificare la lista icone.",
+  "editSourceTitle": "File esistente",
+  "editSourceEmpty": "Nessun file selezionato",
+  "dropZoneTitle": "Trascina qui le icone",
+  "dropZoneDesc": "Sono accettati file ICO e PNG. La conversione reale arrivera nella fase Rust.",
+  "previewEmpty": "Nessuna icona aggiunta. Usa Aggiungi o trascina un file qui.",
+  "itemCount": "{count} icone nel progetto",
+  "footerText": "Versione {version}",
+  "footerGithub": "GitHub",
+  "common": {
+    "editMode": "Modifica",
+    "createMode": "Crea",
+    "submit": "Build DLL",
+    "chooseFile": "Scegli file",
+    "chooseExistingFile": "Carica esistente",
+    "backHome": "Torna alla Home",
+    "toggleLocale": "Cambia lingua",
+    "toggleTheme": "Cambia tema",
+    "openSettings": "Apri impostazioni"
+  },
+  "menu": {
+    "add": "Aggiungi",
+    "delete": "Elimina",
+    "clear": "Svuota"
+  },
+  "notifications": {
+    "errorTitle": "Operazione non completata",
+    "noEditSource": "Seleziona prima il file esistente da modificare.",
+    "noIcons": "Aggiungi almeno un file ICO o PNG prima di confermare.",
+    "invalidIcons": "Ci sono {count} file non validi. Rimuovili o sostituiscili prima di salvare.",
+    "createSavedTitle": "Creazione salvata",
+    "createSavedBody": "Il progetto e pronto per la generazione della DLL.",
+    "editSavedTitle": "Modifica salvata",
+    "editSavedBody": "Le modifiche al progetto sono state confermate."
+  }
+}

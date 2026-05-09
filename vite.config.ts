@@ -1,0 +1,85 @@
+import { defineConfig, type PluginOption } from 'vite';
+import vue from '@vitejs/plugin-vue';
+import { fileURLToPath, URL } from 'node:url';
+
+import combineSelectors from 'postcss-combine-duplicated-selectors';
+import autoprefixer from 'autoprefixer';
+import purgecss from '@fullhuman/postcss-purgecss';
+import cssnano from 'cssnano';
+
+const host = process.env.TAURI_DEV_HOST;
+
+
+export default defineConfig(async ({ mode }) => {
+  const analyze = mode === 'analyze' || process.env.ANALYZE === 'true';
+  const plugins: PluginOption[] = [vue()];
+
+  if (analyze) {
+    const { visualizer } = await import('rollup-plugin-visualizer');
+
+    plugins.push(
+      visualizer({
+        filename: 'dist/stats.html',
+        gzipSize: true,
+        brotliSize: true,
+      }) as PluginOption,
+    );
+  }
+
+  return {
+    resolve: {
+      alias: {
+        '@': fileURLToPath(new URL('./src', import.meta.url)),
+      },
+    },
+
+    clearScreen: false,
+    server: {
+      port: 1420,
+      strictPort: true,
+      host: host || false,
+      hmr: host
+        ? {
+            protocol: 'ws',
+            host,
+            port: 1421,
+          }
+        : undefined,
+      watch: {
+        ignored: ['**/src-tauri/**'],
+      },
+    },
+
+    plugins,
+
+    css: {
+      postcss: {
+        plugins: [
+          combineSelectors({ removeDuplicatedProperties: true }),
+          purgecss({
+            content: [
+              './public/**/*.html',
+              './src/**/*.vue',
+              './src/**/*.ts',
+              './src/styles/**/*.scss',
+            ],
+            safelist: {
+              standard: [/^v-/, /^el-/],
+            },
+            defaultExtractor: (content) => content.match(/[\w-/:]+(?<!:)/g) || [],
+          }),
+          autoprefixer({
+            overrideBrowserslist: ['last 4 versions', 'not dead'],
+          }),
+          cssnano({ preset: 'default' }),
+        ],
+      }
+    },
+  
+    build: {
+      sourcemap: false,
+      reportCompressedSize: true,
+      chunkSizeWarningLimit: 1400,
+    }
+  };
+});

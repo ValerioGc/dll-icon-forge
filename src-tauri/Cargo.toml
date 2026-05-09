@@ -1,0 +1,25 @@
+[package]
+name = "win-dll-packer"
+version = "0.1.0"
+description = "Dll icon packer for windows"
+authors = ["ValerioGc"]
+edition = "2024"
+license = "Unlicense"
+
+[lib]
+name = "win_dll_packer_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-notification = "2"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

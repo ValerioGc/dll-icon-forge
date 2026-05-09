@@ -1,0 +1,43 @@
+{
+  "homeView": "Win DLL Packer",
+  "homeViewDesc": "Create and edit Windows icon DLL libraries.",
+  "homeViewChooseMode": "Choose a mode",
+  "homeViewCreateHint": "Import icons and prepare a new DLL.",
+  "homeViewEditHint": "Reopen an existing project when that flow is available.",
+  "itemViewCreateDesc": "Add ICO or PNG files, check the preview, and prepare the DLL build.",
+  "itemViewEditDesc": "Load an existing project or DLL before editing the icon list.",
+  "editSourceTitle": "Existing file",
+  "editSourceEmpty": "No file selected",
+  "dropZoneTitle": "Drop icons here",
+  "dropZoneDesc": "ICO and PNG files are accepted. The real conversion will arrive in the Rust phase.",
+  "previewEmpty": "No icons added yet. Use Add or drop a file here.",
+  "itemCount": "{count} icons in the project",
+  "footerText": "Version {version}",
+  "footerGithub": "GitHub",
+  "common": {
+    "editMode": "Edit",
+    "createMode": "Create",
+    "submit": "Build DLL",
+    "chooseFile": "Choose file",
+    "chooseExistingFile": "Load existing",
+    "backHome": "Back to Home",
+    "toggleLocale": "Toggle language",
+    "toggleTheme": "Toggle theme",
+    "openSettings": "Open settings"
+  },
+  "menu": {
+    "add": "Add",
+    "delete": "Delete",
+    "clear": "Clear"
+  },
+  "notifications": {
+    "errorTitle": "Operation not completed",
+    "noEditSource": "Select the existing file to edit first.",
+    "noIcons": "Add at least one ICO or PNG file before confirming.",
+    "invalidIcons": "There are {count} invalid files. Remove or replace them before saving.",
+    "createSavedTitle": "Creation saved",
+    "createSavedBody": "The project is ready for DLL generation.",
+    "editSavedTitle": "Changes saved",
+    "editSavedBody": "Your project changes have been confirmed."
+  }
+}

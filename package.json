@@ -1,0 +1,52 @@
+{
+  "name": "win-dll-packer",
+  "private": true,
+  "version": "0.1.0",
+  "license": "Unlicense",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "analyze": "vue-tsc --noEmit && vite build --mode analyze",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:rust": "cd src-tauri && cargo test",
+    "test:rust:coverage": "node -e \"require('fs').mkdirSync('src-tauri/target/llvm-cov', { recursive: true })\" && cd src-tauri && cargo llvm-cov --lcov --output-path target/llvm-cov/lcov.info -- --include-ignored",
+    "coverage": "npm run test:coverage && npm run test:rust:coverage",
+    "sonar": "sonar",
+    "sonar:coverage": "npm run coverage && npm run sonar",
+    "docker:sonar:up": "docker compose -f .docker/docker-compose.sonar.yml up -d",
+    "docker:sonar:down": "docker compose -f .docker/docker-compose.sonar.yml down",
+    "docker:sonar:logs": "docker compose -f .docker/docker-compose.sonar.yml logs -f sonarqube"
+  },
+  "dependencies": {
+    "@tauri-apps/plugin-notification": "^2.3.3",
+    "pinia": "^2.3.1",
+    "vue": "^3.5.13",
+    "vue-i18n": "^11.0.1"
+  },
+  "devDependencies": {
+    "@fullhuman/postcss-purgecss": "^6.0.0",
+    "@sonar/scan": "^4.3.6",
+    "@tauri-apps/cli": "^2.1.0",
+    "@types/node": "^25.6.0",
+    "@vitejs/plugin-vue": "^5.2.1",
+    "@vitest/coverage-v8": "^4.1.5",
+    "@vue/test-utils": "^2.4.10",
+    "@vue/tsconfig": "^0.7.0",
+    "autoprefixer": "^10.4.19",
+    "cssnano": "^7.0.6",
+    "happy-dom": "^20.9.0",
+    "postcss": "^8.5.3",
+    "postcss-combine-duplicated-selectors": "^10.0.3",
+    "rollup-plugin-visualizer": "^7.0.1",
+    "sass": "^1.83.4",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^4.1.5",
+    "vue-tsc": "^2.2.0"
+  }
+}
