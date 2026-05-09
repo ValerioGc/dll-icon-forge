@@ -25,20 +25,16 @@ Roadmap, architecture notes, testing, and SonarQube are documented in [.claude/R
 - Header with logo, language toggle, and theme toggle
 - Footer with app version and GitHub link
 - Dark and light theme with persistent preference
-- Italian and English UI
+- UI in Italian, English, French, Spanish and German
 - Native Windows notifications wired to the submit flow (placeholder)
 
 ## Planned features
 
 - Real DLL generation from imported icons (`RT_GROUP_ICON` + `RT_ICON`)
 - Real DLL read in edit mode, with extraction of existing icons
-- List/grid view with pagination and configurable items per page
-- `ProjectIcon` model independent from source file metadata
 - Native open/save dialogs via Tauri
-- JPG and BMP support after ICO/PNG is stable
-- Project save/load as JSON with schema versioning
-- Confirmation prompts and unsaved-changes guard
-- GitHub Actions release pipeline for Windows installers
+- Confirmation prompts on destructive actions (roadmap sez. 4)
+- GitHub Actions release pipeline for Windows installers (roadmap sez. 5)
 
 ## Requirements
 
@@ -52,7 +48,7 @@ For development:
 
 ## Installation
 
-Installer is not yet published. Once the release pipeline (roadmap sez. 12) is in place:
+Installer is not yet published. Once the release pipeline (roadmap sez. 5) is in place:
 
 1. Download the latest installer from Releases:
    `Win DLL Packer_<version>_x64-setup.exe`
@@ -89,7 +85,7 @@ win-dll-packer:settings
 
 ### Project files
 
-Generated `.dll` files and saved project files (planned, see roadmap sez. 8) are written to the path the user chooses through the save dialog. The app does not maintain a private project library.
+Generated `.dll` files are written to the path the user chooses through the save dialog. The app does not maintain a private project library and does not save session state between runs.
 
 ## Privacy
 
@@ -100,7 +96,7 @@ Win DLL Packer runs entirely offline. No telemetry, no cloud calls, no third-par
 - Real DLL read and write are not implemented yet
 - Only `.ico` and `.png` are accepted for v1
 - The "Edit" source file is currently accepted without validation (any dropped file is treated as the source)
-- No confirmation prompt on destructive actions (delete, clear, mode switch with unsaved changes) — planned in roadmap sez. 7 and 11
+- No confirmation prompt on destructive actions (delete, clear, mode switch with unsaved changes) — planned in roadmap sez. 4
 - Windows is the only supported target
 
 ## Keyboard shortcuts
