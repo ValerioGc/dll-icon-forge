@@ -53,6 +53,11 @@ export default defineConfig(async ({ mode }) => {
     plugins,
 
     css: {
+      preprocessorOptions: {
+        scss: {
+          additionalData: "@use '@/styles/partials/placeholders' as *;\n",
+        },
+      },
       postcss: {
         plugins: [
           combineSelectors({ removeDuplicatedProperties: true }),

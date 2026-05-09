@@ -1,0 +1,192 @@
+<script lang="ts" setup>
+import { computed } from 'vue';
+import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
+import IconListView from '@/components/explorer/IconListView.vue';
+import IconGridView from '@/components/explorer/IconGridView.vue';
+import PaginationControls from '@/components/common/PaginationControls.vue';
+import PageSizeSelector from '@/components/common/PageSizeSelector.vue';
+import { useProjectStore } from '@/stores/project';
+import { useSettingsStore, type PageSize, type ViewMode } from '@/stores/settings';
+
+const { t } = useI18n();
+const project = useProjectStore();
+const settings = useSettingsStore();
+
+const {
+    icons,
+    paginatedIcons,
+    selectedIconIds,
+    page,
+    totalPages,
+    canGoPrevious,
+    canGoNext,
+    currentPageGlobalStart,
+} = storeToRefs(project);
+
+const isEmpty = computed(() => icons.value.length === 0);
+const activeView = computed<ViewMode>(() => settings.viewMode);
+
+function handleSelect(id: string, additive: boolean): void {
+    if (additive) {
+        project.toggleIconSelection(id);
+    } else {
+        project.selectIcon(id);
+    }
+}
+
+function handleDelete(id: string): void {
+    project.removeIcon(id);
+}
+
+function handleViewMode(next: ViewMode): void {
+    settings.setViewMode(next);
+}
+
+function handlePageSize(next: PageSize): void {
+    settings.setPageSize(next);
+    project.resetPage();
+}
+</script>
+
+<template>
+    <section class="icon_collection_view surface">
+        <header class="icon_collection_view__toolbar">
+            <fieldset class="icon_collection_view__view_mode">
+                <legend class="icon_collection_view__view_legend">{{ t('viewMode.label') }}</legend>
+                <button
+                    type="button"
+                    class="icon_collection_view__view_button action_button"
+                    :class="{ 'is-active': activeView === 'list' }"
+                    :aria-pressed="activeView === 'list'"
+                    :aria-label="t('viewMode.list')"
+                    :title="t('viewMode.list')"
+                    @click.prevent="handleViewMode('list')"
+                >
+                    <img class="ui_icon themed_icon" src="@/assets/icons/list.svg" alt="" aria-hidden="true">
+                </button>
+                <button
+                    type="button"
+                    class="icon_collection_view__view_button action_button"
+                    :class="{ 'is-active': activeView === 'grid' }"
+                    :aria-pressed="activeView === 'grid'"
+                    :aria-label="t('viewMode.grid')"
+                    :title="t('viewMode.grid')"
+                    @click.prevent="handleViewMode('grid')"
+                >
+                    <img class="ui_icon themed_icon" src="@/assets/icons/grid.svg" alt="" aria-hidden="true">
+                </button>
+            </fieldset>
+
+            <PageSizeSelector
+                :value="settings.pageSize"
+                :disabled="isEmpty"
+                @change="handlePageSize"
+            />
+        </header>
+
+        <p class="icon_collection_empty" v-if="isEmpty">{{ t('previewEmpty') }}</p>
+
+        <IconListView
+            v-else-if="activeView === 'list'"
+            :items="paginatedIcons"
+            :selected-ids="selectedIconIds"
+            :start-index="currentPageGlobalStart"
+            @select="handleSelect"
+            @delete="handleDelete"
+        />
+
+        <IconGridView
+            v-else
+            :items="paginatedIcons"
+            :selected-ids="selectedIconIds"
+            :start-index="currentPageGlobalStart"
+            @select="handleSelect"
+            @delete="handleDelete"
+        />
+
+        <footer v-if="!isEmpty" class="icon_collection_view__footer">
+            <PaginationControls
+                :page="page"
+                :total-pages="totalPages"
+                :can-go-previous="canGoPrevious"
+                :can-go-next="canGoNext"
+                @previous="project.goToPreviousPage"
+                @next="project.goToNextPage"
+            />
+        </footer>
+    </section>
+</template>
+
+<style lang="scss" scoped>
+.icon_collection_empty {
+    @extend %grid_center;
+    min-height: 18rem;
+    margin: 0;
+    padding: 2rem;
+    color: var(--color-muted);
+    text-align: center;
+}
+.icon_collection_view {
+    @extend %grid_stack;
+    min-height: 18rem;
+    overflow: hidden;
+}
+
+.icon_collection_view__toolbar {
+    @extend %fx_between_center;
+    gap: 1rem;
+    padding: .65rem .75rem;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-control-background);
+    flex-wrap: wrap;
+}
+
+.icon_collection_view__view_mode {
+    @extend %fx_inline_center;
+    gap: .35rem;
+    min-inline-size: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.icon_collection_view__view_legend {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.icon_collection_view__view_button {
+    width: 2.25rem;
+    min-height: 2.25rem;
+    padding: 0;
+    font-weight: 700;
+
+    &.is-active {
+        border-color: var(--color-accent);
+        background: var(--color-accent-soft);
+        color: var(--color-text);
+    }
+}
+
+.icon_collection_view__footer {
+    @extend %fx_center;
+    padding: .65rem .75rem;
+    border-top: 1px solid var(--color-border);
+    background: var(--color-control-background);
+}
+
+@media (max-width: 600px) {
+    .icon_collection_view__toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}
+</style>

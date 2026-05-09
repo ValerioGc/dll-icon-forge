@@ -10,8 +10,9 @@
   "editSourceEmpty": "Nessun file selezionato",
   "dropZoneTitle": "Trascina qui le icone",
   "dropZoneDesc": "Sono accettati file ICO e PNG. La conversione reale arrivera nella fase Rust.",
-  "previewEmpty": "Nessuna icona aggiunta. Usa Aggiungi o trascina un file qui.",
+  "previewEmpty": "Nessuna icona aggiunta. Usa il riquadro sopra per importare i file.",
   "itemCount": "{count} icone nel progetto",
+  "itemCountWithSelection": "{count} icone, {selected} selezionate",
   "footerText": "Versione {version}",
   "footerGithub": "GitHub",
   "common": {
@@ -26,9 +27,20 @@
     "openSettings": "Apri impostazioni"
   },
   "menu": {
-    "add": "Aggiungi",
     "delete": "Elimina",
-    "clear": "Svuota"
+    "deleteWithCount": "Elimina ({count})"
+  },
+  "viewMode": {
+    "label": "Modalita di visualizzazione",
+    "list": "Lista",
+    "grid": "Griglia"
+  },
+  "pagination": {
+    "label": "Paginazione",
+    "previous": "Pagina precedente",
+    "next": "Pagina successiva",
+    "status": "Pagina {page} di {total}",
+    "pageSize": "Per pagina"
   },
   "notifications": {
     "errorTitle": "Operazione non completata",

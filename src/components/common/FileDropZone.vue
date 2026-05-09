@@ -1,4 +1,5 @@
 <script setup lang="ts">
+
 import { ref } from 'vue';
 import uploadIcon from '@/assets/icons/upload.svg';
 
@@ -24,9 +25,8 @@ const input = ref<HTMLInputElement | null>(null);
 const isDragging = ref(false);
 
 function openFilePicker(): void {
-    if (props.disabled) {
+    if (props.disabled)
         return;
-    }
 
     input.value?.click();
 }
@@ -38,9 +38,8 @@ defineExpose({
 function emitFiles(files: FileList | File[]): void {
     const selectedFiles = Array.from(files);
 
-    if (selectedFiles.length === 0) {
+    if (selectedFiles.length === 0)
         return;
-    }
 
     emit('files', props.multiple ? selectedFiles : selectedFiles.slice(0, 1));
 }
@@ -48,28 +47,26 @@ function emitFiles(files: FileList | File[]): void {
 function handleFileChange(event: Event): void {
     const target = event.target as HTMLInputElement;
 
-    if (target.files) {
+    if (target.files) 
         emitFiles(target.files);
-    }
 
     target.value = '';
 }
 
 function handleDragState(dragging: boolean): void {
-    if (!props.disabled) {
+    if (!props.disabled) 
         isDragging.value = dragging;
-    }
 }
 
 function handleDrop(event: DragEvent): void {
     handleDragState(false);
 
-    if (props.disabled || !event.dataTransfer?.files.length) {
+    if (props.disabled || !event.dataTransfer?.files.length) 
         return;
-    }
 
     emitFiles(event.dataTransfer.files);
 }
+
 </script>
 
 <template>
@@ -84,15 +81,14 @@ function handleDrop(event: DragEvent): void {
         @dragleave.prevent="handleDragState(false)"
         @drop.prevent="handleDrop"
     >
-        <div class="file_drop_zone__copy">
+        <div class="file_drop_zone_copy">
             <strong>{{ title }}</strong>
             <span>{{ description }}</span>
         </div>
 
-        <button
+        <button class="file_drop_zone_button action_button"
             type="button"
-            class="file_drop_zone__button action_button"
-            :class="{ 'file_drop_zone__button--primary': primary }"
+            :class="{ 'file_drop_zone_button--primary': primary }"
             :disabled="disabled"
             @click.prevent="openFilePicker"
         >
@@ -100,10 +96,9 @@ function handleDrop(event: DragEvent): void {
             {{ buttonText }}
         </button>
 
-        <input
-            ref="input"
+        <input ref="input"
             type="file"
-            class="file_drop_zone__input"
+            class="file_drop_zone_input"
             :accept="accept"
             :multiple="multiple"
             :disabled="disabled"
@@ -113,7 +108,6 @@ function handleDrop(event: DragEvent): void {
 </template>
 
 <style lang="scss" scoped>
-@use '@/styles/partials/placeholders' as *;
 
 .file_drop_zone {
     @extend %fx_between_center;
@@ -123,57 +117,57 @@ function handleDrop(event: DragEvent): void {
     border: 1px dashed var(--color-border-strong);
     border-radius: .5rem;
     background: var(--color-surface);
-}
 
-.file_drop_zone--active {
-    border-color: var(--color-accent);
-    background: var(--color-accent-soft);
-}
-
-.file_drop_zone--disabled {
-    opacity: .55;
-    pointer-events: none;
-}
-
-.file_drop_zone__copy {
-    @extend %grid_stack;
-    gap: .35rem;
-
-    strong {
-        color: var(--color-text);
+    &--active {
+        border-color: var(--color-accent);
+        background: var(--color-accent-soft);
     }
 
-    span {
-        color: var(--color-muted);
+    &--disabled {
+        opacity: .55;
+        pointer-events: none;
     }
-}
 
-.file_drop_zone__button {
-    min-height: 2.65rem;
-    gap: .5rem;
-    padding: 0 1rem;
-    border-radius: .45rem;
-    font-weight: 800;
-    transition: border-color .16s ease, background .16s ease, opacity .16s ease;
+    &_copy {
+        @extend %grid_stack;
+        gap: .35rem;
 
-    &:disabled {
-        opacity: .5;
+        strong {
+            color: var(--color-text);
+        }
+
+        span {
+            color: var(--color-muted);
+        }
     }
-}
 
-.file_drop_zone__button--primary {
-    border-color: var(--color-accent);
-    background: var(--color-accent);
-    color: #ffffff;
+    &_button {
+        min-height: 2.65rem;
+        gap: .5rem;
+        padding: 0 1rem;
+        border-radius: .45rem;
+        font-weight: 800;
+        transition: border-color .16s ease, background .16s ease, opacity .16s ease;
 
-    &:hover:not(:disabled),
-    &:focus-visible:not(:disabled) {
-        background: var(--color-accent-hover);
+        &:disabled {
+            opacity: .5;
+        }
+        
+        &--primary {
+            border-color: var(--color-accent);
+            background: var(--color-accent);
+            color: #ffffff;
+            
+            &:hover:not(:disabled),
+            &:focus-visible:not(:disabled) {
+                background: var(--color-accent-hover);
+            }
+        }
     }
-}
 
-.file_drop_zone__input {
-    @extend %visually_hidden;
+    &_input {
+        @extend %visually_hidden;
+    }
 }
 
 .invert {
@@ -186,4 +180,5 @@ function handleDrop(event: DragEvent): void {
         flex-direction: column;
     }
 }
+
 </style>

@@ -10,8 +10,9 @@
   "editSourceEmpty": "No file selected",
   "dropZoneTitle": "Drop icons here",
   "dropZoneDesc": "ICO and PNG files are accepted. The real conversion will arrive in the Rust phase.",
-  "previewEmpty": "No icons added yet. Use Add or drop a file here.",
+  "previewEmpty": "No icons added yet. Use the panel above to import files.",
   "itemCount": "{count} icons in the project",
+  "itemCountWithSelection": "{count} icons, {selected} selected",
   "footerText": "Version {version}",
   "footerGithub": "GitHub",
   "common": {
@@ -26,9 +27,20 @@
     "openSettings": "Open settings"
   },
   "menu": {
-    "add": "Add",
     "delete": "Delete",
-    "clear": "Clear"
+    "deleteWithCount": "Delete ({count})"
+  },
+  "viewMode": {
+    "label": "View mode",
+    "list": "List",
+    "grid": "Grid"
+  },
+  "pagination": {
+    "label": "Pagination",
+    "previous": "Previous page",
+    "next": "Next page",
+    "status": "Page {page} of {total}",
+    "pageSize": "Per page"
   },
   "notifications": {
     "errorTitle": "Operation not completed",

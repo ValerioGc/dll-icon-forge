@@ -23,7 +23,6 @@
     "src/**/*.ts",
     "src/**/*.vue",
     "src/**/*.d.ts",
-    "src/types/chat",
     "tests/**/*.ts"
   ],
   "references": [{ "path": "./tsconfig.node.json" }]

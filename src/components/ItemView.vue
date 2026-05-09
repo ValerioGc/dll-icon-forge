@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+
+import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
-import PreviewTab from '@/components/common/PreviewTab.vue';
-import MenuTab from '@/components/common/MenuTab.vue';
-import FileDropZone from '@/components/common/FileDropZone.vue';
 import { useI18n } from 'vue-i18n';
+
+import IconCollectionView from '@/components/explorer/IconCollectionView.vue';
+import MenuTab from '@/components/explorer/MenuTab.vue';
+import FileDropZone from '@/components/common/FileDropZone.vue';
+
 import { useProjectStore } from '@/stores/project';
-import type { AppMode, MenuAction } from '@/types/Icon';
+import type { ProjectMode } from '@/types/Project';
 
 const { t } = useI18n();
 const project = useProjectStore();
-const { editSourceFileName } = storeToRefs(project);
-const iconDropZone = ref<InstanceType<typeof FileDropZone> | null>(null);
+const { sourceLabel, selectedCount, icons } = storeToRefs(project);
 
 const props = defineProps<{
-    mode: AppMode;
+    mode: ProjectMode;
 }>();
 
 const title = computed(() => {
@@ -26,63 +28,57 @@ const description = computed(() => {
 });
 
 const isEditLocked = computed(() => {
-    return props.mode === 'edit' && !editSourceFileName.value;
+    return props.mode === 'edit' && sourceLabel.value === null;
+});
+
+const itemCountLabel = computed(() => {
+    if (selectedCount.value > 0) {
+        return t('itemCountWithSelection', {
+            count: icons.value.length,
+            selected: selectedCount.value,
+        });
+    }
+    return t('itemCount', { count: icons.value.length });
 });
 
 function handleEditSourceFiles(files: File[]): void {
     const [file] = files;
 
-    if (file) {
+    if (file)
         project.setEditSourceFile(file);
-    }
 }
 
 function handleIconFiles(files: File[]): void {
     project.addFiles(files);
 }
 
-function handleMenuAction(action: MenuAction): void {
-    if (action === 'add') {
-        iconDropZone.value?.openFilePicker();
-        return;
-    }
-
-    if (action === 'delete') {
-        project.removeSelectedIcon();
-        return;
-    }
-
-    project.clearIcons();
+function handleDelete(): void {
+    project.removeSelectedIcons();
 }
 
 </script>
 
-
 <template>
-
     <div class="item_view">
         <button type="button" class="back_button" @click.prevent="project.goHome">
-            <img class="ui_icon back_button__icon themed_icon" src="@/assets/icons/back.svg" alt="" />
+            <img class="ui_icon back_button_icon themed_icon" src="@/assets/icons/back.svg" alt="" />
             {{ t('common.backHome') }}
         </button>
 
-        <header class="item_view__header">
+        <header class="item_view_header">
             <h1>{{ title }}</h1>
             <p>{{ description }}</p>
         </header>
 
-        <FileDropZone
-            v-if="props.mode === 'edit'"
+        <FileDropZone v-if="props.mode === 'edit'"
             :title="t('editSourceTitle')"
-            :description="project.editSourceFileName ?? t('editSourceEmpty')"
+            :description="project.sourceLabel ?? t('editSourceEmpty')"
             :button-text="t('common.chooseExistingFile')"
             accept=".dll,.json"
             @files="handleEditSourceFiles"
         />
 
-        <FileDropZone
-            v-if="!isEditLocked"
-            ref="iconDropZone"
+        <FileDropZone v-if="!isEditLocked"
             :title="t('dropZoneTitle')"
             :description="t('dropZoneDesc')"
             :button-text="t('common.chooseFile')"
@@ -94,44 +90,30 @@ function handleMenuAction(action: MenuAction): void {
 
         <div v-if="!isEditLocked" class="item_view_content">
             <MenuTab
-                :can-delete="project.icons.length > 0"
-                :can-clear="project.icons.length > 0"
-                @action="handleMenuAction"
+                :selected-count="selectedCount"
+                @delete="handleDelete"
             />
 
-            <PreviewTab
-                :items="project.icons"
-                :selected-id="project.selectedIconId"
-                @select="project.selectIcon"
-                @delete="project.removeIcon"
-            />
+            <IconCollectionView />
         </div>
 
-        <footer v-if="!isEditLocked" class="item_view__footer">
-            <p>{{ t('itemCount', { count: project.icons.length }) }}</p>
-            
+        <footer v-if="!isEditLocked" class="item_view_footer">
+            <p>{{ itemCountLabel }}</p>
+
             <button type="button"
                 class="item_button item_button--primary"
                 :disabled="!project.canBuild"
                 :aria-disabled="!project.canBuild"
                 @click.prevent="project.submitProject"
-                >
+            >
                 <img class="ui_icon themed_icon" src="@/assets/icons/save.svg" alt="" />
                 {{ t('common.submit') }}
             </button>
         </footer>
     </div>
-
 </template>
 
 <style lang="scss" scoped>
-@use '@/styles/partials/placeholders' as *;
-
-.item_view {
-    width: min(1080px, 100%);
-    @extend %grid_stack;
-    gap: 1.25rem;
-}
 
 .back_button {
     @extend %fx_inline_center;
@@ -146,63 +128,69 @@ function handleMenuAction(action: MenuAction): void {
     color: var(--color-muted);
     font-weight: 700;
     cursor: pointer;
-    
+
     &:hover,
     &:focus-visible {
         color: var(--color-text);
         outline: none;
     }
+
+    &_icon {
+        width: 1rem;
+        height: 1rem;
+    }
 }
 
-.back_button__icon {
-    width: 1rem;
-    height: 1rem;
-}
-
-.item_view__header {
+.item_view {
+    width: min(1080px, 100%);
     @extend %grid_stack;
-    gap: .5rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--color-border);
+    gap: 1.25rem;
 
-    h1,
-    p {
-        margin: 0;
+    &_header {
+        @extend %grid_stack;
+        gap: .5rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid var(--color-border);
+
+        h1,
+        p {
+            margin: 0;
+        }
+
+        h1 {
+            color: var(--color-heading);
+            font-size: clamp(1.75rem, 3vw, 2.4rem);
+            line-height: 1.05;
+        }
+
+        p {
+            max-width: 760px;
+            color: var(--color-muted);
+            line-height: 1.55;
+        }
     }
 
-    h1 {
-        color: var(--color-heading);
-        font-size: clamp(1.75rem, 3vw, 2.4rem);
-        line-height: 1.05;
+    &_content {
+        @extend %grid_stack;
+        gap: .75rem;
     }
 
-    p {
-        max-width: 760px;
-        color: var(--color-muted);
-        line-height: 1.55;
-    }
-}
+    &_footer {
+        @extend %fx_between_center;
+        gap: 1rem;
+        padding-top: .75rem;
+        border-top: 1px solid var(--color-border);
 
-.item_view_content {
-    @extend %grid_stack;
-    gap: .75rem;
-}
-
-.item_view__footer {
-    @extend %fx_between_center;
-    gap: 1rem;
-    padding-top: .75rem;
-    border-top: 1px solid var(--color-border);
-
-    p {
-        margin: 0;
-        color: var(--color-muted);
-        font-weight: 700;
+        p {
+            margin: 0;
+            color: var(--color-muted);
+            font-weight: 700;
+        }
     }
 }
 
 @media (max-width: 760px) {
-    .item_view__footer {
+    .item_view_footer {
         align-items: stretch;
         flex-direction: column;
     }
