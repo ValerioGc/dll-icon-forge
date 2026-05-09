@@ -1,6 +1,6 @@
 import { watch } from 'vue';
 import { defineStore } from 'pinia';
-import { setLocale, type AppLocale } from '@/i18n';
+import { setLocale, type AppLocale, SUPPORTED_LOCALES } from '@/i18n';
 
 export type Theme = 'dark' | 'light';
 export type Language = AppLocale;
@@ -20,11 +20,18 @@ type SettingsState = {
 const STORAGE_KEY = 'win-dll-packer:settings';
 
 const DEFAULTS: Omit<SettingsState, 'loaded'> = {
-  language: 'it',
+  language: 'en',
   theme: 'light',
   viewMode: 'grid',
   pageSize: 20,
 };
+
+function detectSystemLanguage(): Language {
+  const lang = (navigator.language ?? '').split('-')[0].toLowerCase();
+  return (SUPPORTED_LOCALES as readonly string[]).includes(lang)
+    ? (lang as Language)
+    : 'en';
+}
 
 function readStoredSettings(): Partial<SettingsState> {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -58,9 +65,9 @@ export const useSettingsStore = defineStore('settings', {
     load(): void {
       const stored = readStoredSettings();
 
-      this.language = stored.language === 'en' || stored.language === 'it'
-        ? stored.language
-        : DEFAULTS.language;
+      this.language = (SUPPORTED_LOCALES as readonly string[]).includes(stored.language as string)
+        ? (stored.language as Language)
+        : detectSystemLanguage();
 
       this.theme = stored.theme === 'dark' || stored.theme === 'light'
         ? stored.theme
@@ -103,10 +110,6 @@ export const useSettingsStore = defineStore('settings', {
 
     setLanguage(language: Language): void {
       this.language = language;
-    },
-
-    toggleLanguage(): void {
-      this.language = this.language === 'it' ? 'en' : 'it';
     },
 
     setTheme(theme: Theme): void {

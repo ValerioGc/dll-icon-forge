@@ -1,0 +1,66 @@
+{
+  "homeView": "Win DLL Packer",
+  "homeViewDesc": "Crea y edita bibliotecas DLL de iconos de Windows.",
+  "homeViewChooseMode": "Elige un modo",
+  "homeViewCreateHint": "Importa iconos y prepara una nueva DLL.",
+  "homeViewEditHint": "Reabre un proyecto existente cuando ese flujo esté disponible.",
+  "itemViewCreateDesc": "Añade archivos ICO o PNG, revisa la vista previa y prepara la compilación DLL.",
+  "itemViewEditDesc": "Carga un proyecto o DLL existente antes de editar la lista de iconos.",
+  "editSourceTitle": "Archivo existente",
+  "editSourceEmpty": "Ningún archivo seleccionado",
+  "dropZoneTitle": "Arrastra los iconos aquí",
+  "dropZoneDesc": "Se aceptan archivos ICO y PNG. La conversión real llegará en la fase Rust.",
+  "previewEmpty": "No se han añadido iconos. Usa el panel de arriba para importar archivos.",
+  "itemCount": "{count} iconos en el proyecto",
+  "itemCountWithSelection": "{count} iconos, {selected} seleccionados",
+  "footerText": "Versión {version}",
+  "footerGithub": "GitHub",
+  "common": {
+    "editMode": "Editar",
+    "createMode": "Crear",
+    "submit": "Generar DLL",
+    "chooseFile": "Elegir archivo",
+    "chooseExistingFile": "Cargar existente",
+    "backHome": "Volver al inicio",
+    "toggleLocale": "Cambiar idioma",
+    "toggleTheme": "Cambiar tema",
+    "dismiss": "Cerrar"
+  },
+  "menu": {
+    "delete": "Eliminar",
+    "deleteWithCount": "Eliminar ({count})"
+  },
+  "viewMode": {
+    "label": "Modo de visualización",
+    "list": "Lista",
+    "grid": "Cuadrícula"
+  },
+  "pagination": {
+    "label": "Paginación",
+    "previous": "Página anterior",
+    "next": "Página siguiente",
+    "status": "Página {page} de {total}",
+    "pageSize": "Por página"
+  },
+  "notifications": {
+    "errorTitle": "Operación no completada",
+    "noEditSource": "Selecciona primero el archivo existente a editar.",
+    "noIcons": "Añade al menos un archivo ICO o PNG antes de confirmar.",
+    "invalidIcons": "Hay {count} archivos no válidos. Elimínalos o reemplázalos antes de guardar.",
+    "createSavedTitle": "Creación guardada",
+    "createSavedBody": "El proyecto está listo para la generación de DLL.",
+    "editSavedTitle": "Cambios guardados",
+    "editSavedBody": "Los cambios del proyecto han sido confirmados.",
+    "unsupportedFiles": "Algunos archivos no son compatibles. Solo se aceptan ICO y PNG.",
+    "invalidEditSource": "El archivo seleccionado no es una DLL válida. Carga un archivo .dll."
+  },
+  "confirm": {
+    "unsavedTitle": "Cambios sin guardar",
+    "unsavedMessage": "Tienes cambios sin guardar. Si sales ahora se perderán.",
+    "deleteTitle": "Confirmar eliminación",
+    "deleteSingle": "¿Eliminar el icono seleccionado?",
+    "deleteMultiple": "¿Eliminar {count} iconos seleccionados?",
+    "confirmLabel": "Confirmar",
+    "cancelLabel": "Cancelar"
+  }
+}

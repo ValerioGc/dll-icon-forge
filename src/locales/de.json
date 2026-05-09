@@ -1,0 +1,66 @@
+{
+  "homeView": "Win DLL Packer",
+  "homeViewDesc": "Erstellen und bearbeiten Sie Windows-Icon-DLL-Bibliotheken.",
+  "homeViewChooseMode": "Modus wählen",
+  "homeViewCreateHint": "Importieren Sie Icons und erstellen Sie eine neue DLL.",
+  "homeViewEditHint": "Öffnen Sie ein bestehendes Projekt, wenn dieser Ablauf verfügbar ist.",
+  "itemViewCreateDesc": "Fügen Sie ICO- oder PNG-Dateien hinzu, prüfen Sie die Vorschau und bereiten Sie den DLL-Build vor.",
+  "itemViewEditDesc": "Laden Sie ein bestehendes Projekt oder eine DLL, bevor Sie die Icon-Liste bearbeiten.",
+  "editSourceTitle": "Vorhandene Datei",
+  "editSourceEmpty": "Keine Datei ausgewählt",
+  "dropZoneTitle": "Icons hier ablegen",
+  "dropZoneDesc": "ICO- und PNG-Dateien werden akzeptiert. Die eigentliche Konvertierung erfolgt in der Rust-Phase.",
+  "previewEmpty": "Noch keine Icons hinzugefügt. Verwenden Sie das obere Panel zum Importieren.",
+  "itemCount": "{count} Icons im Projekt",
+  "itemCountWithSelection": "{count} Icons, {selected} ausgewählt",
+  "footerText": "Version {version}",
+  "footerGithub": "GitHub",
+  "common": {
+    "editMode": "Bearbeiten",
+    "createMode": "Erstellen",
+    "submit": "DLL erstellen",
+    "chooseFile": "Datei wählen",
+    "chooseExistingFile": "Vorhandene laden",
+    "backHome": "Zurück zur Startseite",
+    "toggleLocale": "Sprache wechseln",
+    "toggleTheme": "Design wechseln",
+    "dismiss": "Schließen"
+  },
+  "menu": {
+    "delete": "Löschen",
+    "deleteWithCount": "Löschen ({count})"
+  },
+  "viewMode": {
+    "label": "Ansichtsmodus",
+    "list": "Liste",
+    "grid": "Raster"
+  },
+  "pagination": {
+    "label": "Seitenumbruch",
+    "previous": "Vorherige Seite",
+    "next": "Nächste Seite",
+    "status": "Seite {page} von {total}",
+    "pageSize": "Pro Seite"
+  },
+  "notifications": {
+    "errorTitle": "Vorgang nicht abgeschlossen",
+    "noEditSource": "Wählen Sie zuerst die zu bearbeitende Datei aus.",
+    "noIcons": "Fügen Sie mindestens eine ICO- oder PNG-Datei hinzu, bevor Sie bestätigen.",
+    "invalidIcons": "Es gibt {count} ungültige Dateien. Entfernen oder ersetzen Sie diese vor dem Speichern.",
+    "createSavedTitle": "Erstellung gespeichert",
+    "createSavedBody": "Das Projekt ist bereit für die DLL-Generierung.",
+    "editSavedTitle": "Änderungen gespeichert",
+    "editSavedBody": "Ihre Projektänderungen wurden bestätigt.",
+    "unsupportedFiles": "Einige Dateien werden nicht unterstützt. Es werden nur ICO und PNG akzeptiert.",
+    "invalidEditSource": "Die ausgewählte Datei ist keine gültige DLL. Bitte laden Sie eine .dll-Datei."
+  },
+  "confirm": {
+    "unsavedTitle": "Nicht gespeicherte Änderungen",
+    "unsavedMessage": "Sie haben nicht gespeicherte Änderungen. Wenn Sie jetzt verlassen, gehen diese verloren.",
+    "deleteTitle": "Löschen bestätigen",
+    "deleteSingle": "Ausgewähltes Icon löschen?",
+    "deleteMultiple": "{count} ausgewählte Icons löschen?",
+    "confirmLabel": "Bestätigen",
+    "cancelLabel": "Abbrechen"
+  }
+}

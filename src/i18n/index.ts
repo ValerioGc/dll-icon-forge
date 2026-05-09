@@ -1,10 +1,13 @@
 import { createI18n } from 'vue-i18n';
 import it from '@/locales/it.json';
 import en from '@/locales/en.json';
+import fr from '@/locales/fr.json';
+import es from '@/locales/es.json';
+import de from '@/locales/de.json';
 
-export type AppLocale = 'it' | 'en';
+export type AppLocale = 'it' | 'en' | 'fr' | 'es' | 'de';
 
-export const SUPPORTED_LOCALES: AppLocale[] = ['it', 'en'];
+export const SUPPORTED_LOCALES: AppLocale[] = ['it', 'en', 'fr', 'es', 'de'];
 
 export const i18n = createI18n<false>({
   legacy: false,
@@ -14,6 +17,9 @@ export const i18n = createI18n<false>({
   messages: {
     it,
     en,
+    fr,
+    es,
+    de
   },
 });
 
