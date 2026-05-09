@@ -157,7 +157,14 @@ export const useProjectStore = defineStore('project', () => {
   }
 
   function setEditSourceFile(file: File): void {
+    if (!file.name.toLowerCase().endsWith('.dll')) {
+      const msg = t('notifications.invalidEditSource');
+      lastError.value = msg;
+      void notify(t('notifications.errorTitle'), msg);
+      return;
+    }
     sourceLabel.value = file.name;
+    lastError.value = null;
     dirty.value = true;
   }
 
@@ -167,6 +174,13 @@ export const useProjectStore = defineStore('project', () => {
 
     icons.value.push(...newIcons);
     dirty.value = true;
+
+    const unsupportedCount = fileArray.filter((f) => !isSupportedFile(f)).length;
+    if (unsupportedCount > 0) {
+      const msg = t('notifications.unsupportedFiles');
+      lastError.value = msg;
+      void notify(t('notifications.errorTitle'), msg);
+    }
 
     if (selectedIconIds.value.length === 0 && newIcons.length > 0) {
       selectedIconIds.value = [newIcons[0].id];

@@ -24,7 +24,8 @@
     "backHome": "Torna alla Home",
     "toggleLocale": "Cambia lingua",
     "toggleTheme": "Cambia tema",
-    "openSettings": "Apri impostazioni"
+    "openSettings": "Apri impostazioni",
+    "dismiss": "Chiudi"
   },
   "menu": {
     "delete": "Elimina",
@@ -50,6 +51,17 @@
     "createSavedTitle": "Creazione salvata",
     "createSavedBody": "Il progetto e pronto per la generazione della DLL.",
     "editSavedTitle": "Modifica salvata",
-    "editSavedBody": "Le modifiche al progetto sono state confermate."
+    "editSavedBody": "Le modifiche al progetto sono state confermate.",
+    "unsupportedFiles": "Alcuni file non sono supportati. Sono accettati solo ICO e PNG.",
+    "invalidEditSource": "Il file selezionato non e una DLL valida. Carica un file .dll."
+  },
+  "confirm": {
+    "unsavedTitle": "Modifiche non salvate",
+    "unsavedMessage": "Hai modifiche non salvate. Se esci ora andranno perse.",
+    "deleteTitle": "Conferma eliminazione",
+    "deleteSingle": "Vuoi eliminare l'icona selezionata?",
+    "deleteMultiple": "Vuoi eliminare {count} icone selezionate?",
+    "confirmLabel": "Conferma",
+    "cancelLabel": "Annulla"
   }
 }

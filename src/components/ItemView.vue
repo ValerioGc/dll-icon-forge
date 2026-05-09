@@ -1,23 +1,30 @@
 <script setup lang="ts">
 
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
 import IconCollectionView from '@/components/explorer/IconCollectionView.vue';
 import MenuTab from '@/components/explorer/MenuTab.vue';
 import FileDropZone from '@/components/common/FileDropZone.vue';
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 
 import { useProjectStore } from '@/stores/project';
 import type { ProjectMode } from '@/types/Project';
 
 const { t } = useI18n();
 const project = useProjectStore();
-const { sourceLabel, selectedCount, icons } = storeToRefs(project);
+const { sourceLabel, selectedCount, icons, buildState, lastError } = storeToRefs(project);
 
 const props = defineProps<{
     mode: ProjectMode;
 }>();
+
+const emit = defineEmits<{
+    (e: 'home'): void;
+}>();
+
+const showConfirmDelete = ref(false);
 
 const title = computed(() => {
     return props.mode === 'create' ? t('common.createMode') : t('common.editMode');
@@ -31,6 +38,14 @@ const isEditLocked = computed(() => {
     return props.mode === 'edit' && sourceLabel.value === null;
 });
 
+const isBuilding = computed(() => {
+    return buildState.value === 'validating' || buildState.value === 'building';
+});
+
+const isSubmitDisabled = computed(() => {
+    return !project.canBuild || isBuilding.value;
+});
+
 const itemCountLabel = computed(() => {
     if (selectedCount.value > 0) {
         return t('itemCountWithSelection', {
@@ -41,18 +56,27 @@ const itemCountLabel = computed(() => {
     return t('itemCount', { count: icons.value.length });
 });
 
+const deleteConfirmMessage = computed(() => {
+    return selectedCount.value === 1
+        ? t('confirm.deleteSingle')
+        : t('confirm.deleteMultiple', { count: selectedCount.value });
+});
+
 function handleEditSourceFiles(files: File[]): void {
     const [file] = files;
-
-    if (file)
-        project.setEditSourceFile(file);
+    if (file) project.setEditSourceFile(file);
 }
 
 function handleIconFiles(files: File[]): void {
     project.addFiles(files);
 }
 
-function handleDelete(): void {
+function handleDeleteClick(): void {
+    showConfirmDelete.value = true;
+}
+
+function handleConfirmDelete(): void {
+    showConfirmDelete.value = false;
     project.removeSelectedIcons();
 }
 
@@ -60,7 +84,7 @@ function handleDelete(): void {
 
 <template>
     <div class="item_view">
-        <button type="button" class="back_button" @click.prevent="project.goHome">
+        <button type="button" class="back_button" @click.prevent="emit('home')">
             <img class="ui_icon back_button_icon themed_icon" src="@/assets/icons/back.svg" alt="" />
             {{ t('common.backHome') }}
         </button>
@@ -74,7 +98,7 @@ function handleDelete(): void {
             :title="t('editSourceTitle')"
             :description="project.sourceLabel ?? t('editSourceEmpty')"
             :button-text="t('common.chooseExistingFile')"
-            accept=".dll,.json"
+            accept=".dll"
             @files="handleEditSourceFiles"
         />
 
@@ -91,10 +115,23 @@ function handleDelete(): void {
         <div v-if="!isEditLocked" class="item_view_content">
             <MenuTab
                 :selected-count="selectedCount"
-                @delete="handleDelete"
+                :disabled="isBuilding"
+                @delete="handleDeleteClick"
             />
 
-            <IconCollectionView />
+            <div class="item_view_collection">
+                <IconCollectionView />
+                <div v-if="isBuilding" class="item_view_collection_overlay">
+                    <span class="item_view_collection_spinner" aria-hidden="true" />
+                </div>
+            </div>
+        </div>
+
+        <div v-if="lastError" class="item_view_error">
+            <span>{{ lastError }}</span>
+            <button type="button" class="item_view_error_close" :aria-label="t('common.dismiss')" @click="project.setLastError(null)">
+                ✕
+            </button>
         </div>
 
         <footer v-if="!isEditLocked" class="item_view_footer">
@@ -102,14 +139,22 @@ function handleDelete(): void {
 
             <button type="button"
                 class="item_button item_button--primary"
-                :disabled="!project.canBuild"
-                :aria-disabled="!project.canBuild"
+                :disabled="isSubmitDisabled"
+                :aria-disabled="isSubmitDisabled"
                 @click.prevent="project.submitProject"
             >
                 <img class="ui_icon themed_icon" src="@/assets/icons/save.svg" alt="" />
                 {{ t('common.submit') }}
             </button>
         </footer>
+
+        <ConfirmDialog
+            v-if="showConfirmDelete"
+            :title="t('confirm.deleteTitle')"
+            :message="deleteConfirmMessage"
+            @confirm="handleConfirmDelete"
+            @cancel="showConfirmDelete = false"
+        />
     </div>
 </template>
 
@@ -175,6 +220,60 @@ function handleDelete(): void {
         gap: .75rem;
     }
 
+    &_collection {
+        position: relative;
+        min-height: 6rem;
+    }
+
+    &_collection_overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--color-overlay);
+        border-radius: .5rem;
+        z-index: 5;
+    }
+
+    &_collection_spinner {
+        display: block;
+        width: 2.5rem;
+        height: 2.5rem;
+        border: 3px solid var(--color-border);
+        border-top-color: var(--color-accent);
+        border-radius: 50%;
+        animation: spin .8s linear infinite;
+    }
+
+    &_error {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        padding: .7rem 1rem;
+        border: 1px solid var(--color-danger);
+        border-radius: .5rem;
+        color: var(--color-danger);
+        font-size: .9rem;
+        line-height: 1.45;
+
+        &_close {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 0;
+            font-size: 1.1rem;
+            line-height: 1;
+            flex-shrink: 0;
+
+            &:hover {
+                opacity: .7;
+            }
+        }
+    }
+
     &_footer {
         @extend %fx_between_center;
         gap: 1rem;
@@ -187,6 +286,10 @@ function handleDelete(): void {
             font-weight: 700;
         }
     }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 @media (max-width: 760px) {

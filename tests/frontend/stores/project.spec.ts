@@ -209,6 +209,49 @@ describe('project store', () => {
     expect(notify).toHaveBeenLastCalledWith('Creazione salvata', expect.stringContaining('DLL'));
   });
 
+  it('setEditSourceFile: rejects non-DLL files, sets lastError, and notifies', async () => {
+    const { notify } = await import('@/services/notifications');
+    const project = setupProjectStore();
+
+    project.setMode('edit');
+    project.setEditSourceFile(new File(['txt'], 'bad.txt', { type: 'text/plain' }));
+
+    expect(project.sourceLabel).toBeNull();
+    expect(project.dirty).toBe(false);
+    expect(project.lastError).toBeTruthy();
+    expect(notify).toHaveBeenCalledWith(expect.any(String), expect.stringContaining('DLL'));
+  });
+
+  it('setEditSourceFile: accepts .dll, clears lastError, and sets dirty', () => {
+    const project = setupProjectStore();
+
+    project.setMode('edit');
+    project.$patch({ lastError: 'previous error' });
+    project.setEditSourceFile(new File(['dll'], 'lib.dll', { type: 'application/octet-stream' }));
+
+    expect(project.sourceLabel).toBe('lib.dll');
+    expect(project.dirty).toBe(true);
+    expect(project.lastError).toBeNull();
+  });
+
+  it('addFiles: sets lastError and notifies when unsupported files are included', async () => {
+    const { notify } = await import('@/services/notifications');
+    const project = setupProjectStore();
+
+    project.addFiles([new File(['txt'], 'bad.txt', { type: 'text/plain' })]);
+
+    expect(project.lastError).toBeTruthy();
+    expect(notify).toHaveBeenCalledWith(expect.any(String), expect.any(String));
+  });
+
+  it('addFiles: no lastError when all files are supported', () => {
+    const project = setupProjectStore();
+
+    project.addFiles([makePng('a.png')]);
+
+    expect(project.lastError).toBeNull();
+  });
+
   it('dirty: set by addFiles, setEditSourceFile, removeIcon, and removeSelectedIcons', () => {
     const project = setupProjectStore();
 
@@ -245,9 +288,9 @@ describe('project store', () => {
     const settings = useSettingsStore();
 
     settings.load();
-    settings.setPageSize(2);
+    settings.setPageSize(10);
     project.setMode('create');
-    project.addFiles([makePng('a.png'), makePng('b.png'), makePng('c.png')]);
+    project.addFiles(Array.from({ length: 11 }, (_, i) => makePng(`icon-${i}.png`)));
     project.$patch({ dirty: false });
 
     project.selectIcon(project.icons[0].id);

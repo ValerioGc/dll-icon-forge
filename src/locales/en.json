@@ -24,7 +24,8 @@
     "backHome": "Back to Home",
     "toggleLocale": "Toggle language",
     "toggleTheme": "Toggle theme",
-    "openSettings": "Open settings"
+    "openSettings": "Open settings",
+    "dismiss": "Dismiss"
   },
   "menu": {
     "delete": "Delete",
@@ -50,6 +51,17 @@
     "createSavedTitle": "Creation saved",
     "createSavedBody": "The project is ready for DLL generation.",
     "editSavedTitle": "Changes saved",
-    "editSavedBody": "Your project changes have been confirmed."
+    "editSavedBody": "Your project changes have been confirmed.",
+    "unsupportedFiles": "Some files are not supported. Only ICO and PNG are accepted.",
+    "invalidEditSource": "The selected file is not a valid DLL. Please load a .dll file."
+  },
+  "confirm": {
+    "unsavedTitle": "Unsaved changes",
+    "unsavedMessage": "You have unsaved changes. If you leave now they will be lost.",
+    "deleteTitle": "Confirm deletion",
+    "deleteSingle": "Delete the selected icon?",
+    "deleteMultiple": "Delete {count} selected icons?",
+    "confirmLabel": "Confirm",
+    "cancelLabel": "Cancel"
   }
 }

@@ -24,6 +24,7 @@
     --shadow-soft: 0 10px 26px rgba(21, 38, 71, .06);
     --shadow-medium: 0 16px 34px rgba(21, 38, 71, .1);
     --icon-filter: invert(0);
+    --color-overlay: rgba(255, 255, 255, 0.85);
 }
 
 :root[data-theme='dark'] {
@@ -49,4 +50,5 @@
     --shadow-medium: 0 16px 34px rgba(0, 0, 0, .32);
 
     --icon-filter: invert(1);
+    --color-overlay: rgba(23, 32, 48, 0.85);
 }
