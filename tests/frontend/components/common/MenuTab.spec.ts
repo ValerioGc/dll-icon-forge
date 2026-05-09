@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import MenuTab from '@/components/common/MenuTab.vue';
+import MenuTab from '@/components/explorer/MenuTab.vue';
 import { mountComponent, resetFrontendTestState } from '../../helpers/mount';
 
 describe('MenuTab', () => {
@@ -7,10 +7,10 @@ describe('MenuTab', () => {
     resetFrontendTestState();
   });
 
-  it('disables delete when there is nothing to delete', () => {
+  it('disables delete when no icons are selected', () => {
     const wrapper = mountComponent(MenuTab, {
       props: {
-        canDelete: false,
+        selectedCount: 0,
       },
     });
 
@@ -20,15 +20,31 @@ describe('MenuTab', () => {
     expect(button.attributes('disabled')).toBeDefined();
   });
 
-  it('emits delete when delete is enabled', async () => {
+  it('shows the count and emits delete when one or more icons are selected', async () => {
     const wrapper = mountComponent(MenuTab, {
       props: {
-        canDelete: true,
+        selectedCount: 3,
       },
     });
 
-    await wrapper.get('button').trigger('click');
+    const button = wrapper.get('button');
 
-    expect(wrapper.emitted('action')?.[0]).toEqual(['delete']);
+    expect(button.text()).toContain('Elimina (3)');
+    expect(button.attributes('disabled')).toBeUndefined();
+
+    await button.trigger('click');
+
+    expect(wrapper.emitted('delete')).toHaveLength(1);
+  });
+
+  it('honours the disabled prop even when items are selected', () => {
+    const wrapper = mountComponent(MenuTab, {
+      props: {
+        selectedCount: 2,
+        disabled: true,
+      },
+    });
+
+    expect(wrapper.get('button').attributes('disabled')).toBeDefined();
   });
 });

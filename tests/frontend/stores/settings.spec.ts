@@ -70,7 +70,56 @@ describe('settings store', () => {
     expect(JSON.parse(localStorage.getItem('win-dll-packer:settings') ?? '{}')).toEqual({
       language: 'en',
       theme: 'dark',
+      viewMode: 'grid',
+      pageSize: 20,
     });
+  });
+
+  it('loads default viewMode and pageSize when no value is stored', () => {
+    const settings = setupSettingsStore();
+
+    settings.load();
+
+    expect(settings.viewMode).toBe('grid');
+    expect(settings.pageSize).toBe(20);
+  });
+
+  it('persists viewMode and pageSize across changes', async () => {
+    const settings = setupSettingsStore();
+
+    settings.load();
+    settings.setViewMode('list');
+    settings.setPageSize(40);
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+
+    expect(JSON.parse(localStorage.getItem('win-dll-packer:settings') ?? '{}')).toMatchObject({
+      viewMode: 'list',
+      pageSize: 40,
+    });
+  });
+
+  it('rejects invalid viewMode and pageSize from storage and falls back to defaults', () => {
+    localStorage.setItem('win-dll-packer:settings', JSON.stringify({
+      viewMode: 'masonry',
+      pageSize: 17,
+    }));
+    const settings = setupSettingsStore();
+
+    settings.load();
+
+    expect(settings.viewMode).toBe('grid');
+    expect(settings.pageSize).toBe(20);
+  });
+
+  it('toggles viewMode between list and grid', () => {
+    const settings = setupSettingsStore();
+
+    settings.load();
+    expect(settings.viewMode).toBe('grid');
+    settings.toggleViewMode();
+    expect(settings.viewMode).toBe('list');
+    settings.toggleViewMode();
+    expect(settings.viewMode).toBe('grid');
   });
 
   it('allows setting language and theme explicitly', async () => {

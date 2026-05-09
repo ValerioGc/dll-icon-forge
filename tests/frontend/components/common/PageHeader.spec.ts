@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import PageHeader from '@/components/common/PageHeader.vue';
-import LanguageButton from '@/components/common/LanguageButton.vue';
+import PageHeader from '@/components/layout/PageHeader.vue';
+import LanguageButton from '@/components/buttons/LanguageButton.vue';
 import { useSettingsStore } from '@/stores/settings';
 import { mountComponent, resetFrontendTestState } from '../../helpers/mount';
 

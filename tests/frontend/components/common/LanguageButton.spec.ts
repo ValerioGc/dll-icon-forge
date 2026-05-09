@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import LanguageButton from '@/components/common/LanguageButton.vue';
+import LanguageButton from '@/components/buttons/LanguageButton.vue';
 import { useSettingsStore } from '@/stores/settings';
 import { mountComponent, resetFrontendTestState } from '../../helpers/mount';
 

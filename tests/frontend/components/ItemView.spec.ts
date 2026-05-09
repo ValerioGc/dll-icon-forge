@@ -17,7 +17,7 @@ describe('ItemView', () => {
 
     expect(wrapper.findAllComponents({ name: 'FileDropZone' })).toHaveLength(1);
     expect(wrapper.findComponent({ name: 'MenuTab' }).exists()).toBe(true);
-    expect(wrapper.findComponent({ name: 'PreviewTab' }).exists()).toBe(true);
+    expect(wrapper.findComponent({ name: 'IconCollectionView' }).exists()).toBe(true);
   });
 
   it('disables build in create mode until at least one valid icon is loaded', async () => {
@@ -48,7 +48,7 @@ describe('ItemView', () => {
     expect(wrapper.text()).toContain('File esistente');
     expect(wrapper.findAllComponents({ name: 'FileDropZone' })).toHaveLength(1);
     expect(wrapper.findComponent({ name: 'MenuTab' }).exists()).toBe(false);
-    expect(wrapper.findComponent({ name: 'PreviewTab' }).exists()).toBe(false);
+    expect(wrapper.findComponent({ name: 'IconCollectionView' }).exists()).toBe(false);
 
     const input = wrapper.get('input[type="file"]');
     Object.defineProperty(input.element, 'files', {
@@ -57,10 +57,10 @@ describe('ItemView', () => {
     });
     await input.trigger('change');
 
-    expect(project.editSourceFileName).toBe('existing.dll');
+    expect(project.sourceLabel).toBe('existing.dll');
     expect(wrapper.findAllComponents({ name: 'FileDropZone' })).toHaveLength(2);
     expect(wrapper.findComponent({ name: 'MenuTab' }).exists()).toBe(true);
-    expect(wrapper.findComponent({ name: 'PreviewTab' }).exists()).toBe(true);
+    expect(wrapper.findComponent({ name: 'IconCollectionView' }).exists()).toBe(true);
   });
 
   it('accepts an existing DLL through drag and drop before showing edit tools', async () => {
@@ -82,8 +82,26 @@ describe('ItemView', () => {
       },
     });
 
-    expect(project.editSourceFileName).toBe('dropped.dll');
+    expect(project.sourceLabel).toBe('dropped.dll');
     expect(wrapper.findAllComponents({ name: 'FileDropZone' })).toHaveLength(2);
     expect(wrapper.findComponent({ name: 'MenuTab' }).exists()).toBe(true);
+  });
+
+  it('shows the selected count alongside the total when icons are selected', async () => {
+    const wrapper = mountComponent(ItemView, {
+      props: {
+        mode: 'create',
+      },
+    });
+    const project = useProjectStore();
+
+    project.addFiles([
+      new File(['png'], 'a.png', { type: 'image/png' }),
+      new File(['png'], 'b.png', { type: 'image/png' }),
+    ]);
+    project.toggleIconSelection(project.icons[1].id);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('2 icone, 2 selezionate');
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import PageFooter from '@/components/common/PageFooter.vue';
+import PageFooter from '@/components/layout/PageFooter.vue';
 import { mountComponent, resetFrontendTestState } from '../../helpers/mount';
 
 describe('PageFooter', () => {

@@ -13,11 +13,11 @@ UninstPage custom un.RemoveAppDataPageCreate un.RemoveAppDataPageLeave
 
 Function un.RemoveAppDataPageCreate
   ${If} $LANGUAGE == 1040
-    StrCpy $RemovePageBodyText "Scegli se rimuovere anche i dati di AI Cabin salvati in AppData e le API key archiviate nel sistema."
+    StrCpy $RemovePageBodyText "Scegli se rimuovere anche i dati di Dll packer salvati in AppData e le API key archiviate nel sistema."
     StrCpy $RemoveAppDataCheckboxText "Rimuovi anche impostazioni e conversazioni salvate"
     StrCpy $RemoveApiKeysCheckboxText "Rimuovi anche le API key salvate"
   ${Else}
-    StrCpy $RemovePageBodyText "Choose whether to also remove AI Cabin data stored in AppData and the API keys stored in the system keychain."
+    StrCpy $RemovePageBodyText "Choose whether to also remove Dll packer data stored in AppData and the API keys stored in the system keychain."
     StrCpy $RemoveAppDataCheckboxText "Also remove saved settings and conversations"
     StrCpy $RemoveApiKeysCheckboxText "Also remove saved API keys"
   ${EndIf}
@@ -49,13 +49,13 @@ FunctionEnd
 
 !macro NSIS_HOOK_PREUNINSTALL
   ${If} $RemoveApiKeysSelection <> 0
-    IfFileExists "$INSTDIR\ai-cabin.exe" 0 +2
-      nsExec::ExecToLog '"$INSTDIR\ai-cabin.exe" --cleanup-api-keys'
+    IfFileExists "$INSTDIR\dll-packer.exe" 0 +2
+      nsExec::ExecToLog '"$INSTDIR\dll-packe.exe" --cleanup-api-keys'
   ${EndIf}
 !macroend
 
 !macro NSIS_HOOK_POSTUNINSTALL
   ${If} $RemoveAppDataSelection <> 0
-    RMDir /r "$APPDATA\it.aicabin"
+    RMDir /r "$APPDATA\it.dllpacker"
   ${EndIf}
 !macroend
