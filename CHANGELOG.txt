@@ -1,1 +1,12 @@
-First release
+Initial preview release of Win DLL Packer.
+
+Frontend:
+- Vue 3 + TypeScript + Vite + Pinia setup.
+- Create and Edit modes with locked controls until source file is loaded.
+- Drag and drop / file picker for icons and source file.
+- Icon preview list with selection and per-item delete.
+- Light / dark theme and IT / EN localization with persistent settings.
+- Native notification wired to the submit flow (placeholder).
+
+Backend:
+- Rust / Tauri integration not yet implemented; DLL read and write coming in a later release.
