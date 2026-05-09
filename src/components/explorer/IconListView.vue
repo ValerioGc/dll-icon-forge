@@ -34,31 +34,31 @@ function handleSelect(id: string, event: MouseEvent): void {
 </script>
 
 <template>
-    <ul class="icon_list_view" :class="{ 'is_disabled': disabled }">
+    <ul class="icon_list_view" :class="{ 'is-disabled': disabled }">
         <li v-for="(item, index) in items"
             :key="item.id"
-            class="icon_list_view_item"
+            class="icon_list_view__item"
             :class="{
-                'is_selected': isSelected(item.id),
-                'is_error': item.status === 'error',
+                'is-selected': isSelected(item.id),
+                'is-error': item.status === 'error',
             }"
         >
-            <button type="button" class="icon_list_view_select"
+            <button type="button" class="icon_list_view__select"
                 :disabled="disabled"
                 @click="handleSelect(item.id, $event)"
             >
-                <span class="icon_list_view_index" aria-hidden="true">{{ startIndex + index + 1 }}</span>
-                <span class="icon_list_view_thumb">
+                <span class="icon_list_view__index" aria-hidden="true">{{ startIndex + index + 1 }}</span>
+                <span class="icon_list_view__thumb">
                     <img v-if="item.preview" :src="item.preview" alt="">
                 </span>
             </button>
 
-            <button type="button" class="icon_list_view_delete action_button"
+            <button type="button" class="icon_list_view__delete action_button"
                 :disabled="disabled"
                 :aria-label="$t('menu.delete')"
                 @click.stop="emit('delete', item.id)"
             >
-                <img class="ui_icon icon_list_view_delete_icon" :src="closeIcon" alt="" aria-hidden="true">
+                <img class="ui_icon icon_list_view__delete_icon" :src="closeIcon" alt="" aria-hidden="true">
             </button>
         </li>
     </ul>
@@ -66,7 +66,7 @@ function handleSelect(id: string, event: MouseEvent): void {
 
 <style lang="scss" scoped>
 
-.is_disabled {
+.is-disabled {
     opacity: .55;
     pointer-events: none;
 }
@@ -78,7 +78,7 @@ function handleSelect(id: string, event: MouseEvent): void {
     padding: .75rem;
     gap: .6rem;
 
-    &_item {
+    &__item {
         @extend %grid_stack;
         grid-template-columns: 1fr auto;
         align-items: center;
@@ -87,17 +87,17 @@ function handleSelect(id: string, event: MouseEvent): void {
         border-radius: .5rem;
         background: var(--color-control-background);
 
-        &.is_selected {
+        &.is-selected {
             border-color: var(--color-accent);
             box-shadow: 0 0 0 3px var(--color-accent-soft);
         }
 
-        &.is_error {
+        &.is-error {
             border-color: var(--color-danger);
         }
     }
 
-    &_select {
+    &__select {
         @extend %fx_start_center;
         min-width: 0;
         gap: .8rem;
@@ -108,14 +108,14 @@ function handleSelect(id: string, event: MouseEvent): void {
         cursor: pointer;
     }
 
-    &_index {
+    &__index {
         min-width: 1.75rem;
         color: var(--color-muted);
         font-weight: 700;
         text-align: right;
     }
 
-    &_thumb {
+    &__thumb {
         @extend %grid_center;
         width: 3rem;
         height: 3rem;
@@ -131,7 +131,7 @@ function handleSelect(id: string, event: MouseEvent): void {
         }
     }
 
-    &_delete {
+    &__delete {
         width: 2.25rem;
         height: 2.25rem;
         margin-right: .55rem;
@@ -144,7 +144,7 @@ function handleSelect(id: string, event: MouseEvent): void {
             border-color: var(--color-danger);
         }
 
-        &_icon {    
+        &_icon {
             width: 1rem;
             height: 1rem;
         }

@@ -23,6 +23,7 @@ describe('IconCollectionView', () => {
   });
 
   it('renders the grid view by default and switches to list when toggled', async () => {
+    Object.defineProperty(navigator, 'language', { value: 'it-IT', configurable: true });
     const wrapper = mountComponent(IconCollectionView);
     const project = useProjectStore();
     const settings = useSettingsStore();

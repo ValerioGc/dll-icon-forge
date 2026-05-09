@@ -9,6 +9,10 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  define: {
+    'import.meta.env.VITE_APP_VERSION': JSON.stringify('0.1.0'),
+    'import.meta.env.VITE_GITHUB_URL': JSON.stringify('https://github.com/ValerioGc/win-dll-packer'),
+  },
   test: {
     environment: 'happy-dom',
     include: ['tests/frontend/**/*.{test,spec}.{ts,tsx}'],
