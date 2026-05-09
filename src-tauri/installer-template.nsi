@@ -69,9 +69,6 @@ Var UpdateMode
 Var NoShortcutMode
 Var WixMode
 Var OldMainBinaryName
-Var DeleteApiKeysCheckbox
-Var DeleteApiKeysCheckboxState
-
 Name "${PRODUCTNAME}"
 BrandingText "${COPYRIGHT}"
 OutFile "${OUTFILE}"
@@ -452,20 +449,10 @@ Function un.ConfirmShow ; Add add a `Delete app data` check box
   SendMessage $HWNDPARENT ${WM_GETFONT} 0 0 $9
   SendMessage $DeleteAppDataCheckbox ${WM_SETFONT} $9 1
 
-  IntOp $5 125 * $2
-  IntOp $5 $5 / 96
-  ${If} $LANGUAGE == 1040
-    System::Call 'user32::CreateWindowEx(i r3, w "${__NSD_CheckBox_CLASS}", w "Rimuovi anche le API key salvate", i ${__NSD_CheckBox_STYLE}, i r4, i r5, i r6, i r7, p r8, i0, i0, i0) i .s'
-  ${Else}
-    System::Call 'user32::CreateWindowEx(i r3, w "${__NSD_CheckBox_CLASS}", w "Also remove saved API keys", i ${__NSD_CheckBox_STYLE}, i r4, i r5, i r6, i r7, p r8, i0, i0, i0) i .s'
-  ${EndIf}
-  Pop $DeleteApiKeysCheckbox
-  SendMessage $DeleteApiKeysCheckbox ${WM_SETFONT} $9 1
 FunctionEnd
 !define MUI_PAGE_CUSTOMFUNCTION_LEAVE un.ConfirmLeave
 Function un.ConfirmLeave
   SendMessage $DeleteAppDataCheckbox ${BM_GETCHECK} 0 0 $DeleteAppDataCheckboxState
-  SendMessage $DeleteApiKeysCheckbox ${BM_GETCHECK} 0 0 $DeleteApiKeysCheckboxState
 FunctionEnd
 !define MUI_PAGE_CUSTOMFUNCTION_PRE un.SkipIfPassive
 !insertmacro MUI_UNPAGE_CONFIRM
@@ -789,11 +776,6 @@ Section Uninstall
 
   !insertmacro CheckIfAppIsRunning "${MAINBINARYNAME}.exe" "${PRODUCTNAME}"
 
-  ${If} $DeleteApiKeysCheckboxState = 1
-  ${AndIf} $UpdateMode <> 1
-    IfFileExists "$INSTDIR\${MAINBINARYNAME}.exe" 0 +2
-      nsExec::ExecToLog '"$INSTDIR\${MAINBINARYNAME}.exe" --cleanup-api-keys'
-  ${EndIf}
 
   ; Delete the app directory and its content from disk
   ; Copy main executable

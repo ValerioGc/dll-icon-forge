@@ -12,11 +12,11 @@ export const SUPPORTED_LOCALES: AppLocale[] = ['it', 'en', 'fr', 'es', 'de'];
 export const i18n = createI18n<false>({
   legacy: false,
   globalInjection: true,
-  locale: 'it',
+  locale: 'en',
   fallbackLocale: 'en',
   messages: {
-    it,
     en,
+    it,
     fr,
     es,
     de
