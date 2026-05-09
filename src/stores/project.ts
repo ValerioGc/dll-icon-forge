@@ -141,6 +141,7 @@ export const useProjectStore = defineStore('project', () => {
     buildState.value = 'idle';
     lastError.value = null;
     page.value = 0;
+    dirty.value = false;
   }
 
   function goHome(): void {
@@ -152,10 +153,12 @@ export const useProjectStore = defineStore('project', () => {
     buildState.value = 'idle';
     lastError.value = null;
     page.value = 0;
+    dirty.value = false;
   }
 
   function setEditSourceFile(file: File): void {
     sourceLabel.value = file.name;
+    dirty.value = true;
   }
 
   function addFiles(files: FileList | File[]): void {
@@ -163,6 +166,7 @@ export const useProjectStore = defineStore('project', () => {
     const newIcons = fileArray.map((file) => createProjectIcon(file, 'imported'));
 
     icons.value.push(...newIcons);
+    dirty.value = true;
 
     if (selectedIconIds.value.length === 0 && newIcons.length > 0) {
       selectedIconIds.value = [newIcons[0].id];
@@ -204,6 +208,7 @@ export const useProjectStore = defineStore('project', () => {
     const [removed] = icons.value.splice(index, 1);
     revokePreviewUrl(removed);
     selectedIconIds.value = selectedIconIds.value.filter((existing) => existing !== id);
+    dirty.value = true;
     clampPage();
   }
 
@@ -220,6 +225,7 @@ export const useProjectStore = defineStore('project', () => {
       }
       return true;
     });
+    dirty.value = true;
     selectedIconIds.value = [];
     clampPage();
   }
@@ -228,6 +234,7 @@ export const useProjectStore = defineStore('project', () => {
     icons.value.forEach(revokePreviewUrl);
     icons.value = [];
     selectedIconIds.value = [];
+    dirty.value = true;
     page.value = 0;
   }
 
@@ -274,12 +281,14 @@ export const useProjectStore = defineStore('project', () => {
     if (mode.value === 'edit') {
       buildState.value = 'success';
       lastError.value = null;
+      dirty.value = false;
       await notify(t('notifications.editSavedTitle'), t('notifications.editSavedBody'));
       return;
     }
 
     buildState.value = 'success';
     lastError.value = null;
+    dirty.value = false;
     await notify(t('notifications.createSavedTitle'), t('notifications.createSavedBody'));
   }
 

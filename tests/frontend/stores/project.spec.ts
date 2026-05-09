@@ -209,6 +209,97 @@ describe('project store', () => {
     expect(notify).toHaveBeenLastCalledWith('Creazione salvata', expect.stringContaining('DLL'));
   });
 
+  it('dirty: set by addFiles, setEditSourceFile, removeIcon, and removeSelectedIcons', () => {
+    const project = setupProjectStore();
+
+    project.addFiles([makePng('a.png')]);
+    expect(project.dirty).toBe(true);
+
+    project.goHome();
+    expect(project.dirty).toBe(false);
+
+    project.setMode('edit');
+    project.setEditSourceFile(new File(['dll'], 'lib.dll'));
+    expect(project.dirty).toBe(true);
+
+    project.setMode('create');
+    expect(project.dirty).toBe(false);
+
+    project.addFiles([makePng('b.png')]);
+    project.$patch({ dirty: false });
+    const id = project.icons[0].id;
+    project.removeIcon(id);
+    expect(project.dirty).toBe(true);
+
+    project.setMode('create');
+    project.addFiles([makePng('c.png'), makePng('d.png')]);
+    project.$patch({ dirty: false });
+    project.selectIcon(project.icons[0].id);
+    project.toggleIconSelection(project.icons[1].id);
+    project.removeSelectedIcons();
+    expect(project.dirty).toBe(true);
+  });
+
+  it('dirty: invariant on read-only operations', () => {
+    const project = setupProjectStore();
+    const settings = useSettingsStore();
+
+    settings.load();
+    settings.setPageSize(2);
+    project.setMode('create');
+    project.addFiles([makePng('a.png'), makePng('b.png'), makePng('c.png')]);
+    project.$patch({ dirty: false });
+
+    project.selectIcon(project.icons[0].id);
+    expect(project.dirty).toBe(false);
+
+    project.toggleIconSelection(project.icons[1].id);
+    expect(project.dirty).toBe(false);
+
+    project.clearSelection();
+    expect(project.dirty).toBe(false);
+
+    project.goToNextPage();
+    expect(project.dirty).toBe(false);
+
+    project.goToPreviousPage();
+    expect(project.dirty).toBe(false);
+  });
+
+  it('dirty: reset by goHome, setMode, and successful submitProject', async () => {
+    const project = setupProjectStore();
+
+    project.addFiles([makePng('a.png')]);
+    expect(project.dirty).toBe(true);
+    project.goHome();
+    expect(project.dirty).toBe(false);
+
+    project.setMode('create');
+    project.addFiles([makePng('b.png')]);
+    expect(project.dirty).toBe(true);
+    project.setMode('create');
+    expect(project.dirty).toBe(false);
+
+    project.addFiles([makePng('c.png')]);
+    expect(project.dirty).toBe(true);
+    await project.submitProject();
+    expect(project.buildState).toBe('success');
+    expect(project.dirty).toBe(false);
+  });
+
+  it('dirty: not reset on failed submitProject', async () => {
+    const project = setupProjectStore();
+
+    project.addFiles([makePng('a.png')]);
+    project.addFiles([new File(['txt'], 'bad.txt', { type: 'text/plain' })]);
+    project.$patch({ dirty: false });
+
+    project.addFiles([new File(['txt'], 'bad2.txt', { type: 'text/plain' })]);
+    await project.submitProject();
+    expect(project.buildState).toBe('error');
+    expect(project.dirty).toBe(true);
+  });
+
   it('reports edit mode source errors and success', async () => {
     const { notify } = await import('@/services/notifications');
     const project = setupProjectStore();

@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { onMounted, onUnmounted } from 'vue';
 import HomeView from '@/components/HomeView.vue';
 import ItemView from '@/components/ItemView.vue';
 import PageFooter from '@/components/layout/PageFooter.vue';
@@ -10,6 +11,15 @@ const project = useProjectStore();
 const settings = useSettingsStore();
 
 settings.load();
+
+function handleBeforeUnload(event: BeforeUnloadEvent): void {
+  if (project.dirty) {
+    event.preventDefault();
+  }
+}
+
+onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload));
+onUnmounted(() => window.removeEventListener('beforeunload', handleBeforeUnload));
 
 </script>
 
