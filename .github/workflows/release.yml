@@ -5,12 +5,13 @@ on:
     tags:
       - 'v*.*.*'
 
-jobs:
+env:
+  NODE_VERSION: 22.14.0
 
-  # Run tests on Linux before building release bundles for all platforms
+jobs:
   test:
-    name: Test
-    runs-on: ubuntu-22.04
+    name: Test release candidate
+    runs-on: windows-latest
     permissions:
       contents: read
     steps:
@@ -20,7 +21,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
       - name: Setup Rust
@@ -28,45 +29,45 @@ jobs:
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
-
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-3-dev \
-            libwebkit2gtk-4.1-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libssl-dev \
-            libxdo-dev \
-            patchelf \
-            pkg-config
+        with:
+          workspaces: src-tauri
 
       - name: Install npm dependencies
         run: npm ci
 
       - name: Verify release version matches tag
-        shell: bash
+        shell: pwsh
         run: |
-          set -euo pipefail
+          $tagVersion = "${env:GITHUB_REF_NAME}".TrimStart("v")
+          $packageVersion = node -p "require('./package.json').version"
+          $tauriVersion = node -p "require('./src-tauri/tauri.conf.json').version"
 
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
-          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
-          TAURI_VERSION="$(node -p "require('./src-tauri/tauri.conf.json').version")"
+          Write-Host "Tag version: $tagVersion"
+          Write-Host "package.json version: $packageVersion"
+          Write-Host "tauri.conf.json version: $tauriVersion"
 
-          echo "Tag version: ${TAG_VERSION}"
-          echo "package.json version: ${PACKAGE_VERSION}"
-          echo "tauri.conf.json version: ${TAURI_VERSION}"
-
-          if [ "${TAG_VERSION}" != "${PACKAGE_VERSION}" ]; then
-            echo "Tag version does not match package.json version."
+          if ($tagVersion -ne $packageVersion) {
+            Write-Error "Tag version does not match package.json version."
             exit 1
-          fi
+          }
 
-          if [ "${TAG_VERSION}" != "${TAURI_VERSION}" ]; then
-            echo "Tag version does not match tauri.conf.json version."
+          if ($tagVersion -ne $tauriVersion) {
+            Write-Error "Tag version does not match tauri.conf.json version."
             exit 1
-          fi
+          }
+
+      - name: Verify changelog is ready
+        shell: pwsh
+        run: |
+          if (!(Test-Path CHANGELOG.txt)) {
+            Write-Error "CHANGELOG.txt not found."
+            exit 1
+          }
+
+          if ((Get-Item CHANGELOG.txt).Length -eq 0) {
+            Write-Error "CHANGELOG.txt is empty."
+            exit 1
+          }
 
       - name: Run frontend tests
         run: npm run test
@@ -77,23 +78,12 @@ jobs:
       - name: Run frontend build
         run: npm run build
 
-  # Build release bundles for all platforms in parallel, only if tests pass
-  build:
-    name: Build (${{ matrix.label }})
+  build-windows:
+    name: Build Windows EXE
     needs: test
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            label: windows
-          - os: macos-latest
-            label: macos
-          - os: ubuntu-22.04
-            label: linux
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -101,7 +91,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
       - name: Setup Rust
@@ -109,73 +99,46 @@ jobs:
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
-
-      - name: Install Linux dependencies
-        if: matrix.label == 'linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libgtk-3-dev \
-            libwebkit2gtk-4.1-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libssl-dev \
-            libxdo-dev \
-            patchelf \
-            pkg-config
+        with:
+          workspaces: src-tauri
 
       - name: Install npm dependencies
         run: npm ci
 
-      - name: Build desktop bundles
+      - name: Build Windows installer bundles
         run: npm run tauri build
 
-      - name: Collect Windows bundles
-        if: matrix.label == 'windows'
+      - name: Collect Windows installers
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path release-assets | Out-Null
-          Copy-Item src-tauri/target/release/bundle/nsis/*.exe release-assets/ -Force
-          Copy-Item src-tauri/target/release/bundle/msi/*.msi release-assets/ -Force
 
-      - name: Collect macOS bundles
-        if: matrix.label == 'macos'
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p release-assets
-          shopt -s nullglob
+          $nsis = Get-ChildItem -Path src-tauri/target/release/bundle/nsis -Filter *.exe -ErrorAction SilentlyContinue
+          $msi = Get-ChildItem -Path src-tauri/target/release/bundle/msi -Filter *.msi -ErrorAction SilentlyContinue
 
-          for app in src-tauri/target/release/bundle/macos/*.app; do
-            app_name="$(basename "$app")"
-            ditto -c -k --sequesterRsrc --keepParent "$app" "release-assets/${app_name}.zip"
-          done
+          if (!$nsis) {
+            Write-Error "No NSIS .exe installer found."
+            exit 1
+          }
 
-          for dmg in src-tauri/target/release/bundle/dmg/*.dmg; do
-            cp "$dmg" release-assets/
-          done
+          if (!$msi) {
+            Write-Error "No MSI installer found."
+            exit 1
+          }
 
-      - name: Collect Linux bundles
-        if: matrix.label == 'linux'
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p release-assets
-          cp src-tauri/target/release/bundle/appimage/*.AppImage release-assets/
-          cp src-tauri/target/release/bundle/deb/*.deb release-assets/
-          cp src-tauri/target/release/bundle/rpm/*.rpm release-assets/
+          $nsis | Copy-Item -Destination release-assets -Force
+          $msi | Copy-Item -Destination release-assets -Force
 
-      - name: Upload build artifacts
+      - name: Upload Windows installers
         uses: actions/upload-artifact@v4
         with:
-          name: bundles-${{ matrix.label }}
+          name: windows-installers
           path: release-assets/*
           if-no-files-found: error
 
-  # Create GitHub release with all bundles attached, only if build succeeds
   create-release:
-    name: Create release
-    needs: build
+    name: Create draft release
+    needs: build-windows
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -185,9 +148,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download artifacts
+      - name: Download Windows installers
         uses: actions/download-artifact@v4
         with:
+          name: windows-installers
           path: release-assets
 
       - name: Prepare release notes
@@ -205,28 +169,24 @@ jobs:
             exit 1
           fi
 
-          CHANGELOG_CONTENT="$(cat CHANGELOG.txt)"
-
           {
-            echo "# DLL Packer ${GITHUB_REF_NAME}"
+            echo "# Win DLL Packer ${GITHUB_REF_NAME}"
             echo
-            echo "$CHANGELOG_CONTENT"
+            cat CHANGELOG.txt
           } > release-notes.md
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2.6.2
         with:
           tag_name: ${{ github.ref_name }}
-          name: DLL Packer ${{ github.ref_name }}
+          name: Win DLL Packer ${{ github.ref_name }}
           body_path: release-notes.md
-          files: release-assets/**/*
+          files: release-assets/*
           draft: true
           fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # Clear the changelog after a successful release to avoid confusion for future releases,
-  # only if release creation succeeds
   cleanup-changelog:
     name: Cleanup changelog
     needs: create-release
