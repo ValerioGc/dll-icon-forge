@@ -2,6 +2,8 @@ mod decode;
 mod parse;
 mod template;
 mod types;
+#[cfg(target_os = "windows")]
+mod update;
 mod write;
 
 #[cfg(target_os = "windows")]
