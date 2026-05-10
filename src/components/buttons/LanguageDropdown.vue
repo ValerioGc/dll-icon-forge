@@ -26,11 +26,19 @@ const FLAGS: Record<AppLocale, string> = {
     de: deFlag,
 };
 
-const LANGUAGE_NAMES: Record<AppLocale, string> = {
+const LANGUAGE_LABELS: Record<AppLocale, string> = {
+    it: 'ita',
+    en: 'eng',
+    fr: 'fra',
+    es: 'esp',
+    de: 'deu',
+};
+
+const LANGUAGE_TITLES: Record<AppLocale, string> = {
     it: 'Italiano',
     en: 'English',
-    fr: 'Français',
-    es: 'Español',
+    fr: 'Francais',
+    es: 'Espanol',
     de: 'Deutsch',
 };
 </script>
@@ -46,10 +54,12 @@ const LANGUAGE_NAMES: Record<AppLocale, string> = {
                 type="button"
                 class="language_selector__option"
                 :class="{ 'language_selector__option--active': selectedLocale === locale }"
+                :aria-label="LANGUAGE_TITLES[locale]"
+                :title="LANGUAGE_TITLES[locale]"
                 @click="emit('select', locale)"
             >
                 <img class="ui_icon" :src="FLAGS[locale]" :alt="locale.toUpperCase()" />
-                <span>{{ LANGUAGE_NAMES[locale] }}</span>
+                <span>{{ LANGUAGE_LABELS[locale] }}</span>
             </button>
         </li>
     </ul>
@@ -58,10 +68,7 @@ const LANGUAGE_NAMES: Record<AppLocale, string> = {
 <style lang="scss" scoped>
 .language_selector {
     &__dropdown {
-        position: absolute;
-        top: calc(100% + .4rem);
-        right: 0;
-        min-width: 10rem;
+        min-width: 5.5rem;
         padding: .3rem;
         margin: 0;
         list-style: none;
@@ -85,6 +92,7 @@ const LANGUAGE_NAMES: Record<AppLocale, string> = {
         color: var(--color-text);
         font-family: inherit;
         text-align: left;
+        text-transform: uppercase;
         transition: background .1s ease;
 
         &:hover,

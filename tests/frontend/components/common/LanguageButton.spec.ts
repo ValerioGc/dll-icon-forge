@@ -35,6 +35,17 @@ describe('LanguageButton', () => {
     expect(wrapper.findAll('.language_selector__option')).toHaveLength(5);
   });
 
+  it('opens the dropdown on hover', async () => {
+    const wrapper = mountComponent(LanguageButton);
+    useSettingsStore().load();
+    await vi.dynamicImportSettled();
+
+    await wrapper.get('.language_selector').trigger('mouseenter');
+    await vi.dynamicImportSettled();
+
+    expect(wrapper.find('.language_selector__dropdown').exists()).toBe(true);
+  });
+
   it('selects a language and closes the dropdown', async () => {
     const wrapper = mountComponent(LanguageButton);
     const settings = useSettingsStore();
@@ -46,12 +57,12 @@ describe('LanguageButton', () => {
 
     const enOption = wrapper
       .findAll('.language_selector__option')
-      .find((o) => o.text().includes('English'))!;
+      .find((o) => o.text().includes('eng'))!;
 
     await enOption.trigger('click');
 
     expect(settings.language).toBe('en');
-    expect(wrapper.find('.language_selector__dropdown').exists()).toBe(false);
+    expect(wrapper.get('.language_selector__trigger').attributes('aria-expanded')).toBe('false');
     expect(wrapper.text()).toContain('EN');
   });
 
@@ -66,7 +77,8 @@ describe('LanguageButton', () => {
     const activeOptions = wrapper.findAll('.language_selector__option--active');
 
     expect(activeOptions).toHaveLength(1);
-    expect(activeOptions[0].text()).toContain('Italiano');
+    expect(activeOptions[0].text()).toContain('ita');
+    expect(activeOptions[0].attributes('title')).toBe('Italiano');
   });
 
   it('toggles the dropdown closed when the trigger is clicked again', async () => {
@@ -79,7 +91,7 @@ describe('LanguageButton', () => {
     expect(wrapper.find('.language_selector__dropdown').exists()).toBe(true);
 
     await wrapper.get('button').trigger('click');
-    expect(wrapper.find('.language_selector__dropdown').exists()).toBe(false);
+    expect(wrapper.get('.language_selector__trigger').attributes('aria-expanded')).toBe('false');
   });
 
   it('closes the dropdown when the Escape key is pressed', async () => {
@@ -94,7 +106,7 @@ describe('LanguageButton', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.find('.language_selector__dropdown').exists()).toBe(false);
+    expect(wrapper.get('.language_selector__trigger').attributes('aria-expanded')).toBe('false');
   });
 
   it('closes the dropdown on an outside click', async () => {
@@ -109,7 +121,7 @@ describe('LanguageButton', () => {
     document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.find('.language_selector__dropdown').exists()).toBe(false);
+    expect(wrapper.get('.language_selector__trigger').attributes('aria-expanded')).toBe('false');
   });
 
   it('removes document event listeners on unmount without error', async () => {
