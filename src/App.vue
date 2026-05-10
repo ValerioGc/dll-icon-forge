@@ -1,13 +1,14 @@
 <script lang="ts" setup>
-import { onMounted, onUnmounted, ref } from 'vue';
-import HomeView from '@/components/HomeView.vue';
-import ItemView from '@/components/ItemView.vue';
+import { defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue';
+import HomeView from '@/views/HomeView.vue';
 import PageFooter from '@/components/layout/PageFooter.vue';
 import PageHeader from '@/components/layout/PageHeader.vue';
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
 import { useProjectStore } from '@/stores/project';
 import { useSettingsStore } from '@/stores/settings';
 import { useI18n } from 'vue-i18n';
+
+const ItemView = defineAsyncComponent(() => import('@/views/ItemView.vue'));
+const ConfirmDialog = defineAsyncComponent(() => import('@/components/dialogs/ConfirmDialog.vue'));
 
 const { t } = useI18n();
 const project = useProjectStore();

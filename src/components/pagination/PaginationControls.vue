@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 
 import { useI18n } from 'vue-i18n';
+import chevronLeft from '@/assets/icons/navigation/chevron-left.svg';
+import chevronRight from '@/assets/icons/navigation/chevron-right.svg';
 
 const { t } = useI18n();
 
@@ -37,7 +39,7 @@ function handleNext(): void {
             :aria-label="t('pagination.previous')"
             @click.prevent="handlePrevious"
         >
-            &lsaquo;
+            <img class="ui_icon themed_icon" :src="chevronLeft" alt="" aria-hidden="true" />
         </button>
 
         <span class="pagination_controls_status">
@@ -51,7 +53,7 @@ function handleNext(): void {
             :aria-label="t('pagination.next')"
             @click.prevent="handleNext"
         >
-            &rsaquo;
+            <img class="ui_icon themed_icon" :src="chevronRight" alt="" aria-hidden="true" />
         </button>
     </nav>
 </template>
@@ -63,11 +65,10 @@ function handleNext(): void {
     gap: .5rem;
 
     &_button {
+        @extend %fx_center;
         min-width: 2.25rem;
         height: 2.25rem;
-        padding: 0 .65rem;
-        font-size: 1.1rem;
-        font-weight: 800;
+        padding: 0;
     }
 
     &_status {

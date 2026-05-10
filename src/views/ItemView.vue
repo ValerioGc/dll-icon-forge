@@ -1,16 +1,21 @@
 <script setup lang="ts">
 
-import { computed, ref } from 'vue';
+import { computed, defineAsyncComponent, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
 import IconCollectionView from '@/components/explorer/IconCollectionView.vue';
 import MenuTab from '@/components/explorer/MenuTab.vue';
-import FileDropZone from '@/components/common/FileDropZone.vue';
-import ConfirmDialog from '@/components/common/ConfirmDialog.vue';
+import FileDropZone from '@/components/upload/FileDropZone.vue';
 
 import { useProjectStore } from '@/stores/project';
 import type { ProjectMode } from '@/types/Project';
+
+const ConfirmDialog = defineAsyncComponent(() => import('@/components/dialogs/ConfirmDialog.vue'));
+
+defineOptions({
+    name: 'ItemView',
+});
 
 const { t } = useI18n();
 const project = useProjectStore();
@@ -85,7 +90,7 @@ function handleConfirmDelete(): void {
 <template>
     <div class="item_view">
         <button type="button" class="back_button" @click.prevent="emit('home')">
-            <img class="ui_icon back_button_icon themed_icon" src="@/assets/icons/back.svg" alt="" />
+            <img class="ui_icon back_button_icon themed_icon" src="@/assets/icons/navigation/back.svg" alt="" />
             {{ t('common.backHome') }}
         </button>
 
@@ -143,7 +148,7 @@ function handleConfirmDelete(): void {
                 :aria-disabled="isSubmitDisabled"
                 @click.prevent="project.submitProject"
             >
-                <img class="ui_icon themed_icon" src="@/assets/icons/save.svg" alt="" />
+                <img class="ui_icon themed_icon" src="@/assets/icons/actions/save.svg" alt="" />
                 {{ t('common.submit') }}
             </button>
         </footer>

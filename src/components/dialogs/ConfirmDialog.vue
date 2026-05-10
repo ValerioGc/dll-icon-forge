@@ -3,6 +3,10 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 
+defineOptions({
+    name: 'ConfirmDialog',
+});
+
 defineProps<{
     title: string;
     message: string;
@@ -19,7 +23,7 @@ const emit = defineEmits<{
 <template>
     <Teleport to="body">
         <div class="confirm_overlay" @click.self="emit('cancel')">
-            <div class="confirm_dialog" role="dialog" aria-modal="true" :aria-label="title">
+            <dialog class="confirm_dialog" open aria-modal="true" :aria-label="title" @cancel.prevent="emit('cancel')">
                 <h2 class="confirm_dialog_title">{{ title }}</h2>
                 <p class="confirm_dialog_message">{{ message }}</p>
                 <div class="confirm_dialog_actions">
@@ -30,7 +34,7 @@ const emit = defineEmits<{
                         {{ confirmLabel ?? t('confirm.confirmLabel') }}
                     </button>
                 </div>
-            </div>
+            </dialog>
         </div>
     </Teleport>
 </template>
@@ -48,6 +52,8 @@ const emit = defineEmits<{
 }
 
 .confirm_dialog {
+    position: static;
+    margin: 0;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
     border-radius: .5rem;
@@ -55,6 +61,7 @@ const emit = defineEmits<{
     max-width: 420px;
     width: 90%;
     box-shadow: var(--shadow-medium);
+    color: var(--color-text);
 
     &_title {
         margin: 0 0 .5rem;

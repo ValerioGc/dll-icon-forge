@@ -1,7 +1,11 @@
 <script lang="ts" setup>
 
-import closeIcon from '@/assets/icons/close.svg';
+import closeIcon from '@/assets/icons/actions/close.svg';
 import type { ProjectIcon } from '@/types/Project';
+
+defineOptions({
+    name: 'IconListView',
+});
 
 const props = withDefaults(defineProps<{
     items?: ProjectIcon[];

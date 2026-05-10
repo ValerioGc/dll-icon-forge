@@ -1,7 +1,7 @@
 <script setup lang="ts">
 
 import { ref } from 'vue';
-import uploadIcon from '@/assets/icons/upload.svg';
+import uploadIcon from '@/assets/icons/actions/upload.svg';
 
 const props = withDefaults(defineProps<{
     title: string;

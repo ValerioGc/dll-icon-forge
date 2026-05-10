@@ -1,8 +1,8 @@
 <script setup lang="ts">
 
 import { computed } from 'vue';
-import darkIcon from '@/assets/icons/dark.svg';
-import lightIcon from '@/assets/icons/light.svg';
+import darkIcon from '@/assets/icons/theme/dark.svg';
+import lightIcon from '@/assets/icons/theme/light.svg';
 import { useSettingsStore } from '@/stores/settings';
 
 const settings = useSettingsStore();

@@ -2,7 +2,7 @@
 
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
-import trash from '@/assets/icons/trash.svg';
+import trash from '@/assets/icons/actions/trash.svg';
 
 const { t } = useI18n();
 

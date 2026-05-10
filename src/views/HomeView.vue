@@ -22,14 +22,14 @@ const emit = defineEmits<{
             <p>{{ t('homeViewChooseMode') }}</p>
             <button type="button" class="mode_button surface" @click.prevent="emit('selectMode', 'create')">
                 <span class="mode_button_title">
-                    <img class="ui_icon mode_button_icon themed_icon" src="@/assets/icons/plus.svg" alt="" aria-hidden="true">
+                    <img class="ui_icon mode_button_icon themed_icon" src="@/assets/icons/actions/plus.svg" alt="" aria-hidden="true">
                     <span>{{ t('common.createMode') }}</span>
                 </span>
                 <small>{{ t('homeViewCreateHint') }}</small>
             </button>
             <button type="button" class="mode_button surface" @click.prevent="emit('selectMode', 'edit')">
                 <span class="mode_button_title">
-                    <img class="ui_icon mode_button_icon themed_icon" src="@/assets/icons/edit.svg" alt="" aria-hidden="true">
+                    <img class="ui_icon mode_button_icon themed_icon" src="@/assets/icons/actions/edit.svg" alt="" aria-hidden="true">
                     <span>{{ t('common.editMode') }}</span>
                 </span>
                 <small>{{ t('homeViewEditHint') }}</small>

@@ -1,13 +1,14 @@
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, defineAsyncComponent } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
-import IconListView from '@/components/explorer/IconListView.vue';
-import IconGridView from '@/components/explorer/IconGridView.vue';
-import PaginationControls from '@/components/common/PaginationControls.vue';
-import PageSizeSelector from '@/components/common/PageSizeSelector.vue';
+import PaginationControls from '@/components/pagination/PaginationControls.vue';
+import PageSizeSelector from '@/components/pagination/PageSizeSelector.vue';
 import { useProjectStore } from '@/stores/project';
 import { useSettingsStore, type PageSize, type ViewMode } from '@/stores/settings';
+
+const IconListView = defineAsyncComponent(() => import('@/components/explorer/IconListView.vue'));
+const IconGridView = defineAsyncComponent(() => import('@/components/explorer/IconGridView.vue'));
 
 const { t } = useI18n();
 const project = useProjectStore();
@@ -63,7 +64,7 @@ function handlePageSize(next: PageSize): void {
                     :title="t('viewMode.list')"
                     @click.prevent="handleViewMode('list')"
                 >
-                    <img class="ui_icon themed_icon" src="@/assets/icons/list.svg" alt="" aria-hidden="true">
+                    <img class="ui_icon themed_icon" src="@/assets/icons/view/list.svg" alt="" aria-hidden="true">
                 </button>
                 <button
                     type="button"
@@ -74,7 +75,7 @@ function handlePageSize(next: PageSize): void {
                     :title="t('viewMode.grid')"
                     @click.prevent="handleViewMode('grid')"
                 >
-                    <img class="ui_icon themed_icon" src="@/assets/icons/grid.svg" alt="" aria-hidden="true">
+                    <img class="ui_icon themed_icon" src="@/assets/icons/view/grid.svg" alt="" aria-hidden="true">
                 </button>
             </fieldset>
 
