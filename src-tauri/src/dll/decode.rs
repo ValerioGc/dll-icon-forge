@@ -1,6 +1,4 @@
-use crate::{
-    icons::{IconError, IconSize, NormalisedIcon},
-};
+use crate::icons::{IconError, IconSize, NormalisedIcon};
 
 const PNG_MAGIC: &[u8] = b"\x89PNG\r\n\x1a\n";
 const BITMAPINFOHEADER_SIZE: usize = 40;
@@ -301,8 +299,8 @@ mod tests {
 
     #[test]
     fn decodes_32bpp_dib_icon_resource() {
-        let icon = decode_icon_resource(&dib_32_bytes(16, [30, 20, 10, 255], false), 16, 16)
-            .unwrap();
+        let icon =
+            decode_icon_resource(&dib_32_bytes(16, [30, 20, 10, 255], false), 16, 16).unwrap();
 
         assert_eq!(icon.size, IconSize::S16);
         assert_eq!(icon.rgba.len(), 16 * 16 * 4);
@@ -311,8 +309,7 @@ mod tests {
 
     #[test]
     fn applies_dib_mask_when_32bpp_alpha_is_empty() {
-        let icon = decode_icon_resource(&dib_32_bytes(16, [30, 20, 10, 0], true), 16, 16)
-            .unwrap();
+        let icon = decode_icon_resource(&dib_32_bytes(16, [30, 20, 10, 0], true), 16, 16).unwrap();
 
         assert_eq!(&icon.rgba[0..4], &[10, 20, 30, 0]);
         assert_eq!(&icon.rgba[4..8], &[10, 20, 30, 255]);

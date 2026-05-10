@@ -22,14 +22,18 @@ export interface ProjectIcon {
   error?: string | null;
 }
 
+export interface BuildIconInput {
+  id: string;
+}
+
 export interface BuildOptions {
-  overwriteExisting: boolean;
-  targetSizes: number[];
+  outputPath: string;
+  icons: BuildIconInput[];
 }
 
 export const DEFAULT_TARGET_SIZES: number[] = [16, 32, 48, 256];
 
 export const DEFAULT_BUILD_OPTIONS: BuildOptions = {
-  overwriteExisting: false,
-  targetSizes: DEFAULT_TARGET_SIZES,
+  outputPath: '',
+  icons: [],
 };

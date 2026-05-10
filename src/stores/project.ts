@@ -4,6 +4,8 @@ import { t } from '@/i18n';
 import { notify } from '@/services/notifications';
 import {
   addIconSource,
+  clearBuildCache,
+  dropBuildIcon,
   fromBackendIcon,
   ipcErrorMessage,
   loadExistingDll,
@@ -70,8 +72,9 @@ function revokePreviewUrl(icon: ProjectIcon): void {
 
 function cleanupPreview(icon: ProjectIcon): void {
   revokePreviewUrl(icon);
+  void dropBuildIcon(icon.id).catch(() => undefined);
   if (icon.previewPath) {
-    void removePreview(icon.previewPath);
+    void removePreview(icon.previewPath).catch(() => undefined);
   }
 }
 
@@ -338,10 +341,13 @@ export const useProjectStore = defineStore('project', () => {
     const currentIcons = [...icons.value];
     currentIcons.forEach(revokePreviewUrl);
     await Promise.all(
-      currentIcons
-        .map((icon) => icon.previewPath)
-        .filter((path): path is string => Boolean(path))
-        .map((path) => removePreview(path).catch(() => undefined)),
+      [
+        ...currentIcons
+          .map((icon) => icon.previewPath)
+          .filter((path): path is string => Boolean(path))
+          .map((path) => removePreview(path).catch(() => undefined)),
+        clearBuildCache().catch(() => undefined),
+      ],
     );
   }
 

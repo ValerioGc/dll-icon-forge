@@ -26,6 +26,9 @@ pub enum IconError {
 
     #[error("failed to parse DLL resource: {0}")]
     DllParseFailed(String),
+
+    #[error("internal error: {0}")]
+    Internal(String),
 }
 
 /// Serializable error for Tauri IPC. Carries a machine-readable `code` for
@@ -47,6 +50,7 @@ impl From<IconError> for IpcError {
             IconError::PlatformNotSupported => "platform_not_supported",
             IconError::DllLoadFailed(_) => "dll_load_failed",
             IconError::DllParseFailed(_) => "dll_parse_failed",
+            IconError::Internal(_) => "internal_error",
         };
         Self {
             code,

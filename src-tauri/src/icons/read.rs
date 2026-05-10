@@ -163,11 +163,8 @@ mod tests {
     fn make_ico(path: &Path, sizes: &[u32]) {
         let mut dir = ico::IconDir::new(ico::ResourceType::Icon);
         for &size in sizes {
-            let img = ico::IconImage::from_rgba_data(
-                size,
-                size,
-                vec![128u8; (size * size * 4) as usize],
-            );
+            let img =
+                ico::IconImage::from_rgba_data(size, size, vec![128u8; (size * size * 4) as usize]);
             dir.add_entry(ico::IconDirEntry::encode(&img).unwrap());
         }
         dir.write(File::create(path).unwrap()).unwrap();
@@ -250,8 +247,10 @@ mod tests {
         std::fs::write(&path, b"\x42\x4D\x00\x00\x00\x00\x00\x00").unwrap();
 
         let err = read_icon_source(&path).unwrap_err();
-        assert!(matches!(err, IconError::UnsupportedFormat { ref ext } if ext == "bmp"),
-            "expected UnsupportedFormat(bmp), got: {err:?}");
+        assert!(
+            matches!(err, IconError::UnsupportedFormat { ref ext } if ext == "bmp"),
+            "expected UnsupportedFormat(bmp), got: {err:?}"
+        );
     }
 
     #[test]

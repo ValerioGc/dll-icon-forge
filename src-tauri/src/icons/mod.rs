@@ -4,6 +4,8 @@ mod read;
 mod types;
 
 pub use errors::{IconError, IpcError};
-pub use types::{BuildOptions, IconSize, IconStatus, ProjectIcon, SourceKind, SUPPORTED_SIZES};
+pub use types::{
+    BuildIconInput, BuildOptions, IconSize, IconStatus, ProjectIcon, SUPPORTED_SIZES, SourceKind,
+};
 
-pub(crate) use convert::{import_icon_source, write_preview, ImportedIcon, NormalisedIcon};
+pub(crate) use convert::{ImportedIcon, NormalisedIcon, import_icon_source, write_preview};

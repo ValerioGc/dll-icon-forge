@@ -1,7 +1,8 @@
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
 /// The four target sizes Win DLL Packer supports.
-pub const SUPPORTED_SIZES: [IconSize; 4] = [IconSize::S16, IconSize::S32, IconSize::S48, IconSize::S256];
+pub const SUPPORTED_SIZES: [IconSize; 4] =
+    [IconSize::S16, IconSize::S32, IconSize::S48, IconSize::S256];
 
 // ── IconSize ──────────────────────────────────────────────────────────────────
 
@@ -86,11 +87,19 @@ pub struct ProjectIcon {
 
 // ── BuildOptions ──────────────────────────────────────────────────────────────
 
+/// One project icon selected for the build, by the id returned to the frontend.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct BuildIconInput {
+    pub id: String,
+}
+
 /// Parameters for `build_dll`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BuildOptions {
     pub output_path: String,
+    pub icons: Vec<BuildIconInput>,
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -107,8 +116,14 @@ mod tests {
 
     #[test]
     fn icon_size_deserialises_from_number() {
-        assert_eq!(serde_json::from_str::<IconSize>("16").unwrap(), IconSize::S16);
-        assert_eq!(serde_json::from_str::<IconSize>("256").unwrap(), IconSize::S256);
+        assert_eq!(
+            serde_json::from_str::<IconSize>("16").unwrap(),
+            IconSize::S16
+        );
+        assert_eq!(
+            serde_json::from_str::<IconSize>("256").unwrap(),
+            IconSize::S256
+        );
     }
 
     #[test]
@@ -131,13 +146,22 @@ mod tests {
     fn source_kind_serialises_lowercase() {
         assert_eq!(serde_json::to_string(&SourceKind::Png).unwrap(), "\"png\"");
         assert_eq!(serde_json::to_string(&SourceKind::Ico).unwrap(), "\"ico\"");
-        assert_eq!(serde_json::to_string(&SourceKind::Extracted).unwrap(), "\"extracted\"");
+        assert_eq!(
+            serde_json::to_string(&SourceKind::Extracted).unwrap(),
+            "\"extracted\""
+        );
     }
 
     #[test]
     fn icon_status_serialises_lowercase() {
-        assert_eq!(serde_json::to_string(&IconStatus::Ready).unwrap(), "\"ready\"");
-        assert_eq!(serde_json::to_string(&IconStatus::Error).unwrap(), "\"error\"");
+        assert_eq!(
+            serde_json::to_string(&IconStatus::Ready).unwrap(),
+            "\"ready\""
+        );
+        assert_eq!(
+            serde_json::to_string(&IconStatus::Error).unwrap(),
+            "\"error\""
+        );
     }
 
     #[test]
@@ -195,21 +219,42 @@ mod tests {
         };
 
         let json = serde_json::to_string(&icon).unwrap();
-        assert!(json.contains("\"sourceKind\""), "missing sourceKind in: {json}");
-        assert!(json.contains("\"availableSizes\""), "missing availableSizes in: {json}");
-        assert!(json.contains("\"previewPath\""), "missing previewPath in: {json}");
-        assert!(!json.contains("\"source_kind\""), "unexpected snake_case in: {json}");
-        assert!(!json.contains("\"available_sizes\""), "unexpected snake_case in: {json}");
+        assert!(
+            json.contains("\"sourceKind\""),
+            "missing sourceKind in: {json}"
+        );
+        assert!(
+            json.contains("\"availableSizes\""),
+            "missing availableSizes in: {json}"
+        );
+        assert!(
+            json.contains("\"previewPath\""),
+            "missing previewPath in: {json}"
+        );
+        assert!(
+            !json.contains("\"source_kind\""),
+            "unexpected snake_case in: {json}"
+        );
+        assert!(
+            !json.contains("\"available_sizes\""),
+            "unexpected snake_case in: {json}"
+        );
     }
 
     #[test]
     fn build_options_round_trips() {
         let opts = BuildOptions {
             output_path: "C:\\output\\my.dll".to_string(),
+            icons: vec![BuildIconInput {
+                id: "icon-1".to_string(),
+            }],
         };
         let json = serde_json::to_string(&opts).unwrap();
         assert!(json.contains("\"outputPath\""));
+        assert!(json.contains("\"icons\""));
+        assert!(json.contains("\"id\":\"icon-1\""));
         let recovered: BuildOptions = serde_json::from_str(&json).unwrap();
         assert_eq!(recovered.output_path, opts.output_path);
+        assert_eq!(recovered.icons[0].id, opts.icons[0].id);
     }
 }

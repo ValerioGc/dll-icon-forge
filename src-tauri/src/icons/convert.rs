@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     errors::IconError,
-    read::{read_icon_source, IconSourceData},
-    types::{IconSize, SourceKind, SUPPORTED_SIZES},
+    read::{IconSourceData, read_icon_source},
+    types::{IconSize, SUPPORTED_SIZES, SourceKind},
 };
 
 // ── Validation types ──────────────────────────────────────────────────────────
@@ -131,7 +131,12 @@ pub(crate) fn normalise(
             }
         };
 
-        result.push(NormalisedIcon { size, rgba, width: target, height: target });
+        result.push(NormalisedIcon {
+            size,
+            rgba,
+            width: target,
+            height: target,
+        });
     }
 
     Ok(result)
@@ -237,11 +242,8 @@ mod tests {
     fn make_ico(path: &Path, sizes: &[u32]) {
         let mut dir = ico::IconDir::new(ico::ResourceType::Icon);
         for &size in sizes {
-            let img = ico::IconImage::from_rgba_data(
-                size,
-                size,
-                vec![128u8; (size * size * 4) as usize],
-            );
+            let img =
+                ico::IconImage::from_rgba_data(size, size, vec![128u8; (size * size * 4) as usize]);
             dir.add_entry(ico::IconDirEntry::encode(&img).unwrap());
         }
         dir.write(File::create(path).unwrap()).unwrap();
@@ -258,7 +260,13 @@ mod tests {
         let source = read_icon_source(&path).unwrap();
         let err = validate(&source).unwrap_err();
         assert!(
-            matches!(err, IconError::NotSquare { width: 32, height: 16 }),
+            matches!(
+                err,
+                IconError::NotSquare {
+                    width: 32,
+                    height: 16
+                }
+            ),
             "expected NotSquare(32,16), got: {err:?}"
         );
     }
@@ -272,7 +280,13 @@ mod tests {
         let source = read_icon_source(&path).unwrap();
         let err = validate(&source).unwrap_err();
         assert!(
-            matches!(err, IconError::TooSmall { width: 8, height: 8 }),
+            matches!(
+                err,
+                IconError::TooSmall {
+                    width: 8,
+                    height: 8
+                }
+            ),
             "expected TooSmall(8,8), got: {err:?}"
         );
     }
@@ -300,7 +314,11 @@ mod tests {
 
         let source = read_icon_source(&path).unwrap();
         let result = validate(&source).unwrap();
-        assert!(result.warnings.is_empty(), "unexpected warnings: {:?}", result.warnings);
+        assert!(
+            result.warnings.is_empty(),
+            "unexpected warnings: {:?}",
+            result.warnings
+        );
     }
 
     #[test]
@@ -324,8 +342,12 @@ mod tests {
         let source = read_icon_source(&path).unwrap();
         let result = validate(&source).unwrap();
         assert!(
-            result.warnings.iter().any(|w| matches!(w, ValidationWarning::NoAlpha)),
-            "expected NoAlpha warning, got: {:?}", result.warnings
+            result
+                .warnings
+                .iter()
+                .any(|w| matches!(w, ValidationWarning::NoAlpha)),
+            "expected NoAlpha warning, got: {:?}",
+            result.warnings
         );
     }
 
@@ -355,7 +377,10 @@ mod tests {
         let source = read_icon_source(&path).unwrap();
         let result = validate(&source).unwrap();
         assert!(
-            !result.warnings.iter().any(|w| matches!(w, ValidationWarning::NonStandardSizes)),
+            !result
+                .warnings
+                .iter()
+                .any(|w| matches!(w, ValidationWarning::NonStandardSizes)),
             "unexpected NonStandardSizes warning"
         );
     }
@@ -371,8 +396,12 @@ mod tests {
         let source = read_icon_source(&path).unwrap();
         let result = validate(&source).unwrap();
         assert!(
-            result.warnings.iter().any(|w| matches!(w, ValidationWarning::NonStandardSizes)),
-            "expected NonStandardSizes warning, got: {:?}", result.warnings
+            result
+                .warnings
+                .iter()
+                .any(|w| matches!(w, ValidationWarning::NonStandardSizes)),
+            "expected NonStandardSizes warning, got: {:?}",
+            result.warnings
         );
     }
 
@@ -380,12 +409,15 @@ mod tests {
     fn ico_with_one_standard_size_has_no_size_warning() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("partial.ico");
-        make_ico(&path, &[32, 64]);  // 32 is standard, 64 is not
+        make_ico(&path, &[32, 64]); // 32 is standard, 64 is not
 
         let source = read_icon_source(&path).unwrap();
         let result = validate(&source).unwrap();
         assert!(
-            !result.warnings.iter().any(|w| matches!(w, ValidationWarning::NonStandardSizes)),
+            !result
+                .warnings
+                .iter()
+                .any(|w| matches!(w, ValidationWarning::NonStandardSizes)),
             "32 is a standard size, should not warn"
         );
     }
@@ -395,11 +427,8 @@ mod tests {
     fn make_ico_with_pixel(path: &Path, sizes_and_pixel: &[(u32, u8)]) {
         let mut dir = ico::IconDir::new(ico::ResourceType::Icon);
         for &(size, pixel) in sizes_and_pixel {
-            let img = ico::IconImage::from_rgba_data(
-                size,
-                size,
-                vec![pixel; (size * size * 4) as usize],
-            );
+            let img =
+                ico::IconImage::from_rgba_data(size, size, vec![pixel; (size * size * 4) as usize]);
             dir.add_entry(ico::IconDirEntry::encode(&img).unwrap());
         }
         dir.write(File::create(path).unwrap()).unwrap();
@@ -421,7 +450,12 @@ mod tests {
         assert_eq!(result.len(), 4);
         for icon in &result {
             let expected_len = (icon.width * icon.height * 4) as usize;
-            assert_eq!(icon.rgba.len(), expected_len, "wrong buffer size for {:?}", icon.size);
+            assert_eq!(
+                icon.rgba.len(),
+                expected_len,
+                "wrong buffer size for {:?}",
+                icon.size
+            );
             assert_eq!(icon.width, u32::from(icon.size));
             assert_eq!(icon.height, u32::from(icon.size));
         }
@@ -440,7 +474,10 @@ mod tests {
         let result = normalise(source, &[IconSize::S32]).unwrap();
 
         assert_eq!(result.len(), 1);
-        assert_eq!(result[0].rgba[0], 50, "should use exact 32px frame, not resize from 256px");
+        assert_eq!(
+            result[0].rgba[0], 50,
+            "should use exact 32px frame, not resize from 256px"
+        );
     }
 
     #[test]
@@ -529,7 +566,12 @@ mod tests {
     fn normalised_icon(size: IconSize) -> NormalisedIcon {
         let px = u32::from(size);
         let rgba = vec![128u8; (px * px * 4) as usize];
-        NormalisedIcon { size, rgba, width: px, height: px }
+        NormalisedIcon {
+            size,
+            rgba,
+            width: px,
+            height: px,
+        }
     }
 
     #[test]
@@ -564,7 +606,10 @@ mod tests {
         assert!(preview.exists());
 
         std::fs::remove_file(&preview).unwrap();
-        assert!(!preview.exists(), "caller should be able to delete the preview");
+        assert!(
+            !preview.exists(),
+            "caller should be able to delete the preview"
+        );
     }
 
     #[test]
@@ -603,7 +648,11 @@ mod tests {
         let result = import_icon_source(&src_path, prev_dir.path()).unwrap();
 
         assert_eq!(result.source_kind, SourceKind::Png);
-        assert!(result.warnings.is_empty(), "unexpected warnings: {:?}", result.warnings);
+        assert!(
+            result.warnings.is_empty(),
+            "unexpected warnings: {:?}",
+            result.warnings
+        );
         assert_eq!(result.icons.len(), 4);
         let sizes: Vec<u32> = result.icons.iter().map(|i| u32::from(i.size)).collect();
         assert_eq!(sizes, vec![16, 32, 48, 256]);
@@ -623,7 +672,10 @@ mod tests {
         assert_eq!(result.source_kind, SourceKind::Ico);
         assert_eq!(result.icons.len(), 4);
         assert!(
-            !result.warnings.iter().any(|w| matches!(w, ValidationWarning::NonStandardSizes)),
+            !result
+                .warnings
+                .iter()
+                .any(|w| matches!(w, ValidationWarning::NonStandardSizes)),
             "unexpected NonStandardSizes warning"
         );
         assert!(result.preview_path.exists());
@@ -639,8 +691,12 @@ mod tests {
         let result = import_icon_source(&src_path, prev_dir.path()).unwrap();
 
         assert!(
-            result.warnings.iter().any(|w| matches!(w, ValidationWarning::NoAlpha)),
-            "expected NoAlpha warning, got: {:?}", result.warnings
+            result
+                .warnings
+                .iter()
+                .any(|w| matches!(w, ValidationWarning::NoAlpha)),
+            "expected NoAlpha warning, got: {:?}",
+            result.warnings
         );
         assert_eq!(result.icons.len(), 4, "pipeline must still produce icons");
         assert!(result.preview_path.exists());
@@ -656,10 +712,18 @@ mod tests {
         let result = import_icon_source(&src_path, prev_dir.path()).unwrap();
 
         assert!(
-            result.warnings.iter().any(|w| matches!(w, ValidationWarning::NonStandardSizes)),
-            "expected NonStandardSizes warning, got: {:?}", result.warnings
+            result
+                .warnings
+                .iter()
+                .any(|w| matches!(w, ValidationWarning::NonStandardSizes)),
+            "expected NonStandardSizes warning, got: {:?}",
+            result.warnings
         );
-        assert_eq!(result.icons.len(), 4, "all four sizes should be produced by resize");
+        assert_eq!(
+            result.icons.len(),
+            4,
+            "all four sizes should be produced by resize"
+        );
     }
 
     #[test]

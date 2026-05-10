@@ -80,3 +80,11 @@ export async function addIconSource(path: string): Promise<BackendProjectIcon> {
 export async function removePreview(path: string): Promise<void> {
   await invoke('remove_preview', { path });
 }
+
+export async function dropBuildIcon(id: string): Promise<void> {
+  await invoke('drop_build_icon', { id });
+}
+
+export async function clearBuildCache(): Promise<void> {
+  await invoke('clear_build_cache');
+}

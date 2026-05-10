@@ -25,11 +25,12 @@ use {
 
 #[cfg(target_os = "windows")]
 use crate::{
+    build_cache::CachedBuildIcon,
     dll::{
-        decode::decode_icon_resource, parse::parse_group_icon, DllWarning, IconGroupMetadata,
-        LoadedDll,
+        DllWarning, IconGroupMetadata, LoadedDll, decode::decode_icon_resource,
+        parse::parse_group_icon,
     },
-    icons::{write_preview, IconError, IconStatus, NormalisedIcon, ProjectIcon, SourceKind},
+    icons::{IconError, IconStatus, NormalisedIcon, ProjectIcon, SourceKind, write_preview},
 };
 
 #[cfg(target_os = "windows")]
@@ -118,11 +119,7 @@ pub(super) fn enumerate_icon_groups(
         groups.push(IconGroupMetadata {
             group_id: group_ref.group_id,
             language_id: group_ref.language_id,
-            entry_count: read_group_entry_count(
-                module,
-                group_ref.group_id,
-                group_ref.language_id,
-            )?,
+            entry_count: read_group_entry_count(module, group_ref.group_id, group_ref.language_id)?,
         });
     }
 
@@ -238,11 +235,7 @@ pub(super) fn read_icon_group_icons(
             )));
         }
 
-        icons.push(decode_icon_resource(
-            icon_bytes,
-            entry.width,
-            entry.height,
-        )?);
+        icons.push(decode_icon_resource(icon_bytes, entry.width, entry.height)?);
     }
 
     Ok(icons)
@@ -255,11 +248,13 @@ pub(super) fn load_dll_icons(dll_path: &Path, preview_dir: &Path) -> Result<Load
     if groups.is_empty() {
         return Ok(LoadedDll {
             icons: Vec::new(),
+            build_icons: Vec::new(),
             warnings: vec![DllWarning::NoIcons],
         });
     }
 
     let mut icons = Vec::with_capacity(groups.len());
+    let mut build_icons = Vec::with_capacity(groups.len());
     let mut warnings = Vec::new();
     for group in groups {
         let group_id = group.group_id;
@@ -285,10 +280,16 @@ pub(super) fn load_dll_icons(dll_path: &Path, preview_dir: &Path) -> Result<Load
             continue;
         }
 
-        icons.push(project_icon_from_group(metadata, extracted, preview_dir)?);
+        let (project_icon, build_icon) = project_icon_from_group(metadata, extracted, preview_dir)?;
+        icons.push(project_icon);
+        build_icons.push(build_icon);
     }
 
-    Ok(LoadedDll { icons, warnings })
+    Ok(LoadedDll {
+        icons,
+        build_icons,
+        warnings,
+    })
 }
 
 fn read_icon_group_icons_lossy(
@@ -342,23 +343,30 @@ fn project_icon_from_group(
     group: IconGroupMetadata,
     icons: Vec<NormalisedIcon>,
     preview_dir: &Path,
-) -> Result<ProjectIcon, IconError> {
-    let preview_icon = icons
-        .iter()
-        .max_by_key(|icon| icon.width)
-        .ok_or_else(|| IconError::DllParseFailed(format!("RT_GROUP_ICON {} has no icons", group.group_id)))?;
+) -> Result<(ProjectIcon, CachedBuildIcon), IconError> {
+    let preview_icon = icons.iter().max_by_key(|icon| icon.width).ok_or_else(|| {
+        IconError::DllParseFailed(format!("RT_GROUP_ICON {} has no icons", group.group_id))
+    })?;
     let preview_path = write_preview(preview_icon, preview_dir)?;
-    let available_sizes = icons.into_iter().map(|icon| icon.size).collect();
+    let id = format!("dll-group-{}-lang-{}", group.group_id, group.language_id);
+    let available_sizes = icons.iter().map(|icon| icon.size).collect();
+    let build_icon = CachedBuildIcon {
+        id: id.clone(),
+        icons,
+    };
 
-    Ok(ProjectIcon {
-        id: format!("dll-group-{}-lang-{}", group.group_id, group.language_id),
-        name: format!("Icon group {}", group.group_id),
-        source_kind: SourceKind::Extracted,
-        available_sizes,
-        status: IconStatus::Ready,
-        error: None,
-        preview_path: Some(preview_path.to_string_lossy().into_owned()),
-    })
+    Ok((
+        ProjectIcon {
+            id,
+            name: format!("Icon group {}", group.group_id),
+            source_kind: SourceKind::Extracted,
+            available_sizes,
+            status: IconStatus::Ready,
+            error: None,
+            preview_path: Some(preview_path.to_string_lossy().into_owned()),
+        },
+        build_icon,
+    ))
 }
 
 fn read_group_resource<'a>(
@@ -446,9 +454,9 @@ unsafe extern "system" fn enum_language_callback(
 mod tests {
     use super::*;
     use crate::icons::IconSize;
+    use image::{ImageFormat, Rgba, RgbaImage};
     use std::io::Cursor;
     use std::{fs, path::PathBuf};
-    use image::{ImageFormat, Rgba, RgbaImage};
     use tempfile::TempDir;
     use windows_sys::Win32::System::LibraryLoader::{
         BeginUpdateResourceW, EndUpdateResourceW, UpdateResourceW,
@@ -488,7 +496,9 @@ mod tests {
     fn png_bytes(size: u32, rgba: [u8; 4]) -> Vec<u8> {
         let image = RgbaImage::from_pixel(size, size, Rgba(rgba));
         let mut bytes = Cursor::new(Vec::new());
-        image.write_to(&mut bytes, ImageFormat::Png).expect("encode PNG");
+        image
+            .write_to(&mut bytes, ImageFormat::Png)
+            .expect("encode PNG");
         bytes.into_inner()
     }
 
@@ -532,9 +542,7 @@ mod tests {
         create_test_dll_with_icon_groups(&[(group_id, language_id, icon_id, icon_bytes)])
     }
 
-    fn create_test_dll_with_icon_groups(
-        groups: &[(u16, u16, u16, &[u8])],
-    ) -> (TempDir, PathBuf) {
+    fn create_test_dll_with_icon_groups(groups: &[(u16, u16, u16, &[u8])]) -> (TempDir, PathBuf) {
         let dir = tempfile::tempdir().expect("create temp dir");
         let path = dir.path().join("icon-resource-test.dll");
         fs::copy(std::env::current_exe().expect("current exe"), &path)
@@ -545,8 +553,7 @@ mod tests {
         assert!(!update.is_null(), "BeginUpdateResourceW failed");
 
         for &(group_id, language_id, icon_id, icon_bytes) in groups {
-            let group =
-                build_group_resource_entries(&[(16, 16, icon_bytes.len() as u32, icon_id)]);
+            let group = build_group_resource_entries(&[(16, 16, icon_bytes.len() as u32, icon_id)]);
             let ok = unsafe {
                 UpdateResourceW(
                     update,
@@ -770,7 +777,11 @@ mod tests {
         assert_eq!(icon.source_kind, SourceKind::Extracted);
         assert_eq!(icon.status, IconStatus::Ready);
         assert_eq!(icon.available_sizes, vec![IconSize::S16]);
-        assert!(icon.preview_path.as_ref().is_some_and(|path| Path::new(path).exists()));
+        assert!(
+            icon.preview_path
+                .as_ref()
+                .is_some_and(|path| Path::new(path).exists())
+        );
     }
 
     #[test]
@@ -822,20 +833,26 @@ mod tests {
         assert_eq!(loaded.icons.len(), 1);
         assert_eq!(loaded.icons[0].id, "dll-group-5-lang-0");
         assert_eq!(loaded.icons[0].available_sizes, vec![IconSize::S16]);
-        assert!(loaded.warnings.iter().any(|warning| {
-            matches!(warning, DllWarning::IconUnreadable { icon_id: 2, .. })
-        }));
+        assert!(
+            loaded.warnings.iter().any(|warning| {
+                matches!(warning, DllWarning::IconUnreadable { icon_id: 2, .. })
+            })
+        );
     }
 
     #[test]
     fn load_dll_icons_skips_unreadable_group_and_continues() {
         let invalid_group = vec![0, 0, 1];
         let valid_icon = png_bytes(16, [1, 2, 3, 4]);
-        let valid_group =
-            build_group_resource_entries(&[(16, 16, valid_icon.len() as u32, 10)]);
+        let valid_group = build_group_resource_entries(&[(16, 16, valid_icon.len() as u32, 10)]);
         let (_dir, path) = create_test_dll_with_raw_groups(&[
             (2, 0, invalid_group.as_slice(), Vec::new()),
-            (10, 0, valid_group.as_slice(), vec![(10, valid_icon.as_slice())]),
+            (
+                10,
+                0,
+                valid_group.as_slice(),
+                vec![(10, valid_icon.as_slice())],
+            ),
         ]);
         let preview_dir = tempfile::tempdir().unwrap();
 
@@ -843,9 +860,11 @@ mod tests {
 
         assert_eq!(loaded.icons.len(), 1);
         assert_eq!(loaded.icons[0].id, "dll-group-10-lang-0");
-        assert!(loaded.warnings.iter().any(|warning| {
-            matches!(warning, DllWarning::GroupUnreadable { group_id: 2, .. })
-        }));
+        assert!(
+            loaded.warnings.iter().any(|warning| {
+                matches!(warning, DllWarning::GroupUnreadable { group_id: 2, .. })
+            })
+        );
     }
 
     #[test]

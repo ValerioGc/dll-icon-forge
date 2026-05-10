@@ -1,4 +1,4 @@
-use crate::icons::ProjectIcon;
+use crate::{build_cache::CachedBuildIcon, icons::ProjectIcon};
 
 // -- IconGroupMetadata ---------------------------------------------------------
 
@@ -58,6 +58,9 @@ pub enum DllWarning {
 pub struct LoadedDll {
     /// Icons extracted from the DLL, one per `RT_GROUP_ICON`, sorted by group ID.
     pub icons: Vec<ProjectIcon>,
+    /// Normalised icon data retained by the backend for the later build step.
+    #[serde(skip)]
+    pub build_icons: Vec<CachedBuildIcon>,
     /// Non-blocking issues encountered during loading.
     pub warnings: Vec<DllWarning>,
 }
