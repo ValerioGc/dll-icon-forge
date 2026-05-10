@@ -83,7 +83,7 @@ const LANGUAGE_NAMES: Record<AppLocale, string> = {
         cursor: pointer;
         font-size: .875rem;
         color: var(--color-text);
-        font: inherit;
+        font-family: inherit;
         text-align: left;
         transition: background .1s ease;
 
