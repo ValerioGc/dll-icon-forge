@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import PaginationControls from '@/components/common/PaginationControls.vue';
+import PaginationControls from '@/components/pagination/PaginationControls.vue';
 import { mountComponent, resetFrontendTestState } from '../../helpers/mount';
 
 describe('PaginationControls', () => {
@@ -33,6 +33,22 @@ describe('PaginationControls', () => {
     const buttons = wrapper.findAll('button');
     expect(buttons[0].attributes('disabled')).toBeDefined();
     expect(buttons[1].attributes('disabled')).toBeDefined();
+  });
+
+  it('renders themed chevron icons for navigation buttons', () => {
+    const wrapper = mountComponent(PaginationControls, {
+      props: {
+        page: 1,
+        totalPages: 3,
+        canGoPrevious: true,
+        canGoNext: true,
+      },
+    });
+
+    const icons = wrapper.findAll('.pagination_controls_button img');
+    expect(icons).toHaveLength(2);
+    expect(icons[0].classes()).toContain('themed_icon');
+    expect(icons[1].classes()).toContain('themed_icon');
   });
 
   it('emits previous and next when the corresponding buttons are clicked', async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import FileDropZone from '@/components/common/FileDropZone.vue';
+import FileDropZone from '@/components/upload/FileDropZone.vue';
 import { mountComponent, resetFrontendTestState } from '../../helpers/mount';
 
 function fileListOf(files: File[]): FileList {
@@ -56,6 +56,72 @@ describe('FileDropZone', () => {
     });
 
     expect(wrapper.emitted('files')?.[0]).toEqual([[dll]]);
+  });
+
+  it('does not emit files when the input change produces an empty selection', async () => {
+    const wrapper = mountComponent(FileDropZone, {
+      props: {
+        title: 'Upload',
+        description: 'Drop files',
+        buttonText: 'Choose',
+        accept: '.png',
+      },
+    });
+    const input = wrapper.get('input[type="file"]');
+    Object.defineProperty(input.element, 'files', {
+      value: fileListOf([]),
+      configurable: true,
+    });
+    await input.trigger('change');
+    expect(wrapper.emitted('files')).toBeUndefined();
+  });
+
+  it('sets the drag-active class on dragenter and removes it on dragleave', async () => {
+    const wrapper = mountComponent(FileDropZone, {
+      props: {
+        title: 'Upload',
+        description: 'Drop files',
+        buttonText: 'Choose',
+        accept: '.png',
+      },
+    });
+    const zone = wrapper.get('.file_drop_zone');
+
+    await zone.trigger('dragenter');
+    expect(zone.classes()).toContain('file_drop_zone--active');
+
+    await zone.trigger('dragleave');
+    expect(zone.classes()).not.toContain('file_drop_zone--active');
+  });
+
+  it('does not set the drag-active class when disabled', async () => {
+    const wrapper = mountComponent(FileDropZone, {
+      props: {
+        title: 'Upload',
+        description: 'Drop files',
+        buttonText: 'Choose',
+        accept: '.png',
+        disabled: true,
+      },
+    });
+    await wrapper.get('.file_drop_zone').trigger('dragenter');
+    expect(wrapper.get('.file_drop_zone').classes()).not.toContain('file_drop_zone--active');
+  });
+
+  it('openFilePicker is a no-op when disabled', () => {
+    const wrapper = mountComponent(FileDropZone, {
+      props: {
+        title: 'Upload',
+        description: 'Drop files',
+        buttonText: 'Choose',
+        accept: '.png',
+        disabled: true,
+      },
+    });
+    expect(() => {
+      (wrapper.vm as { openFilePicker: () => void }).openFilePicker();
+    }).not.toThrow();
+    expect(wrapper.emitted('files')).toBeUndefined();
   });
 
   it('does not emit files while disabled', async () => {

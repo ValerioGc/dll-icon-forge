@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import ItemView from '@/components/ItemView.vue';
+import ItemView from '@/views/ItemView.vue';
 import { useProjectStore } from '@/stores/project';
 import { mountComponent, resetFrontendTestState } from '../helpers/mount';
 
@@ -127,7 +127,7 @@ describe('ItemView', () => {
     expect(wrapper.findComponent({ name: 'ConfirmDialog' }).exists()).toBe(false);
 
     await wrapper.findComponent({ name: 'MenuTab' }).vm.$emit('delete');
-    await wrapper.vm.$nextTick();
+    await vi.dynamicImportSettled();
 
     expect(wrapper.findComponent({ name: 'ConfirmDialog' }).exists()).toBe(true);
     expect(project.icons).toHaveLength(1);
@@ -147,7 +147,7 @@ describe('ItemView', () => {
     await wrapper.vm.$nextTick();
 
     await wrapper.findComponent({ name: 'MenuTab' }).vm.$emit('delete');
-    await wrapper.vm.$nextTick();
+    await vi.dynamicImportSettled();
 
     wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('cancel');
     await wrapper.vm.$nextTick();

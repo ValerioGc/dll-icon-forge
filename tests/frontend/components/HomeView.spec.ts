@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import HomeView from '@/components/HomeView.vue';
+import HomeView from '@/views/HomeView.vue';
 import { mountComponent, resetFrontendTestState } from '../helpers/mount';
 
 describe('HomeView', () => {

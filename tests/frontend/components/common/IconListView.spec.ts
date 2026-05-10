@@ -68,6 +68,18 @@ describe('IconListView', () => {
     expect(wrapper.emitted('select')?.[0]).toEqual(['a', true]);
   });
 
+  it('does not emit select when disabled', async () => {
+    const wrapper = mountComponent(IconListView, {
+      props: {
+        items: [makeIcon('a')],
+        disabled: true,
+      },
+    });
+
+    await wrapper.get('.icon_list_view__select').trigger('click');
+    expect(wrapper.emitted('select')).toBeUndefined();
+  });
+
   it('emits delete without firing select', async () => {
     const wrapper = mountComponent(IconListView, {
       props: {

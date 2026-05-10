@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import PageSizeSelector from '@/components/common/PageSizeSelector.vue';
+import PageSizeSelector from '@/components/pagination/PageSizeSelector.vue';
 import { mountComponent, resetFrontendTestState } from '../../helpers/mount';
 
 describe('PageSizeSelector', () => {

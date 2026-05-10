@@ -44,6 +44,18 @@ describe('IconGridView', () => {
     expect(wrapper.emitted('delete')?.[0]).toEqual(['a']);
   });
 
+  it('does not emit select when disabled', async () => {
+    const wrapper = mountComponent(IconGridView, {
+      props: {
+        items: [makeIcon('a')],
+        disabled: true,
+      },
+    });
+
+    await wrapper.get('.icon_grid_view__select').trigger('click');
+    expect(wrapper.emitted('select')).toBeUndefined();
+  });
+
   it('marks selected items', () => {
     const wrapper = mountComponent(IconGridView, {
       props: {

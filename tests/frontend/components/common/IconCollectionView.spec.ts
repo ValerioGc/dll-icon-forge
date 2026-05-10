@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
 import IconCollectionView from '@/components/explorer/IconCollectionView.vue';
 import { useProjectStore } from '@/stores/project';
 import { useSettingsStore } from '@/stores/settings';
@@ -31,6 +31,7 @@ describe('IconCollectionView', () => {
 
     project.addFiles([makePng('a.png')]);
     await wrapper.vm.$nextTick();
+    await vi.dynamicImportSettled();
 
     expect(wrapper.get('select').attributes('disabled')).toBeUndefined();
     expect(wrapper.findComponent({ name: 'IconGridView' }).exists()).toBe(true);
@@ -44,6 +45,7 @@ describe('IconCollectionView', () => {
       .findAll('.icon_collection_view__view_button')
       .find((b) => b.attributes('title') === 'Lista');
     await listButton?.trigger('click');
+    await vi.dynamicImportSettled();
 
     expect(settings.viewMode).toBe('list');
     expect(wrapper.findComponent({ name: 'IconListView' }).exists()).toBe(true);
@@ -55,6 +57,7 @@ describe('IconCollectionView', () => {
     const project = useProjectStore();
     project.addFiles([makePng('a.png'), makePng('b.png')]);
     await wrapper.vm.$nextTick();
+    await vi.dynamicImportSettled();
 
     const view = wrapper.findComponent({ name: 'IconGridView' });
     view.vm.$emit('select', project.icons[1].id, false);
@@ -69,6 +72,7 @@ describe('IconCollectionView', () => {
     const project = useProjectStore();
     project.addFiles([makePng('a.png')]);
     await wrapper.vm.$nextTick();
+    await vi.dynamicImportSettled();
 
     const view = wrapper.findComponent({ name: 'IconGridView' });
     view.vm.$emit('delete', project.icons[0].id);
