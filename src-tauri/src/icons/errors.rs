@@ -17,6 +17,15 @@ pub enum IconError {
 
     #[error("image data is corrupted: {0}")]
     Corrupted(String),
+
+    #[error("DLL operation not supported on this platform")]
+    PlatformNotSupported,
+
+    #[error("failed to load DLL: {0}")]
+    DllLoadFailed(String),
+
+    #[error("failed to parse DLL resource: {0}")]
+    DllParseFailed(String),
 }
 
 /// Serializable error for Tauri IPC. Carries a machine-readable `code` for
@@ -35,6 +44,9 @@ impl From<IconError> for IpcError {
             IconError::TooSmall { .. } => "image_too_small",
             IconError::NotSquare { .. } => "image_not_square",
             IconError::Corrupted(_) => "image_corrupted",
+            IconError::PlatformNotSupported => "platform_not_supported",
+            IconError::DllLoadFailed(_) => "dll_load_failed",
+            IconError::DllParseFailed(_) => "dll_parse_failed",
         };
         Self {
             code,

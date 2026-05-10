@@ -1,3 +1,4 @@
+mod dll;
 mod icons;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
