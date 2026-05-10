@@ -8,10 +8,7 @@ use windows_sys::{
     core::PCWSTR,
 };
 
-use crate::{
-    dll::ResourcePlan,
-    icons::{IconError, IconSize},
-};
+use crate::{dll::ResourcePlan, icons::IconError};
 
 const RT_ICON_ID: u16 = 3;
 const RT_GROUP_ICON_ID: u16 = 14;
@@ -142,7 +139,7 @@ mod tests {
     use crate::{
         build_cache::CachedBuildIcon,
         dll::{copy_template_dll, load_dll_icons, plan_icon_resources},
-        icons::NormalisedIcon,
+        icons::{IconSize, NormalisedIcon},
     };
     use tempfile::tempdir;
 

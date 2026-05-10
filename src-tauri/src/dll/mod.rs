@@ -1,3 +1,4 @@
+mod build;
 mod decode;
 mod parse;
 mod template;
@@ -9,6 +10,7 @@ mod write;
 #[cfg(target_os = "windows")]
 mod read;
 
+pub(crate) use build::build_dll;
 pub(crate) use template::{copy_template_dll, template_dll_bytes};
 pub(crate) use types::{DllWarning, IconGroupMetadata, LoadedDll};
 pub(crate) use write::{

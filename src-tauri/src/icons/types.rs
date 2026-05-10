@@ -102,6 +102,13 @@ pub struct BuildOptions {
     pub icons: Vec<BuildIconInput>,
 }
 
+/// Result returned after generating a DLL.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct BuildResult {
+    pub output_path: String,
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -256,5 +263,18 @@ mod tests {
         let recovered: BuildOptions = serde_json::from_str(&json).unwrap();
         assert_eq!(recovered.output_path, opts.output_path);
         assert_eq!(recovered.icons[0].id, opts.icons[0].id);
+    }
+
+    #[test]
+    fn build_result_round_trips() {
+        let result = BuildResult {
+            output_path: "C:\\output\\my.dll".to_string(),
+        };
+
+        let json = serde_json::to_string(&result).unwrap();
+        assert!(json.contains("\"outputPath\""));
+        let recovered: BuildResult = serde_json::from_str(&json).unwrap();
+
+        assert_eq!(recovered, result);
     }
 }

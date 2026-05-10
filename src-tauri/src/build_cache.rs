@@ -3,7 +3,7 @@ use std::{
     sync::{Mutex, MutexGuard},
 };
 
-use crate::icons::{IconError, NormalisedIcon};
+use crate::icons::{BuildIconInput, IconError, NormalisedIcon};
 
 #[derive(Debug, Clone)]
 pub(crate) struct CachedBuildIcon {
@@ -37,6 +37,31 @@ impl BuildCache {
     pub(crate) fn clear(&self) -> Result<(), IconError> {
         self.lock()?.clear();
         Ok(())
+    }
+
+    pub(crate) fn get_ordered(
+        &self,
+        inputs: &[BuildIconInput],
+    ) -> Result<Vec<CachedBuildIcon>, IconError> {
+        if inputs.is_empty() {
+            return Err(IconError::Internal(
+                "build needs at least one project icon".to_owned(),
+            ));
+        }
+
+        let icons = self.lock()?;
+        inputs
+            .iter()
+            .map(|input| {
+                let normalised = icons.get(&input.id).ok_or_else(|| {
+                    IconError::Internal(format!("missing cached build icon {}", input.id))
+                })?;
+                Ok(CachedBuildIcon {
+                    id: input.id.clone(),
+                    icons: normalised.clone(),
+                })
+            })
+            .collect()
     }
 
     fn lock(&self) -> Result<MutexGuard<'_, HashMap<String, Vec<NormalisedIcon>>>, IconError> {
