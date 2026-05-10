@@ -23,6 +23,7 @@
     "docker:sonar:logs": "docker compose -f .docker/docker-compose.sonar.yml logs -f sonarqube"
   },
   "dependencies": {
+    "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-notification": "^2.3.3",
     "pinia": "^2.3.1",
     "vue": "^3.5.13",

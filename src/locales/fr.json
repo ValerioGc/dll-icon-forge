@@ -43,6 +43,8 @@
     "pageSize": "Par page"
   },
   "notifications": {
+    "warningTitle": "Operation terminee avec avertissements",
+    "dllLoadWarnings": "La DLL a ete chargee, mais certaines ressources d'icone sont illisibles.",
     "errorTitle": "Opération non terminée",
     "noEditSource": "Sélectionnez d'abord le fichier existant à modifier.",
     "noIcons": "Ajoutez au moins un fichier ICO ou PNG avant de confirmer.",

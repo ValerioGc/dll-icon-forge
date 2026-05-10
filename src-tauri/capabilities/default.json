@@ -9,6 +9,7 @@
     "core:webview:default",
     "core:event:default",
     "core:app:default",
-    "notification:default"
+    "notification:default",
+    "dialog:default"
   ]
 }

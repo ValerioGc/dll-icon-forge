@@ -43,6 +43,8 @@
     "pageSize": "Pro Seite"
   },
   "notifications": {
+    "warningTitle": "Mit Warnungen abgeschlossen",
+    "dllLoadWarnings": "Die DLL wurde geladen, aber einige Icon-Ressourcen konnten nicht gelesen werden.",
     "errorTitle": "Vorgang nicht abgeschlossen",
     "noEditSource": "Wählen Sie zuerst die zu bearbeitende Datei aus.",
     "noIcons": "Fügen Sie mindestens eine ICO- oder PNG-Datei hinzu, bevor Sie bestätigen.",

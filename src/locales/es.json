@@ -43,6 +43,8 @@
     "pageSize": "Por página"
   },
   "notifications": {
+    "warningTitle": "Completado con avisos",
+    "dllLoadWarnings": "La DLL se cargo, pero algunos recursos de icono no se pudieron leer.",
     "errorTitle": "Operación no completada",
     "noEditSource": "Selecciona primero el archivo existente a editar.",
     "noIcons": "Añade al menos un archivo ICO o PNG antes de confirmar.",

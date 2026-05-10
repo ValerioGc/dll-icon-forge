@@ -44,6 +44,8 @@
   },
   "notifications": {
     "errorTitle": "Operation not completed",
+    "warningTitle": "Completed with warnings",
+    "dllLoadWarnings": "The DLL was loaded, but some icon resources could not be read.",
     "noEditSource": "Select the existing file to edit first.",
     "noIcons": "Add at least one ICO or PNG file before confirming.",
     "invalidIcons": "There are {count} invalid files. Remove or replace them before saving.",

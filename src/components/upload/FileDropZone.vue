@@ -11,14 +11,17 @@ const props = withDefaults(defineProps<{
     multiple?: boolean;
     primary?: boolean;
     disabled?: boolean;
+    nativePicker?: boolean;
 }>(), {
     multiple: false,
     primary: false,
     disabled: false,
+    nativePicker: false,
 });
 
 const emit = defineEmits<{
     (event: 'files', files: File[]): void;
+    (event: 'browse'): void;
 }>();
 
 const input = ref<HTMLInputElement | null>(null);
@@ -27,6 +30,11 @@ const isDragging = ref(false);
 function openFilePicker(): void {
     if (props.disabled)
         return;
+
+    if (props.nativePicker) {
+        emit('browse');
+        return;
+    }
 
     input.value?.click();
 }

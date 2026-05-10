@@ -1,6 +1,6 @@
 export type ProjectMode = 'create' | 'edit';
 
-export type SourceKind = 'imported' | 'extracted';
+export type SourceKind = 'imported' | 'extracted' | 'png' | 'ico';
 
 export type IconStatus = 'ready' | 'error';
 
@@ -13,10 +13,13 @@ export interface IconSize {
 
 export interface ProjectIcon {
   id: string;
+  name?: string;
   preview: string;
+  previewPath?: string | null;
   status: IconStatus;
   sourceKind: SourceKind;
   availableSizes: IconSize[];
+  error?: string | null;
 }
 
 export interface BuildOptions {

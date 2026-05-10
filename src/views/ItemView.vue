@@ -8,6 +8,7 @@ import IconCollectionView from '@/components/explorer/IconCollectionView.vue';
 import MenuTab from '@/components/explorer/MenuTab.vue';
 import FileDropZone from '@/components/upload/FileDropZone.vue';
 
+import { chooseExistingDll, chooseIconSources, ipcErrorMessage } from '@/services/tauriProject';
 import { useProjectStore } from '@/stores/project';
 import type { ProjectMode } from '@/types/Project';
 
@@ -76,6 +77,24 @@ function handleIconFiles(files: File[]): void {
     project.addFiles(files);
 }
 
+async function handleChooseEditSource(): Promise<void> {
+    try {
+        const path = await chooseExistingDll();
+        if (path) await project.loadExistingDllPath(path);
+    } catch (error) {
+        project.setLastError(ipcErrorMessage(error));
+    }
+}
+
+async function handleChooseIconSources(): Promise<void> {
+    try {
+        const paths = await chooseIconSources();
+        await project.addIconSources(paths);
+    } catch (error) {
+        project.setLastError(ipcErrorMessage(error));
+    }
+}
+
 function handleDeleteClick(): void {
     showConfirmDelete.value = true;
 }
@@ -104,7 +123,9 @@ function handleConfirmDelete(): void {
             :description="project.sourceLabel ?? t('editSourceEmpty')"
             :button-text="t('common.chooseExistingFile')"
             accept=".dll"
+            native-picker
             @files="handleEditSourceFiles"
+            @browse="handleChooseEditSource"
         />
 
         <FileDropZone v-if="!isEditLocked"
@@ -114,7 +135,9 @@ function handleConfirmDelete(): void {
             accept=".ico,.png,.jpg,.jpeg,.bmp,image/png,image/jpeg,image/bmp,image/x-icon"
             multiple
             primary
+            native-picker
             @files="handleIconFiles"
+            @browse="handleChooseIconSources"
         />
 
         <div v-if="!isEditLocked" class="item_view_content">

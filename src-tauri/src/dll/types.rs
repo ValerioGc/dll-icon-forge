@@ -39,7 +39,8 @@ pub(super) struct ParsedIconGroupEntry {
 // ── DllWarning ────────────────────────────────────────────────────────────────
 
 /// Non-blocking issue found while loading icons from a DLL.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
 pub enum DllWarning {
     /// The DLL contains no `RT_GROUP_ICON` resources.
     NoIcons,
@@ -52,7 +53,8 @@ pub enum DllWarning {
 // ── LoadedDll ─────────────────────────────────────────────────────────────────
 
 /// Result of loading all icon groups from a DLL via [`crate::dll::load_dll_icons`].
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct LoadedDll {
     /// Icons extracted from the DLL, one per `RT_GROUP_ICON`, sorted by group ID.
     pub icons: Vec<ProjectIcon>,

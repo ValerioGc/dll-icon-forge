@@ -44,6 +44,8 @@
   },
   "notifications": {
     "errorTitle": "Operazione non completata",
+    "warningTitle": "Operazione completata con avvisi",
+    "dllLoadWarnings": "La DLL e stata caricata, ma alcune risorse icona non erano leggibili.",
     "noEditSource": "Seleziona prima il file esistente da modificare.",
     "noIcons": "Aggiungi almeno un file ICO o PNG prima di confermare.",
     "invalidIcons": "Ci sono {count} file non validi. Rimuovili o sostituiscili prima di salvare.",
