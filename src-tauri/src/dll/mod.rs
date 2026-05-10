@@ -1,13 +1,18 @@
 mod decode;
 mod parse;
+mod template;
 mod types;
 mod write;
 
 #[cfg(target_os = "windows")]
 mod read;
 
+pub(crate) use template::{copy_template_dll, template_dll_bytes};
 pub(crate) use types::{DllWarning, IconGroupMetadata, LoadedDll};
-pub(crate) use write::{GroupIconResourceEntry, encode_group_icon_resource};
+pub(crate) use write::{
+    GroupIconResourceEntry, IconResourcePlan, ResourcePlan, encode_group_icon_resource,
+    plan_icon_resources,
+};
 
 /// Enumerates all `RT_GROUP_ICON` resource groups from the DLL at `dll_path`.
 ///

@@ -1,4 +1,11 @@
-use crate::icons::{IconError, IconSize};
+use std::io::Cursor;
+
+use image::{DynamicImage, ImageFormat, RgbaImage};
+
+use crate::{
+    build_cache::CachedBuildIcon,
+    icons::{IconError, IconSize, NormalisedIcon},
+};
 
 const GRPICONDIR_SIZE: usize = 6;
 const GRPICONDIRENTRY_SIZE: usize = 14;
@@ -11,6 +18,87 @@ pub(crate) struct GroupIconResourceEntry {
     pub size: IconSize,
     pub bytes_in_res: u32,
     pub icon_id: u16,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct IconResourcePlan {
+    pub icon_id: u16,
+    pub size: IconSize,
+    pub bytes: Vec<u8>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct GroupResourcePlan {
+    pub project_icon_id: String,
+    pub group_id: u16,
+    pub group_bytes: Vec<u8>,
+    pub icons: Vec<IconResourcePlan>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ResourcePlan {
+    pub groups: Vec<GroupResourcePlan>,
+}
+
+pub(crate) fn plan_icon_resources(icons: &[CachedBuildIcon]) -> Result<ResourcePlan, IconError> {
+    if icons.is_empty() {
+        return Err(IconError::Internal(
+            "build needs at least one project icon".to_owned(),
+        ));
+    }
+
+    if icons.len() > u16::MAX as usize {
+        return Err(IconError::Internal(
+            "project icon count exceeds u16::MAX".to_owned(),
+        ));
+    }
+
+    let mut groups = Vec::with_capacity(icons.len());
+    let mut next_icon_id = 1u16;
+
+    for (group_index, icon) in icons.iter().enumerate() {
+        if icon.icons.is_empty() {
+            return Err(IconError::Internal(format!(
+                "project icon {} has no normalised sizes",
+                icon.id
+            )));
+        }
+
+        let group_id = u16::try_from(group_index + 1)
+            .map_err(|_| IconError::Internal("group id overflow".to_owned()))?;
+        let mut planned_icons = Vec::with_capacity(icon.icons.len());
+        let mut group_entries = Vec::with_capacity(icon.icons.len());
+
+        for normalised in &icon.icons {
+            let icon_id = next_icon_id;
+            next_icon_id = next_icon_id
+                .checked_add(1)
+                .ok_or_else(|| IconError::Internal("RT_ICON id exceeds u16::MAX".to_owned()))?;
+
+            let png = encode_png_icon(normalised)?;
+            group_entries.push(GroupIconResourceEntry {
+                size: normalised.size,
+                bytes_in_res: u32::try_from(png.len()).map_err(|_| {
+                    IconError::Internal(format!("RT_ICON {icon_id} PNG exceeds u32::MAX"))
+                })?,
+                icon_id,
+            });
+            planned_icons.push(IconResourcePlan {
+                icon_id,
+                size: normalised.size,
+                bytes: png,
+            });
+        }
+
+        groups.push(GroupResourcePlan {
+            project_icon_id: icon.id.clone(),
+            group_id,
+            group_bytes: encode_group_icon_resource(&group_entries)?,
+            icons: planned_icons,
+        });
+    }
+
+    Ok(ResourcePlan { groups })
 }
 
 /// Encodes a Windows `RT_GROUP_ICON` resource.
@@ -87,10 +175,60 @@ fn push_u32(bytes: &mut Vec<u8>, value: u32) {
     bytes.extend_from_slice(&value.to_le_bytes());
 }
 
+fn encode_png_icon(icon: &NormalisedIcon) -> Result<Vec<u8>, IconError> {
+    validate_normalised_icon(icon)?;
+
+    let image = RgbaImage::from_raw(icon.width, icon.height, icon.rgba.clone())
+        .ok_or_else(|| IconError::Corrupted("icon pixel buffer size mismatch".to_owned()))?;
+    let mut bytes = Cursor::new(Vec::new());
+    DynamicImage::ImageRgba8(image)
+        .write_to(&mut bytes, ImageFormat::Png)
+        .map_err(|err| IconError::Corrupted(err.to_string()))?;
+    Ok(bytes.into_inner())
+}
+
+fn validate_normalised_icon(icon: &NormalisedIcon) -> Result<(), IconError> {
+    let expected = u32::from(icon.size);
+    if icon.width != expected || icon.height != expected {
+        return Err(IconError::Internal(format!(
+            "normalised icon {:?} has dimensions {}x{}",
+            icon.size, icon.width, icon.height
+        )));
+    }
+
+    let expected_len = (icon.width as usize)
+        .checked_mul(icon.height as usize)
+        .and_then(|px| px.checked_mul(4))
+        .ok_or_else(|| IconError::Internal("normalised icon pixel count overflows".to_owned()))?;
+    if icon.rgba.len() != expected_len {
+        return Err(IconError::Internal(format!(
+            "normalised icon {:?} has {} RGBA bytes, expected {expected_len}",
+            icon.size,
+            icon.rgba.len()
+        )));
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::dll::parse::parse_group_icon;
+
+    fn normalised(size: IconSize, pixel: [u8; 4]) -> NormalisedIcon {
+        let px = u32::from(size);
+        let mut rgba = Vec::with_capacity((px * px * 4) as usize);
+        for _ in 0..(px * px) {
+            rgba.extend_from_slice(&pixel);
+        }
+        NormalisedIcon {
+            size,
+            rgba,
+            width: px,
+            height: px,
+        }
+    }
 
     #[test]
     fn encodes_group_icon_header_and_entries() {
@@ -190,6 +328,109 @@ mod tests {
             size: IconSize::S16,
             bytes_in_res: 1,
             icon_id: 0,
+        }])
+        .unwrap_err();
+
+        assert!(matches!(err, IconError::Internal(_)));
+    }
+
+    #[test]
+    fn resource_plan_assigns_stable_group_and_icon_ids() {
+        let plan = plan_icon_resources(&[
+            CachedBuildIcon {
+                id: "first".to_owned(),
+                icons: vec![
+                    normalised(IconSize::S16, [255, 0, 0, 255]),
+                    normalised(IconSize::S32, [0, 255, 0, 255]),
+                ],
+            },
+            CachedBuildIcon {
+                id: "second".to_owned(),
+                icons: vec![normalised(IconSize::S48, [0, 0, 255, 255])],
+            },
+        ])
+        .unwrap();
+
+        assert_eq!(plan.groups.len(), 2);
+        assert_eq!(plan.groups[0].project_icon_id, "first");
+        assert_eq!(plan.groups[0].group_id, 1);
+        assert_eq!(plan.groups[0].icons[0].icon_id, 1);
+        assert_eq!(plan.groups[0].icons[1].icon_id, 2);
+        assert_eq!(plan.groups[1].project_icon_id, "second");
+        assert_eq!(plan.groups[1].group_id, 2);
+        assert_eq!(plan.groups[1].icons[0].icon_id, 3);
+    }
+
+    #[test]
+    fn resource_plan_encodes_png_icon_bytes() {
+        let plan = plan_icon_resources(&[CachedBuildIcon {
+            id: "icon".to_owned(),
+            icons: vec![normalised(IconSize::S16, [10, 20, 30, 255])],
+        }])
+        .unwrap();
+
+        let bytes = &plan.groups[0].icons[0].bytes;
+        assert_eq!(&bytes[0..8], b"\x89PNG\r\n\x1a\n");
+
+        let decoded = image::load_from_memory(bytes).unwrap();
+        assert_eq!(decoded.width(), 16);
+        assert_eq!(decoded.height(), 16);
+    }
+
+    #[test]
+    fn resource_plan_group_bytes_match_png_lengths() {
+        let plan = plan_icon_resources(&[CachedBuildIcon {
+            id: "icon".to_owned(),
+            icons: vec![
+                normalised(IconSize::S16, [10, 20, 30, 255]),
+                normalised(IconSize::S256, [30, 20, 10, 255]),
+            ],
+        }])
+        .unwrap();
+
+        let group = &plan.groups[0];
+        let parsed = parse_group_icon(&group.group_bytes).unwrap();
+
+        assert_eq!(parsed.entries.len(), 2);
+        assert_eq!(parsed.entries[0].icon_id, group.icons[0].icon_id);
+        assert_eq!(
+            parsed.entries[0].bytes_in_res as usize,
+            group.icons[0].bytes.len()
+        );
+        assert_eq!(parsed.entries[1].icon_id, group.icons[1].icon_id);
+        assert_eq!(
+            parsed.entries[1].bytes_in_res as usize,
+            group.icons[1].bytes.len()
+        );
+    }
+
+    #[test]
+    fn resource_plan_rejects_empty_project() {
+        let err = plan_icon_resources(&[]).unwrap_err();
+        assert!(matches!(err, IconError::Internal(_)));
+    }
+
+    #[test]
+    fn resource_plan_rejects_icon_without_sizes() {
+        let err = plan_icon_resources(&[CachedBuildIcon {
+            id: "empty".to_owned(),
+            icons: Vec::new(),
+        }])
+        .unwrap_err();
+
+        assert!(matches!(err, IconError::Internal(_)));
+    }
+
+    #[test]
+    fn resource_plan_rejects_mismatched_dimensions() {
+        let err = plan_icon_resources(&[CachedBuildIcon {
+            id: "bad".to_owned(),
+            icons: vec![NormalisedIcon {
+                size: IconSize::S32,
+                rgba: vec![0; 16 * 16 * 4],
+                width: 16,
+                height: 16,
+            }],
         }])
         .unwrap_err();
 

@@ -91,7 +91,7 @@ fn has_alpha(img: &DynamicImage) -> bool {
 // ── Normalisation ─────────────────────────────────────────────────────────────
 
 /// A single icon normalised to one specific target size.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct NormalisedIcon {
     pub size: IconSize,
     /// RGBA pixels in row-major order: 4 bytes per pixel.

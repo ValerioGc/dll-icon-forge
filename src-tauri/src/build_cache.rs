@@ -5,7 +5,7 @@ use std::{
 
 use crate::icons::{IconError, NormalisedIcon};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct CachedBuildIcon {
     pub id: String,
     pub icons: Vec<NormalisedIcon>,
