@@ -1,6 +1,7 @@
 import { defineConfig, type PluginOption } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import { fileURLToPath, URL } from 'node:url';
+import { readFileSync } from 'node:fs';
 
 import combineSelectors from 'postcss-combine-duplicated-selectors';
 import autoprefixer from 'autoprefixer';
@@ -8,6 +9,10 @@ import purgecss from '@fullhuman/postcss-purgecss';
 import cssnano from 'cssnano';
 
 const host = process.env.TAURI_DEV_HOST;
+const packageJson = JSON.parse(
+  readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf-8'),
+) as { version: string };
+const githubUrl = 'https://github.com/ValerioGc/win-dll-packer';
 
 
 export default defineConfig(async ({ mode }) => {
@@ -31,6 +36,11 @@ export default defineConfig(async ({ mode }) => {
       alias: {
         '@': fileURLToPath(new URL('./src', import.meta.url)),
       },
+    },
+
+    define: {
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
+      'import.meta.env.VITE_GITHUB_URL': JSON.stringify(githubUrl),
     },
 
     clearScreen: false,
