@@ -1,132 +1,77 @@
+<p align="center">
+  <img src="src/assets/logo.svg" alt="Win DLL Packer logo" width="120">
+</p>
+
 # Win DLL Packer
 
-Desktop tool for creating and editing Windows resource-only `.dll` files used as icon libraries, built with Tauri, Vue, and Rust.
+Win DLL Packer is a Windows desktop app for creating and editing icon library DLLs.
 
-The app works locally: it imports `.ico` and `.png` files, reads existing icon DLLs, generates resource-only DLLs, and writes the output path chosen through the native save dialog.
+It helps you collect `.ico` and `.png` files, preview them, organize the icon list, and generate a resource-only `.dll` that can be used as a Windows icon library. Existing DLLs can also be opened, inspected, adjusted, and rebuilt into a new output file.
 
-Roadmap and final validation checklist live in [.claude/ROADMAP.MD](.claude/ROADMAP.MD). Development notes live in [DEVELOPMENT.md](DEVELOPMENT.md).
+![Win DLL Packer screenshot](docs/app-main.png)
 
-![Win DLL Packer screenshot](docs/screenshots/app-main.png)
+## What It Does
 
-## Current Status
+- Creates new icon DLL libraries from `.ico` and `.png` files.
+- Opens existing icon DLLs and extracts readable icon groups.
+- Lets you review icons in list or grid view.
+- Supports selecting and removing icons before saving.
+- Generates Windows resource-only DLL files with icon resources.
+- Uses native open/save dialogs for choosing source files and output paths.
+- Shows success, warning, and error notifications.
+- Supports light and dark themes.
+- Supports Italian, English, French, Spanish, and German.
 
-- Create mode is wired to the Rust backend and can generate a real `.dll`.
-- Edit mode can load an existing DLL, extract readable icon groups, and rebuild to a new DLL.
-- Windows is the only supported target for v1.
-- CI and release workflows are configured and still need final validation with a PR and pre-release tag.
-
-## Features
-
-- Create mode: import `.ico` and `.png` files via drag and drop or native file picker.
-- Edit mode: load an existing `.dll` and extract icon resources.
-- Native dialogs for opening icons, opening DLLs, and saving generated DLLs.
-- Resource-only DLL generation using `RT_GROUP_ICON` and `RT_ICON`.
-- PNG-backed icon resources for 16, 32, 48 and 256 px sizes.
-- Icon preview list/grid with selection and delete actions.
-- Temporary backend preview files shown through Tauri asset protocol.
-- Cleanup for preview files and build cache.
-- Dirty-state guard before leaving or closing with unsaved changes.
-- Dark/light theme and UI language support for Italian, English, French, Spanish and German.
-- Windows notifications for success, warnings and errors.
-
-## Requirements
-
-- Windows 10 or 11, 64-bit.
-- Input icons in `.ico` or `.png` format.
-
-For development:
-
-- Node.js 20+.
-- Rust toolchain via `rustup`.
-- Visual Studio Build Tools with Desktop C++.
-- WebView2 Runtime.
-
-## Installation
-
-Installer packages are produced by the release workflow and are expected as:
-
-```text
-Win DLL Packer_<version>_x64-setup.exe
-Win DLL Packer_<version>_x64_en-US.msi
-```
-
-Until the first public release is validated, build locally with:
-
-```powershell
-npm install
-npm run tauri build
-```
-
-Installer artifacts are generated under:
-
-```text
-src-tauri/target/release/bundle/nsis/
-src-tauri/target/release/bundle/msi/
-```
-
-## Quick Start
+## How It Works
 
 ### Create A New DLL
 
-1. Open the app and choose **Create**.
-2. Add `.ico` or `.png` files.
-3. Review previews and remove anything you do not want.
-4. Click **Build DLL**.
-5. Choose the output `.dll` path in the save dialog.
+1. Choose **Create** from the home screen.
+2. Add one or more `.ico` or `.png` files.
+3. Review the previews and remove anything you do not want to include.
+4. Generate the DLL.
+5. Choose where to save the output `.dll`.
 
-### Edit From An Existing DLL
+### Edit An Existing DLL
 
-1. Open the app and choose **Edit**.
-2. Load an existing `.dll`.
-3. Review extracted icons.
+1. Choose **Edit** from the home screen.
+2. Select an existing `.dll`.
+3. Review the icons extracted from the file.
 4. Remove icons or add new `.ico` / `.png` files.
-5. Click **Build DLL** and choose a new output path.
+5. Generate a new DLL and choose the output path.
 
-The app writes a new DLL. It does not modify the original DLL in place.
+The original DLL is not modified in place. Win DLL Packer always writes the result to the output path you choose.
 
-## Data Storage
+## Supported Files
 
-Theme and language are stored in WebView `localStorage` under:
+Input files:
 
-```text
-win-dll-packer:settings
-```
+- `.ico`
+- `.png`
+- existing `.dll` files containing icon resources
 
-Temporary previews are stored under:
+Output:
 
-```text
-%TEMP%\win-dll-packer
-```
-
-Generated DLLs are written only to the path selected in the save dialog. The app does not keep a project library and does not persist sessions between runs.
+- resource-only `.dll` icon libraries
 
 ## Privacy
 
-Win DLL Packer runs entirely offline. Files you import never leave your machine. There is no telemetry and no cloud service.
+Win DLL Packer runs locally on your machine. Files you import are processed offline and are not uploaded anywhere. The app does not include telemetry or cloud services.
 
-## Known Limitations
+## Current Limitations
 
-- Windows only for v1.
-- Input formats are limited to `.ico` and `.png`.
-- Generated DLLs are resource-only icon libraries.
-- Existing DLLs are rebuilt into a new output DLL; non-icon resources are not preserved in v1.
-- Session persistence and advanced image editing are out of scope for v1.
+- Windows is the only supported platform for the first release.
+- Input image formats are limited to `.ico` and `.png`.
+- Generated DLLs are icon libraries only.
+- Non-icon resources from existing DLLs are not preserved.
+- Sessions are not persisted between app launches.
 
-## Verification
+## Planned Improvements
 
-Current automatic checks:
-
-```powershell
-npm run build
-npm run test
-cd src-tauri
-cargo test
-```
-
-Manual tests still tracked in the roadmap:
-
-- temporary folder removal / preview recreation
-- CI/release pipeline validation
+- Better handling of large icon collections.
+- More detailed warnings when an icon group cannot be read from an existing DLL.
+- Possible session/project persistence after the first stable version.
+- More advanced icon inspection and editing tools.
 
 ## License
 

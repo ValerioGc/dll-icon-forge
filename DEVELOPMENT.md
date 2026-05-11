@@ -1,6 +1,6 @@
 # Development
 
-Technical notes for working on **Win DLL Packer**. End-user instructions live in [README.md](README.md).
+Technical notes for working on **Win DLL Packer**. Product-facing information lives in [README.md](README.md).
 
 ## Stack
 
@@ -39,11 +39,13 @@ cargo --version
 npm install
 ```
 
-If you need to regenerate app icons:
+If you need to regenerate app icons from a square PNG or SVG source:
 
 ```powershell
-npm run tauri icon path\to\icon.png
+npm run tauri icon path\to\app-icon.svg
 ```
+
+The command rewrites the generated assets under `src-tauri/icons/`. The web favicon used by Vite is configured separately in `index.html`.
 
 ## Main Commands
 
@@ -122,7 +124,7 @@ npm run coverage
 Current known automatic checks:
 
 - `npm run build`: green.
-- `npm run test`: 113 frontend tests green.
+- `npm run test`: 117 frontend tests green.
 - `cargo test`: 108 Rust tests green, 1 manual DLL inspection test ignored.
 
 The ignored manual Rust test can generate a repeatable DLL for inspection:
@@ -139,8 +141,6 @@ src-tauri/target/manual-check/win-dll-packer-manual-check.dll
 ```
 
 ## Manual Validation Before v1
-
-Track the authoritative checklist in [.claude/ROADMAP.MD](.claude/ROADMAP.MD).
 
 Required manual checks:
 
