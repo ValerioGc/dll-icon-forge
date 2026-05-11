@@ -1,6 +1,7 @@
 mod build;
 mod decode;
 mod parse;
+mod pe_resource;
 mod template;
 mod types;
 #[cfg(target_os = "windows")]
@@ -13,6 +14,9 @@ mod read;
 #[cfg(target_os = "windows")]
 static RESOURCE_IO_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+#[cfg(all(test, target_os = "windows"))]
+static RESOURCE_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 #[cfg(target_os = "windows")]
 type ResourceIoGuard = std::sync::MutexGuard<'static, ()>;
 
@@ -21,6 +25,14 @@ pub(super) fn lock_resource_io() -> Result<ResourceIoGuard, crate::icons::IconEr
     RESOURCE_IO_LOCK
         .lock()
         .map_err(|_| crate::icons::IconError::Internal("resource I/O lock poisoned".to_owned()))
+}
+
+#[cfg(all(test, target_os = "windows"))]
+pub(super) fn lock_resource_test() -> std::sync::MutexGuard<'static, ()> {
+    match RESOURCE_TEST_LOCK.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    }
 }
 
 pub(crate) use build::build_dll;
@@ -42,8 +54,7 @@ pub(crate) fn enumerate_dll_icon_groups(
 ) -> Result<Vec<IconGroupMetadata>, crate::icons::IconError> {
     #[cfg(target_os = "windows")]
     {
-        let module = read::load_dll(dll_path)?;
-        read::enumerate_icon_groups(&module)
+        read::enumerate_dll_icon_groups(dll_path)
     }
     #[cfg(not(target_os = "windows"))]
     {
@@ -69,4 +80,12 @@ pub(crate) fn load_dll_icons(
         let _ = preview_dir;
         Err(crate::icons::IconError::PlatformNotSupported)
     }
+}
+
+#[cfg(all(test, target_os = "windows"))]
+pub(super) fn load_dll_icons_from_file_for_test(
+    source_path: &std::path::Path,
+    preview_dir: &std::path::Path,
+) -> Result<LoadedDll, crate::icons::IconError> {
+    pe_resource::load_dll_icons_from_file(source_path, preview_dir)
 }

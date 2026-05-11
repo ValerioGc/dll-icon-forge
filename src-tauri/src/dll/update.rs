@@ -1,4 +1,4 @@
-use std::{ffi::OsStr, os::windows::ffi::OsStrExt, path::Path, ptr};
+use std::{ffi::OsStr, os::windows::ffi::OsStrExt, path::Path, ptr, thread, time::Duration};
 
 use windows_sys::{
     Win32::{
@@ -13,10 +13,35 @@ use crate::{dll::ResourcePlan, icons::IconError};
 const RT_ICON_ID: u16 = 3;
 const RT_GROUP_ICON_ID: u16 = 14;
 const LANG_NEUTRAL: u16 = 0;
+const RESOURCE_WRITE_ATTEMPTS: usize = 3;
+const RESOURCE_WRITE_RETRY_DELAY: Duration = Duration::from_millis(25);
 
 pub(super) fn apply_resource_plan(path: &Path, plan: &ResourcePlan) -> Result<(), IconError> {
     let _guard = crate::dll::lock_resource_io()?;
-    apply_resource_plan_unlocked(path, plan)
+    let Ok(original_bytes) = std::fs::read(path) else {
+        return apply_resource_plan_unlocked(path, plan);
+    };
+
+    let mut last_error = None;
+    for attempt in 0..RESOURCE_WRITE_ATTEMPTS {
+        std::fs::write(path, &original_bytes)?;
+        match apply_resource_plan_unlocked(path, plan) {
+            Ok(()) => return Ok(()),
+            Err(err)
+                if is_resource_write_verification_error(&err)
+                    && attempt + 1 < RESOURCE_WRITE_ATTEMPTS =>
+            {
+                last_error = Some(err);
+                thread::sleep(RESOURCE_WRITE_RETRY_DELAY);
+            }
+            Err(err) => return Err(err),
+        }
+    }
+
+    let _ = std::fs::write(path, &original_bytes);
+    Err(last_error.unwrap_or_else(|| {
+        IconError::Internal("resource update retry failed without an error".to_owned())
+    }))
 }
 
 pub(super) fn apply_resource_plan_unlocked(
@@ -29,6 +54,25 @@ pub(super) fn apply_resource_plan_unlocked(
         ));
     }
 
+    let mut last_error = None;
+    for attempt in 0..RESOURCE_WRITE_ATTEMPTS {
+        write_resource_plan_once(path, plan)?;
+        match verify_written_resources(path, plan.groups.len()) {
+            Ok(()) => return Ok(()),
+            Err(err) if attempt + 1 < RESOURCE_WRITE_ATTEMPTS => {
+                last_error = Some(err);
+                thread::sleep(RESOURCE_WRITE_RETRY_DELAY);
+            }
+            Err(err) => return Err(err),
+        }
+    }
+
+    Err(last_error.unwrap_or_else(|| {
+        IconError::Internal("resource write retry failed without an error".to_owned())
+    }))
+}
+
+fn write_resource_plan_once(path: &Path, plan: &ResourcePlan) -> Result<(), IconError> {
     let mut update = ResourceUpdate::begin(path)?;
 
     for group in &plan.groups {
@@ -45,6 +89,25 @@ pub(super) fn apply_resource_plan_unlocked(
     }
 
     update.commit()
+}
+
+fn verify_written_resources(path: &Path, expected_groups: usize) -> Result<(), IconError> {
+    let actual_groups = crate::dll::pe_resource::group_icon_resource_count(path)?;
+    if actual_groups < expected_groups {
+        return Err(IconError::DllLoadFailed(format!(
+            "resource write verification found {actual_groups} RT_GROUP_ICON resources, expected {expected_groups}"
+        )));
+    }
+
+    Ok(())
+}
+
+fn is_resource_write_verification_error(err: &IconError) -> bool {
+    matches!(
+        err,
+        IconError::DllLoadFailed(message)
+            if message.contains("resource write verification found")
+    )
 }
 
 fn update_resource(
@@ -146,7 +209,7 @@ mod tests {
     use super::*;
     use crate::{
         build_cache::CachedBuildIcon,
-        dll::{copy_template_dll, load_dll_icons, plan_icon_resources},
+        dll::{copy_template_dll, plan_icon_resources},
         icons::{IconSize, NormalisedIcon},
     };
     use tempfile::tempdir;
@@ -167,6 +230,7 @@ mod tests {
 
     #[test]
     fn apply_resource_plan_writes_readable_icon_resources() {
+        let _guard = crate::dll::lock_resource_test();
         let dir = tempdir().unwrap();
         let dll_path = dir.path().join("icons.dll");
         let preview_dir = dir.path().join("previews");
@@ -184,7 +248,8 @@ mod tests {
 
         apply_resource_plan(&dll_path, &plan).unwrap();
 
-        let loaded = load_dll_icons(&dll_path, &preview_dir).unwrap();
+        let loaded =
+            crate::dll::load_dll_icons_from_file_for_test(&dll_path, &preview_dir).unwrap();
         assert!(
             loaded.warnings.is_empty(),
             "warnings: {:?}",
@@ -199,6 +264,7 @@ mod tests {
 
     #[test]
     fn apply_resource_plan_rejects_empty_plan() {
+        let _guard = crate::dll::lock_resource_test();
         let dir = tempdir().unwrap();
         let dll_path = dir.path().join("icons.dll");
         copy_template_dll(&dll_path).unwrap();
@@ -210,6 +276,7 @@ mod tests {
 
     #[test]
     fn apply_resource_plan_rejects_missing_file() {
+        let _guard = crate::dll::lock_resource_test();
         let dir = tempdir().unwrap();
         let dll_path = dir.path().join("missing.dll");
         let plan = plan_icon_resources(&[CachedBuildIcon {

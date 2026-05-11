@@ -1,6 +1,7 @@
 use std::{
     path::{Path, PathBuf},
-    time::{SystemTime, UNIX_EPOCH},
+    thread,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 #[cfg(target_os = "windows")]
@@ -15,6 +16,11 @@ use crate::{
     build_cache::BuildCache,
     icons::{BuildOptions, BuildResult, IconError},
 };
+
+#[cfg(target_os = "windows")]
+const BUILD_WRITE_ATTEMPTS: usize = 5;
+#[cfg(target_os = "windows")]
+const BUILD_WRITE_RETRY_DELAY: Duration = Duration::from_millis(25);
 
 pub(crate) fn build_dll(
     options: &BuildOptions,
@@ -35,30 +41,62 @@ pub(crate) fn build_dll(
 
 #[cfg(target_os = "windows")]
 fn build_dll_windows(options: &BuildOptions, cache: &BuildCache) -> Result<BuildResult, IconError> {
-    use crate::dll::{
-        copy_template_dll, plan_icon_resources, update::apply_resource_plan_unlocked,
-    };
+    use crate::dll::plan_icon_resources;
 
     let _guard = crate::dll::lock_resource_io()?;
     let output_path = Path::new(&options.output_path);
     let cached_icons = cache.get_ordered(&options.icons)?;
     let plan = plan_icon_resources(&cached_icons)?;
-    let temp_path = temp_output_path(output_path)?;
 
-    let result = (|| {
-        copy_template_dll(&temp_path)?;
-        apply_resource_plan_unlocked(&temp_path, &plan)?;
-        replace_file(&temp_path, output_path)?;
-        Ok(BuildResult {
-            output_path: output_path.to_string_lossy().into_owned(),
-        })
-    })();
+    let mut last_error = None;
+    for attempt in 0..BUILD_WRITE_ATTEMPTS {
+        let temp_path = temp_output_path(output_path)?;
+        let result = build_dll_to_temp(&temp_path, output_path, &plan);
+        if result.is_err() {
+            let _ = std::fs::remove_file(&temp_path);
+        }
 
-    if result.is_err() {
-        let _ = std::fs::remove_file(&temp_path);
+        match result {
+            Ok(result) => return Ok(result),
+            Err(err)
+                if is_resource_write_verification_error(&err)
+                    && attempt + 1 < BUILD_WRITE_ATTEMPTS =>
+            {
+                last_error = Some(err);
+                thread::sleep(BUILD_WRITE_RETRY_DELAY);
+            }
+            Err(err) => return Err(err),
+        }
     }
 
-    result
+    Err(last_error.unwrap_or_else(|| {
+        IconError::Internal("DLL build retry failed without an error".to_owned())
+    }))
+}
+
+#[cfg(target_os = "windows")]
+fn build_dll_to_temp(
+    temp_path: &Path,
+    output_path: &Path,
+    plan: &crate::dll::ResourcePlan,
+) -> Result<BuildResult, IconError> {
+    use crate::dll::{copy_template_dll, update::apply_resource_plan_unlocked};
+
+    copy_template_dll(temp_path)?;
+    apply_resource_plan_unlocked(temp_path, plan)?;
+    replace_file(temp_path, output_path)?;
+    Ok(BuildResult {
+        output_path: output_path.to_string_lossy().into_owned(),
+    })
+}
+
+#[cfg(target_os = "windows")]
+fn is_resource_write_verification_error(err: &IconError) -> bool {
+    matches!(
+        err,
+        IconError::DllLoadFailed(message)
+            if message.contains("resource write verification found")
+    )
 }
 
 fn temp_output_path(output_path: &Path) -> Result<PathBuf, IconError> {
@@ -133,7 +171,6 @@ mod tests {
         use super::*;
         use crate::{
             build_cache::{BuildCache, CachedBuildIcon},
-            dll::load_dll_icons,
             icons::{BuildIconInput, IconSize, NormalisedIcon},
         };
 
@@ -157,8 +194,13 @@ mod tests {
             cache
         }
 
+        fn load_generated_dll_icons(output: &Path, preview_dir: &Path) -> crate::dll::LoadedDll {
+            crate::dll::load_dll_icons_from_file_for_test(output, preview_dir).unwrap()
+        }
+
         #[test]
         fn build_dll_writes_output_from_cached_icons() {
+            let _guard = crate::dll::lock_resource_test();
             let dir = tempfile::tempdir().unwrap();
             let output = dir.path().join("out.dll");
             let preview_dir = dir.path().join("previews");
@@ -180,7 +222,7 @@ mod tests {
             let result = build_dll(&options, &cache).unwrap();
 
             assert_eq!(result.output_path, output.to_string_lossy());
-            let loaded = load_dll_icons(&output, &preview_dir).unwrap();
+            let loaded = load_generated_dll_icons(&output, &preview_dir);
             assert!(
                 loaded.warnings.is_empty(),
                 "warnings: {:?}",
@@ -195,6 +237,7 @@ mod tests {
 
         #[test]
         fn build_dll_respects_requested_order() {
+            let _guard = crate::dll::lock_resource_test();
             let dir = tempfile::tempdir().unwrap();
             let output = dir.path().join("ordered.dll");
             let preview_dir = dir.path().join("previews");
@@ -219,7 +262,7 @@ mod tests {
 
             build_dll(&options, &cache).unwrap();
 
-            let loaded = load_dll_icons(&output, &preview_dir).unwrap();
+            let loaded = load_generated_dll_icons(&output, &preview_dir);
             assert_eq!(loaded.icons.len(), 2);
             assert_eq!(loaded.icons[0].available_sizes, vec![IconSize::S32]);
             assert_eq!(loaded.icons[1].available_sizes, vec![IconSize::S16]);
@@ -227,6 +270,7 @@ mod tests {
 
         #[test]
         fn build_dll_replaces_existing_output() {
+            let _guard = crate::dll::lock_resource_test();
             let dir = tempfile::tempdir().unwrap();
             let output = dir.path().join("replace.dll");
             std::fs::write(&output, b"old").unwrap();
@@ -248,6 +292,7 @@ mod tests {
 
         #[test]
         fn build_dll_rejects_missing_cached_icon() {
+            let _guard = crate::dll::lock_resource_test();
             let dir = tempfile::tempdir().unwrap();
             let output = dir.path().join("missing.dll");
             let cache = BuildCache::default();
@@ -266,6 +311,7 @@ mod tests {
 
         #[test]
         fn build_dll_rejects_empty_icon_list() {
+            let _guard = crate::dll::lock_resource_test();
             let dir = tempfile::tempdir().unwrap();
             let output = dir.path().join("empty.dll");
             let cache = BuildCache::default();
@@ -282,6 +328,7 @@ mod tests {
 
         #[test]
         fn build_dll_removes_temp_file_when_final_replace_fails() {
+            let _guard = crate::dll::lock_resource_test();
             let dir = tempfile::tempdir().unwrap();
             let output = dir.path().join("existing-directory.dll");
             std::fs::create_dir(&output).unwrap();
@@ -317,6 +364,7 @@ mod tests {
 
         #[test]
         fn roundtrip_generated_dll_preserves_groups_sizes_and_previews() {
+            let _guard = crate::dll::lock_resource_test();
             let dir = tempfile::tempdir().unwrap();
             let first_output = dir.path().join("first.dll");
             let second_output = dir.path().join("second.dll");
@@ -356,7 +404,7 @@ mod tests {
             };
 
             build_dll(&first_options, &first_cache).unwrap();
-            let first_loaded = load_dll_icons(&first_output, &first_preview_dir).unwrap();
+            let first_loaded = load_generated_dll_icons(&first_output, &first_preview_dir);
             assert_loaded_preview_coherent(&first_loaded);
 
             let second_cache = cache_with_icons(first_loaded.build_icons.clone());
@@ -372,7 +420,7 @@ mod tests {
             };
 
             build_dll(&second_options, &second_cache).unwrap();
-            let second_loaded = load_dll_icons(&second_output, &second_preview_dir).unwrap();
+            let second_loaded = load_generated_dll_icons(&second_output, &second_preview_dir);
             assert_loaded_preview_coherent(&second_loaded);
 
             assert_eq!(icon_sizes(&first_loaded), icon_sizes(&second_loaded));
@@ -390,6 +438,7 @@ mod tests {
         #[test]
         #[ignore = "generates target/manual-check/win-dll-packer-manual-check.dll for manual inspection"]
         fn generate_manual_check_dll() {
+            let _guard = crate::dll::lock_resource_test();
             let output_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("target")
                 .join("manual-check");
@@ -431,7 +480,7 @@ mod tests {
 
             build_dll(&options, &cache).unwrap();
 
-            let loaded = load_dll_icons(&output, &preview_dir).unwrap();
+            let loaded = load_generated_dll_icons(&output, &preview_dir);
             assert!(
                 loaded.warnings.is_empty(),
                 "warnings: {:?}",

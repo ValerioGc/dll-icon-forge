@@ -15,7 +15,8 @@ use {
             },
             System::LibraryLoader::{
                 EnumResourceLanguagesW, EnumResourceNamesW, FindResourceExW,
-                LOAD_LIBRARY_AS_DATAFILE, LoadLibraryExW, LoadResource, LockResource,
+                LOAD_LIBRARY_AS_DATAFILE, LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE,
+                LOAD_LIBRARY_AS_IMAGE_RESOURCE, LoadLibraryExW, LoadResource, LockResource,
                 SizeofResource,
             },
         },
@@ -38,6 +39,19 @@ const RT_ICON_ID: u16 = 3;
 
 #[cfg(target_os = "windows")]
 const RT_GROUP_ICON_ID: u16 = 14;
+
+#[cfg(target_os = "windows")]
+const RESOURCE_RELOAD_ATTEMPTS: usize = 10;
+
+#[cfg(target_os = "windows")]
+const RESOURCE_RELOAD_DELAY: Duration = Duration::from_millis(50);
+
+#[cfg(target_os = "windows")]
+const RESOURCE_LOAD_FLAGS: [u32; 3] = [
+    LOAD_LIBRARY_AS_DATAFILE | LOAD_LIBRARY_AS_IMAGE_RESOURCE,
+    LOAD_LIBRARY_AS_DATAFILE,
+    LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE,
+];
 
 #[cfg(target_os = "windows")]
 #[derive(Debug, Clone, Copy)]
@@ -74,7 +88,7 @@ fn wide_path(path: &Path) -> Vec<u16> {
 
 /// Owns an `HMODULE` and calls `FreeLibrary` on drop.
 ///
-/// The module is loaded with `LOAD_LIBRARY_AS_DATAFILE`, so no code is executed.
+/// The module is loaded as a data/image-resource file, so no code is executed.
 #[cfg(target_os = "windows")]
 pub(super) struct OwnedModule {
     handle: HMODULE,
@@ -106,10 +120,20 @@ impl Drop for OwnedModule {
 
 /// Opens `path` as a data-only module.
 pub(super) fn load_dll(path: &Path) -> Result<OwnedModule, IconError> {
+    load_dll_with_flags(path, RESOURCE_LOAD_FLAGS[0])
+}
+
+fn load_dll_for_retry(path: &Path, attempt: usize) -> Result<OwnedModule, IconError> {
+    load_dll_with_flags(
+        path,
+        RESOURCE_LOAD_FLAGS[attempt % RESOURCE_LOAD_FLAGS.len()],
+    )
+}
+
+fn load_dll_with_flags(path: &Path, flags: u32) -> Result<OwnedModule, IconError> {
     let resource_guard = crate::dll::lock_resource_io()?;
     let wide = wide_path(path);
-    let hmodule =
-        unsafe { LoadLibraryExW(wide.as_ptr(), ptr::null_mut(), LOAD_LIBRARY_AS_DATAFILE) };
+    let hmodule = unsafe { LoadLibraryExW(wide.as_ptr(), ptr::null_mut(), flags) };
 
     if hmodule.is_null() {
         return Err(last_error("LoadLibraryExW"));
@@ -140,6 +164,15 @@ pub(super) fn enumerate_icon_groups(
     }
 
     Ok(groups)
+}
+
+pub(super) fn enumerate_dll_icon_groups(
+    dll_path: &Path,
+) -> Result<Vec<IconGroupMetadata>, IconError> {
+    retry_after_resource_data_not_found(|attempt| {
+        let module = load_dll_for_retry(dll_path, attempt)?;
+        enumerate_icon_groups(&module)
+    })
 }
 
 fn enumerate_icon_group_refs(module: &OwnedModule) -> Result<Vec<IconGroupRef>, IconError> {
@@ -268,7 +301,17 @@ pub(super) fn read_icon_group_icons(
 }
 
 pub(super) fn load_dll_icons(dll_path: &Path, preview_dir: &Path) -> Result<LoadedDll, IconError> {
-    let module = load_dll(dll_path)?;
+    retry_after_resource_data_not_found(|attempt| {
+        load_dll_icons_once(dll_path, preview_dir, attempt)
+    })
+}
+
+fn load_dll_icons_once(
+    dll_path: &Path,
+    preview_dir: &Path,
+    attempt: usize,
+) -> Result<LoadedDll, IconError> {
+    let module = load_dll_for_retry(dll_path, attempt)?;
     let groups = enumerate_icon_group_refs(&module)?;
 
     if groups.is_empty() {
@@ -316,6 +359,38 @@ pub(super) fn load_dll_icons(dll_path: &Path, preview_dir: &Path) -> Result<Load
         build_icons,
         warnings,
     })
+}
+
+fn retry_after_resource_data_not_found<T>(
+    mut operation: impl FnMut(usize) -> Result<T, IconError>,
+) -> Result<T, IconError> {
+    let mut last_error = None;
+
+    for attempt in 0..RESOURCE_RELOAD_ATTEMPTS {
+        match operation(attempt) {
+            Ok(value) => return Ok(value),
+            Err(err)
+                if is_retryable_resource_load_error(&err)
+                    && attempt + 1 < RESOURCE_RELOAD_ATTEMPTS =>
+            {
+                last_error = Some(err);
+                thread::sleep(RESOURCE_RELOAD_DELAY);
+            }
+            Err(err) => return Err(err),
+        }
+    }
+
+    Err(last_error.unwrap_or_else(|| {
+        IconError::DllLoadFailed("resource reload retry failed without an error".to_owned())
+    }))
+}
+
+fn is_retryable_resource_load_error(err: &IconError) -> bool {
+    matches!(
+        err,
+        IconError::DllLoadFailed(message)
+            if message.contains("Win32 error 1812") || message.contains("Win32 error 193")
+    )
 }
 
 fn read_icon_group_icons_lossy(
@@ -696,6 +771,7 @@ mod tests {
 
     #[test]
     fn load_nonexistent_path_fails() {
+        let _guard = crate::dll::lock_resource_test();
         let result = load_dll(Path::new(r"C:\does_not_exist_wdp_test_xyz.dll"));
         assert!(
             matches!(result, Err(IconError::DllLoadFailed(_))),
@@ -705,6 +781,7 @@ mod tests {
 
     #[test]
     fn load_non_pe_file_fails() {
+        let _guard = crate::dll::lock_resource_test();
         let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("tests")
             .join("fixtures")
@@ -718,6 +795,7 @@ mod tests {
 
     #[test]
     fn enumerate_code_dll_returns_empty() {
+        let _guard = crate::dll::lock_resource_test();
         let path = system_path("kernel32.dll");
         if !path.exists() {
             return;
@@ -730,6 +808,7 @@ mod tests {
 
     #[test]
     fn enumerate_returns_one_group_metadata() {
+        let _guard = crate::dll::lock_resource_test();
         let (_dir, path) = create_test_dll(&[(7, 0, 3)]);
         let module = load_dll(&path).expect("load test dll");
         let groups = enumerate_icon_groups(&module).expect("enumerate test dll");
@@ -746,6 +825,7 @@ mod tests {
 
     #[test]
     fn enumerate_returns_multiple_groups_sorted() {
+        let _guard = crate::dll::lock_resource_test();
         let (_dir, path) = create_test_dll(&[(20, 1033, 1), (3, 0, 4)]);
         let module = load_dll(&path).expect("load test dll");
         let groups = enumerate_icon_groups(&module).expect("enumerate test dll");
@@ -769,6 +849,7 @@ mod tests {
 
     #[test]
     fn read_group_icon_decodes_png_rt_icon() {
+        let _guard = crate::dll::lock_resource_test();
         let icon_bytes = png_bytes(16, [10, 20, 30, 40]);
         let (_dir, path) = create_test_dll_with_icon(5, 0, 9, &icon_bytes);
         let module = load_dll(&path).expect("load test dll");
@@ -783,6 +864,7 @@ mod tests {
 
     #[test]
     fn read_group_icon_errors_when_rt_icon_is_missing() {
+        let _guard = crate::dll::lock_resource_test();
         let (_dir, path) = create_test_dll_with_missing_icon(5, 0, 9);
         let module = load_dll(&path).expect("load test dll");
 
@@ -793,6 +875,7 @@ mod tests {
 
     #[test]
     fn load_dll_icons_converts_one_group_to_project_icon() {
+        let _guard = crate::dll::lock_resource_test();
         let icon_bytes = png_bytes(16, [10, 20, 30, 40]);
         let (_dir, path) = create_test_dll_with_icon(5, 0, 9, &icon_bytes);
         let preview_dir = tempfile::tempdir().unwrap();
@@ -816,6 +899,7 @@ mod tests {
 
     #[test]
     fn load_dll_icons_keeps_groups_sorted_by_id() {
+        let _guard = crate::dll::lock_resource_test();
         let icon_a = png_bytes(16, [1, 2, 3, 4]);
         let icon_b = png_bytes(16, [5, 6, 7, 8]);
         let (_dir, path) =
@@ -830,6 +914,7 @@ mod tests {
 
     #[test]
     fn load_dll_icons_returns_no_icons_warning() {
+        let _guard = crate::dll::lock_resource_test();
         let path = system_path("kernel32.dll");
         if !path.exists() {
             return;
@@ -844,6 +929,7 @@ mod tests {
 
     #[test]
     fn load_dll_icons_keeps_group_when_one_icon_entry_is_corrupt() {
+        let _guard = crate::dll::lock_resource_test();
         let valid_icon = png_bytes(16, [10, 20, 30, 40]);
         let corrupt_icon = b"not an icon".as_slice();
         let group = build_group_resource_entries(&[
@@ -872,6 +958,7 @@ mod tests {
 
     #[test]
     fn load_dll_icons_skips_unreadable_group_and_continues() {
+        let _guard = crate::dll::lock_resource_test();
         let invalid_group = vec![0, 0, 1];
         let valid_icon = png_bytes(16, [1, 2, 3, 4]);
         let valid_group = build_group_resource_entries(&[(16, 16, valid_icon.len() as u32, 10)]);
@@ -899,6 +986,7 @@ mod tests {
 
     #[test]
     fn load_dll_icons_returns_error_for_non_dll_file() {
+        let _guard = crate::dll::lock_resource_test();
         let fixture = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("tests")
             .join("fixtures")
@@ -912,6 +1000,7 @@ mod tests {
 
     #[test]
     fn enumerate_system_icon_dll_returns_metadata() {
+        let _guard = crate::dll::lock_resource_test();
         let path = system_path("imageres.dll");
         if !path.exists() {
             return;
