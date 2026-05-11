@@ -16,6 +16,7 @@ const LANG_NEUTRAL: u16 = 0;
 const RESOURCE_WRITE_ATTEMPTS: usize = 3;
 const RESOURCE_WRITE_RETRY_DELAY: Duration = Duration::from_millis(25);
 
+#[cfg(test)]
 pub(super) fn apply_resource_plan(path: &Path, plan: &ResourcePlan) -> Result<(), IconError> {
     let _guard = crate::dll::lock_resource_io()?;
     let Ok(original_bytes) = std::fs::read(path) else {
@@ -102,6 +103,7 @@ fn verify_written_resources(path: &Path, expected_groups: usize) -> Result<(), I
     Ok(())
 }
 
+#[cfg(test)]
 fn is_resource_write_verification_error(err: &IconError) -> bool {
     matches!(
         err,

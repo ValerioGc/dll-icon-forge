@@ -19,6 +19,7 @@ pub enum IconError {
     Corrupted(String),
 
     #[error("DLL operation not supported on this platform")]
+    #[allow(dead_code)]
     PlatformNotSupported,
 
     #[error("failed to load DLL: {0}")]

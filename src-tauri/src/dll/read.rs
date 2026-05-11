@@ -119,6 +119,7 @@ impl Drop for OwnedModule {
 // -- 2b: Load + enumerate RT_GROUP_ICON ---------------------------------------
 
 /// Opens `path` as a data-only module.
+#[cfg(test)]
 pub(super) fn load_dll(path: &Path) -> Result<OwnedModule, IconError> {
     load_dll_with_flags(path, RESOURCE_LOAD_FLAGS[0])
 }
@@ -149,6 +150,7 @@ fn load_dll_with_flags(path: &Path, flags: u32) -> Result<OwnedModule, IconError
 ///
 /// Named resource groups are skipped because standard icon resource toolchains
 /// use integer IDs. A DLL with no icon groups returns an empty list.
+#[cfg(test)]
 pub(super) fn enumerate_icon_groups(
     module: &OwnedModule,
 ) -> Result<Vec<IconGroupMetadata>, IconError> {
@@ -164,15 +166,6 @@ pub(super) fn enumerate_icon_groups(
     }
 
     Ok(groups)
-}
-
-pub(super) fn enumerate_dll_icon_groups(
-    dll_path: &Path,
-) -> Result<Vec<IconGroupMetadata>, IconError> {
-    retry_after_resource_data_not_found(|attempt| {
-        let module = load_dll_for_retry(dll_path, attempt)?;
-        enumerate_icon_groups(&module)
-    })
 }
 
 fn enumerate_icon_group_refs(module: &OwnedModule) -> Result<Vec<IconGroupRef>, IconError> {
@@ -255,6 +248,7 @@ fn enumerate_group_languages(module: &OwnedModule, group_id: u16) -> Result<Vec<
     Ok(languages)
 }
 
+#[cfg(test)]
 fn read_group_entry_count(
     module: &OwnedModule,
     group_id: u16,
@@ -270,6 +264,7 @@ fn read_group_entry_count(
     Ok(group.entries.len() as u16)
 }
 
+#[cfg(test)]
 pub(super) fn read_icon_group_icons(
     module: &OwnedModule,
     group_id: u16,

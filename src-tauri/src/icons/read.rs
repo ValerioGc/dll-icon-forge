@@ -1,7 +1,7 @@
 use std::cmp::Reverse;
 use std::fs::File;
 use std::io::{BufReader, Read};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use image::{DynamicImage, RgbaImage};
 
@@ -23,7 +23,6 @@ pub(crate) struct IconFrame {
 /// `frames` is non-empty by construction and sorted largest-to-smallest by area.
 #[derive(Debug)]
 pub(crate) struct IconSourceData {
-    pub source_path: PathBuf,
     pub kind: SourceKind,
     pub frames: Vec<IconFrame>,
 }
@@ -57,11 +56,7 @@ pub(crate) fn read_icon_source(path: &Path) -> Result<IconSourceData, IconError>
             });
         }
     };
-    Ok(IconSourceData {
-        source_path: path.to_owned(),
-        kind,
-        frames,
-    })
+    Ok(IconSourceData { kind, frames })
 }
 
 // ── Format detection ──────────────────────────────────────────────────────────

@@ -36,32 +36,9 @@ pub(super) fn lock_resource_test() -> std::sync::MutexGuard<'static, ()> {
 }
 
 pub(crate) use build::build_dll;
-pub(crate) use template::{copy_template_dll, template_dll_bytes};
+pub(crate) use template::copy_template_dll;
 pub(crate) use types::{DllWarning, IconGroupMetadata, LoadedDll};
-pub(crate) use write::{
-    GroupIconResourceEntry, IconResourcePlan, ResourcePlan, encode_group_icon_resource,
-    plan_icon_resources,
-};
-
-/// Enumerates all `RT_GROUP_ICON` resource groups from the DLL at `dll_path`.
-///
-/// Returns a sorted list of group metadata, or `Ok(vec![])` when the DLL has no
-/// icon groups.
-///
-/// On non-Windows platforms always returns `Err(PlatformNotSupported)`.
-pub(crate) fn enumerate_dll_icon_groups(
-    dll_path: &std::path::Path,
-) -> Result<Vec<IconGroupMetadata>, crate::icons::IconError> {
-    #[cfg(target_os = "windows")]
-    {
-        read::enumerate_dll_icon_groups(dll_path)
-    }
-    #[cfg(not(target_os = "windows"))]
-    {
-        let _ = dll_path;
-        Err(crate::icons::IconError::PlatformNotSupported)
-    }
-}
+pub(crate) use write::{ResourcePlan, plan_icon_resources};
 
 /// Loads icon groups from `dll_path` and converts them to frontend project icons.
 ///

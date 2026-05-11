@@ -25,32 +25,39 @@ fn ensure_preview_dir() -> Result<PathBuf, IconError> {
 }
 
 fn imported_icon_to_project_icon(imported: ImportedIcon) -> (ProjectIcon, CachedBuildIcon) {
-    let name = imported
-        .source_path
+    let ImportedIcon {
+        source_path,
+        source_kind,
+        warnings,
+        icons,
+        preview_path,
+    } = imported;
+    let _ = warnings;
+
+    let name = source_path
         .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or("Icon")
         .to_owned();
-    let id = imported
-        .preview_path
+    let id = preview_path
         .file_stem()
         .and_then(|stem| stem.to_str())
         .map_or_else(|| name.clone(), ToOwned::to_owned);
-    let available_sizes = imported.icons.iter().map(|icon| icon.size).collect();
+    let available_sizes = icons.iter().map(|icon| icon.size).collect();
     let build_icon = CachedBuildIcon {
         id: id.clone(),
-        icons: imported.icons,
+        icons,
     };
 
     (
         ProjectIcon {
             id,
             name,
-            source_kind: imported.source_kind,
+            source_kind,
             available_sizes,
             status: IconStatus::Ready,
             error: None,
-            preview_path: Some(imported.preview_path.to_string_lossy().into_owned()),
+            preview_path: Some(preview_path.to_string_lossy().into_owned()),
         },
         build_icon,
     )

@@ -4,6 +4,7 @@ use crate::icons::IconError;
 
 const TEMPLATE_DLL: &[u8] = include_bytes!("../../assets/template.dll");
 
+#[cfg(test)]
 pub(crate) fn template_dll_bytes() -> &'static [u8] {
     TEMPLATE_DLL
 }
