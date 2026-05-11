@@ -260,5 +260,113 @@ mod tests {
             assert!(matches!(err, IconError::Internal(_)));
             assert!(!output.exists());
         }
+
+        #[test]
+        fn build_dll_rejects_empty_icon_list() {
+            let dir = tempfile::tempdir().unwrap();
+            let output = dir.path().join("empty.dll");
+            let cache = BuildCache::default();
+            let options = BuildOptions {
+                output_path: output.to_string_lossy().into_owned(),
+                icons: Vec::new(),
+            };
+
+            let err = build_dll(&options, &cache).unwrap_err();
+
+            assert!(matches!(err, IconError::Internal(_)));
+            assert!(!output.exists());
+        }
+
+        #[test]
+        fn build_dll_removes_temp_file_when_final_replace_fails() {
+            let dir = tempfile::tempdir().unwrap();
+            let output = dir.path().join("existing-directory.dll");
+            std::fs::create_dir(&output).unwrap();
+            let cache = cache_with_icons(vec![CachedBuildIcon {
+                id: "icon-a".to_owned(),
+                icons: vec![normalised(IconSize::S16, [255, 0, 0, 255])],
+            }]);
+            let options = BuildOptions {
+                output_path: output.to_string_lossy().into_owned(),
+                icons: vec![BuildIconInput {
+                    id: "icon-a".to_owned(),
+                }],
+            };
+
+            let err = build_dll(&options, &cache).unwrap_err();
+
+            assert!(matches!(err, IconError::Io(_)));
+            let leftovers: Vec<_> = std::fs::read_dir(dir.path())
+                .unwrap()
+                .filter_map(Result::ok)
+                .filter(|entry| {
+                    entry
+                        .file_name()
+                        .to_string_lossy()
+                        .starts_with(".existing-directory.dll.")
+                })
+                .collect();
+            assert!(
+                leftovers.is_empty(),
+                "unexpected temp files left behind: {leftovers:?}"
+            );
+        }
+
+        #[test]
+        #[ignore = "generates target/manual-check/win-dll-packer-manual-check.dll for manual inspection"]
+        fn generate_manual_check_dll() {
+            let output_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("target")
+                .join("manual-check");
+            std::fs::create_dir_all(&output_dir).unwrap();
+            let output = output_dir.join("win-dll-packer-manual-check.dll");
+            let preview_dir = output_dir.join("previews");
+            std::fs::create_dir_all(&preview_dir).unwrap();
+            let cache = cache_with_icons(vec![
+                CachedBuildIcon {
+                    id: "red".to_owned(),
+                    icons: vec![
+                        normalised(IconSize::S16, [255, 0, 0, 255]),
+                        normalised(IconSize::S32, [255, 0, 0, 255]),
+                        normalised(IconSize::S48, [255, 0, 0, 255]),
+                        normalised(IconSize::S256, [255, 0, 0, 255]),
+                    ],
+                },
+                CachedBuildIcon {
+                    id: "blue".to_owned(),
+                    icons: vec![
+                        normalised(IconSize::S16, [0, 64, 255, 255]),
+                        normalised(IconSize::S32, [0, 64, 255, 255]),
+                        normalised(IconSize::S48, [0, 64, 255, 255]),
+                        normalised(IconSize::S256, [0, 64, 255, 255]),
+                    ],
+                },
+            ]);
+            let options = BuildOptions {
+                output_path: output.to_string_lossy().into_owned(),
+                icons: vec![
+                    BuildIconInput {
+                        id: "red".to_owned(),
+                    },
+                    BuildIconInput {
+                        id: "blue".to_owned(),
+                    },
+                ],
+            };
+
+            build_dll(&options, &cache).unwrap();
+
+            let loaded = load_dll_icons(&output, &preview_dir).unwrap();
+            assert!(
+                loaded.warnings.is_empty(),
+                "warnings: {:?}",
+                loaded.warnings
+            );
+            assert_eq!(loaded.icons.len(), 2);
+            assert!(loaded.icons.iter().all(|icon| icon.available_sizes
+                == vec![IconSize::S16, IconSize::S32, IconSize::S48, IconSize::S256]));
+
+            println!("manual check DLL: {}", output.display());
+        }
     }
 }
