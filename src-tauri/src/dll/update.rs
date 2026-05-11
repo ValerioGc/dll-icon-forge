@@ -15,6 +15,14 @@ const RT_GROUP_ICON_ID: u16 = 14;
 const LANG_NEUTRAL: u16 = 0;
 
 pub(super) fn apply_resource_plan(path: &Path, plan: &ResourcePlan) -> Result<(), IconError> {
+    let _guard = crate::dll::lock_resource_io()?;
+    apply_resource_plan_unlocked(path, plan)
+}
+
+pub(super) fn apply_resource_plan_unlocked(
+    path: &Path,
+    plan: &ResourcePlan,
+) -> Result<(), IconError> {
     if plan.groups.is_empty() {
         return Err(IconError::Internal(
             "resource plan needs at least one icon group".to_owned(),

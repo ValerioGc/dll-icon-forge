@@ -5,13 +5,13 @@
 
 #[cfg(target_os = "windows")]
 use {
-    std::{os::windows::ffi::OsStrExt, path::Path, ptr},
+    std::{os::windows::ffi::OsStrExt, path::Path, ptr, sync::MutexGuard, thread, time::Duration},
     windows_sys::{
         Win32::{
             Foundation::{
-                ERROR_RESOURCE_LANG_NOT_FOUND, ERROR_RESOURCE_NAME_NOT_FOUND,
-                ERROR_RESOURCE_TYPE_NOT_FOUND, ERROR_SUCCESS, FreeLibrary, GetLastError, HMODULE,
-                SetLastError,
+                ERROR_RESOURCE_DATA_NOT_FOUND, ERROR_RESOURCE_LANG_NOT_FOUND,
+                ERROR_RESOURCE_NAME_NOT_FOUND, ERROR_RESOURCE_TYPE_NOT_FOUND, ERROR_SUCCESS,
+                FreeLibrary, GetLastError, HMODULE, SetLastError,
             },
             System::LibraryLoader::{
                 EnumResourceLanguagesW, EnumResourceNamesW, FindResourceExW,
@@ -76,15 +76,27 @@ fn wide_path(path: &Path) -> Vec<u16> {
 ///
 /// The module is loaded with `LOAD_LIBRARY_AS_DATAFILE`, so no code is executed.
 #[cfg(target_os = "windows")]
-#[derive(Debug)]
-pub(super) struct OwnedModule(pub HMODULE);
+pub(super) struct OwnedModule {
+    handle: HMODULE,
+    _resource_guard: MutexGuard<'static, ()>,
+}
+
+#[cfg(target_os = "windows")]
+impl std::fmt::Debug for OwnedModule {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("OwnedModule")
+            .field("handle", &self.handle)
+            .finish_non_exhaustive()
+    }
+}
 
 #[cfg(target_os = "windows")]
 impl Drop for OwnedModule {
     fn drop(&mut self) {
-        if !self.0.is_null() {
+        if !self.handle.is_null() {
             unsafe {
-                let _ = FreeLibrary(self.0);
+                let _ = FreeLibrary(self.handle);
             }
         }
     }
@@ -94,6 +106,7 @@ impl Drop for OwnedModule {
 
 /// Opens `path` as a data-only module.
 pub(super) fn load_dll(path: &Path) -> Result<OwnedModule, IconError> {
+    let resource_guard = crate::dll::lock_resource_io()?;
     let wide = wide_path(path);
     let hmodule =
         unsafe { LoadLibraryExW(wide.as_ptr(), ptr::null_mut(), LOAD_LIBRARY_AS_DATAFILE) };
@@ -102,7 +115,10 @@ pub(super) fn load_dll(path: &Path) -> Result<OwnedModule, IconError> {
         return Err(last_error("LoadLibraryExW"));
     }
 
-    Ok(OwnedModule(hmodule))
+    Ok(OwnedModule {
+        handle: hmodule,
+        _resource_guard: resource_guard,
+    })
 }
 
 /// Returns sorted metadata for integer `RT_GROUP_ICON` resources in `module`.
@@ -129,19 +145,29 @@ pub(super) fn enumerate_icon_groups(
 fn enumerate_icon_group_refs(module: &OwnedModule) -> Result<Vec<IconGroupRef>, IconError> {
     let mut group_ids: Vec<u16> = Vec::new();
 
-    unsafe {
-        SetLastError(ERROR_SUCCESS);
-        let ok = EnumResourceNamesW(
-            module.0,
-            int_resource(RT_GROUP_ICON_ID),
-            Some(enum_group_callback),
-            &mut group_ids as *mut Vec<u16> as isize,
-        );
+    for attempt in 0..3 {
+        group_ids.clear();
 
-        if ok == 0 {
+        unsafe {
+            SetLastError(ERROR_SUCCESS);
+            let ok = EnumResourceNamesW(
+                module.handle,
+                int_resource(RT_GROUP_ICON_ID),
+                Some(enum_group_callback),
+                &mut group_ids as *mut Vec<u16> as isize,
+            );
+
+            if ok != 0 {
+                break;
+            }
+
             let code = GetLastError();
             if code == ERROR_RESOURCE_TYPE_NOT_FOUND || code == ERROR_RESOURCE_NAME_NOT_FOUND {
                 return Ok(Vec::new());
+            }
+            if code == ERROR_RESOURCE_DATA_NOT_FOUND && attempt < 2 {
+                thread::sleep(Duration::from_millis(10));
+                continue;
             }
             return Err(IconError::DllLoadFailed(format!(
                 "EnumResourceNamesW: Win32 error {code}"
@@ -173,7 +199,7 @@ fn enumerate_group_languages(module: &OwnedModule, group_id: u16) -> Result<Vec<
     unsafe {
         SetLastError(ERROR_SUCCESS);
         let ok = EnumResourceLanguagesW(
-            module.0,
+            module.handle,
             int_resource(RT_GROUP_ICON_ID),
             int_resource(group_id),
             Some(enum_language_callback),
@@ -393,7 +419,7 @@ fn read_resource<'a>(
 ) -> Result<&'a [u8], IconError> {
     let resource = unsafe {
         FindResourceExW(
-            module.0,
+            module.handle,
             int_resource(resource_type),
             int_resource(resource_id),
             language_id,
@@ -403,12 +429,12 @@ fn read_resource<'a>(
         return Err(last_error("FindResourceExW"));
     }
 
-    let size = unsafe { SizeofResource(module.0, resource) };
+    let size = unsafe { SizeofResource(module.handle, resource) };
     if size == 0 {
         return Err(last_error("SizeofResource"));
     }
 
-    let data = unsafe { LoadResource(module.0, resource) };
+    let data = unsafe { LoadResource(module.handle, resource) };
     if data.is_null() {
         return Err(last_error("LoadResource"));
     }
@@ -508,6 +534,7 @@ mod tests {
         fs::copy(std::env::current_exe().expect("current exe"), &path)
             .expect("copy test executable");
 
+        let _guard = crate::dll::lock_resource_io().expect("resource I/O lock");
         let wide = wide_path(&path);
         let update = unsafe { BeginUpdateResourceW(wide.as_ptr(), 0) };
         assert!(!update.is_null(), "BeginUpdateResourceW failed");
@@ -548,6 +575,7 @@ mod tests {
         fs::copy(std::env::current_exe().expect("current exe"), &path)
             .expect("copy test executable");
 
+        let _guard = crate::dll::lock_resource_io().expect("resource I/O lock");
         let wide = wide_path(&path);
         let update = unsafe { BeginUpdateResourceW(wide.as_ptr(), 0) };
         assert!(!update.is_null(), "BeginUpdateResourceW failed");
@@ -595,6 +623,7 @@ mod tests {
         fs::copy(std::env::current_exe().expect("current exe"), &path)
             .expect("copy test executable");
 
+        let _guard = crate::dll::lock_resource_io().expect("resource I/O lock");
         let wide = wide_path(&path);
         let update = unsafe { BeginUpdateResourceW(wide.as_ptr(), 0) };
         assert!(!update.is_null(), "BeginUpdateResourceW failed");
@@ -626,6 +655,7 @@ mod tests {
         fs::copy(std::env::current_exe().expect("current exe"), &path)
             .expect("copy test executable");
 
+        let _guard = crate::dll::lock_resource_io().expect("resource I/O lock");
         let wide = wide_path(&path);
         let update = unsafe { BeginUpdateResourceW(wide.as_ptr(), 0) };
         assert!(!update.is_null(), "BeginUpdateResourceW failed");

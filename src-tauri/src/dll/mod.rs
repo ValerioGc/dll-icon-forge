@@ -10,6 +10,19 @@ mod write;
 #[cfg(target_os = "windows")]
 mod read;
 
+#[cfg(target_os = "windows")]
+static RESOURCE_IO_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+#[cfg(target_os = "windows")]
+type ResourceIoGuard = std::sync::MutexGuard<'static, ()>;
+
+#[cfg(target_os = "windows")]
+pub(super) fn lock_resource_io() -> Result<ResourceIoGuard, crate::icons::IconError> {
+    RESOURCE_IO_LOCK
+        .lock()
+        .map_err(|_| crate::icons::IconError::Internal("resource I/O lock poisoned".to_owned()))
+}
+
 pub(crate) use build::build_dll;
 pub(crate) use template::{copy_template_dll, template_dll_bytes};
 pub(crate) use types::{DllWarning, IconGroupMetadata, LoadedDll};

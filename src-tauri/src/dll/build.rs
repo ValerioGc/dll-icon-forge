@@ -35,8 +35,11 @@ pub(crate) fn build_dll(
 
 #[cfg(target_os = "windows")]
 fn build_dll_windows(options: &BuildOptions, cache: &BuildCache) -> Result<BuildResult, IconError> {
-    use crate::dll::{copy_template_dll, plan_icon_resources, update::apply_resource_plan};
+    use crate::dll::{
+        copy_template_dll, plan_icon_resources, update::apply_resource_plan_unlocked,
+    };
 
+    let _guard = crate::dll::lock_resource_io()?;
     let output_path = Path::new(&options.output_path);
     let cached_icons = cache.get_ordered(&options.icons)?;
     let plan = plan_icon_resources(&cached_icons)?;
@@ -44,7 +47,7 @@ fn build_dll_windows(options: &BuildOptions, cache: &BuildCache) -> Result<Build
 
     let result = (|| {
         copy_template_dll(&temp_path)?;
-        apply_resource_plan(&temp_path, &plan)?;
+        apply_resource_plan_unlocked(&temp_path, &plan)?;
         replace_file(&temp_path, output_path)?;
         Ok(BuildResult {
             output_path: output_path.to_string_lossy().into_owned(),
@@ -313,6 +316,78 @@ mod tests {
         }
 
         #[test]
+        fn roundtrip_generated_dll_preserves_groups_sizes_and_previews() {
+            let dir = tempfile::tempdir().unwrap();
+            let first_output = dir.path().join("first.dll");
+            let second_output = dir.path().join("second.dll");
+            let first_preview_dir = dir.path().join("previews-first");
+            let second_preview_dir = dir.path().join("previews-second");
+            std::fs::create_dir(&first_preview_dir).unwrap();
+            std::fs::create_dir(&second_preview_dir).unwrap();
+
+            let first_cache = cache_with_icons(vec![
+                CachedBuildIcon {
+                    id: "full".to_owned(),
+                    icons: vec![
+                        normalised(IconSize::S16, [255, 0, 0, 255]),
+                        normalised(IconSize::S32, [255, 0, 0, 255]),
+                        normalised(IconSize::S48, [255, 0, 0, 255]),
+                        normalised(IconSize::S256, [255, 0, 0, 255]),
+                    ],
+                },
+                CachedBuildIcon {
+                    id: "partial".to_owned(),
+                    icons: vec![
+                        normalised(IconSize::S16, [0, 255, 0, 255]),
+                        normalised(IconSize::S48, [0, 255, 0, 255]),
+                    ],
+                },
+            ]);
+            let first_options = BuildOptions {
+                output_path: first_output.to_string_lossy().into_owned(),
+                icons: vec![
+                    BuildIconInput {
+                        id: "full".to_owned(),
+                    },
+                    BuildIconInput {
+                        id: "partial".to_owned(),
+                    },
+                ],
+            };
+
+            build_dll(&first_options, &first_cache).unwrap();
+            let first_loaded = load_dll_icons(&first_output, &first_preview_dir).unwrap();
+            assert_loaded_preview_coherent(&first_loaded);
+
+            let second_cache = cache_with_icons(first_loaded.build_icons.clone());
+            let second_options = BuildOptions {
+                output_path: second_output.to_string_lossy().into_owned(),
+                icons: first_loaded
+                    .icons
+                    .iter()
+                    .map(|icon| BuildIconInput {
+                        id: icon.id.clone(),
+                    })
+                    .collect(),
+            };
+
+            build_dll(&second_options, &second_cache).unwrap();
+            let second_loaded = load_dll_icons(&second_output, &second_preview_dir).unwrap();
+            assert_loaded_preview_coherent(&second_loaded);
+
+            assert_eq!(icon_sizes(&first_loaded), icon_sizes(&second_loaded));
+            assert_eq!(first_loaded.icons.len(), 2);
+            assert_eq!(
+                icon_sizes(&first_loaded),
+                vec![
+                    vec![IconSize::S16, IconSize::S32, IconSize::S48, IconSize::S256],
+                    vec![IconSize::S16, IconSize::S48],
+                ]
+            );
+            assert_eq!(second_loaded.build_icons.len(), second_loaded.icons.len());
+        }
+
+        #[test]
         #[ignore = "generates target/manual-check/win-dll-packer-manual-check.dll for manual inspection"]
         fn generate_manual_check_dll() {
             let output_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -367,6 +442,40 @@ mod tests {
                 == vec![IconSize::S16, IconSize::S32, IconSize::S48, IconSize::S256]));
 
             println!("manual check DLL: {}", output.display());
+        }
+
+        fn icon_sizes(loaded: &crate::dll::LoadedDll) -> Vec<Vec<IconSize>> {
+            loaded
+                .icons
+                .iter()
+                .map(|icon| icon.available_sizes.clone())
+                .collect()
+        }
+
+        fn assert_loaded_preview_coherent(loaded: &crate::dll::LoadedDll) {
+            assert!(
+                loaded.warnings.is_empty(),
+                "warnings: {:?}",
+                loaded.warnings
+            );
+            assert_eq!(loaded.icons.len(), loaded.build_icons.len());
+
+            for icon in &loaded.icons {
+                let preview_path = icon.preview_path.as_ref().expect("preview path");
+                assert!(
+                    Path::new(preview_path).exists(),
+                    "preview missing: {preview_path}"
+                );
+                let preview = image::open(preview_path).unwrap();
+                let max_size = icon
+                    .available_sizes
+                    .iter()
+                    .map(|size| u32::from(*size))
+                    .max()
+                    .expect("available sizes");
+                assert_eq!(preview.width(), max_size);
+                assert_eq!(preview.height(), max_size);
+            }
         }
     }
 }
