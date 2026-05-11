@@ -26,7 +26,7 @@ describe('IconGridView', () => {
       },
     });
 
-    const indices = wrapper.findAll('.icon_grid_view__index').map((el) => el.text());
+    const indices = wrapper.findAll('.icon_grid_view_index').map((el) => el.text());
     expect(indices).toEqual(['11', '12']);
   });
 
@@ -37,10 +37,10 @@ describe('IconGridView', () => {
       },
     });
 
-    await wrapper.get('.icon_grid_view__select').trigger('click', { ctrlKey: true });
+    await wrapper.get('.icon_grid_view_select').trigger('click', { ctrlKey: true });
     expect(wrapper.emitted('select')?.[0]).toEqual(['a', true]);
 
-    await wrapper.get('.icon_grid_view__delete').trigger('click');
+    await wrapper.get('.icon_grid_view_delete').trigger('click');
     expect(wrapper.emitted('delete')?.[0]).toEqual(['a']);
   });
 
@@ -52,7 +52,7 @@ describe('IconGridView', () => {
       },
     });
 
-    await wrapper.get('.icon_grid_view__select').trigger('click');
+    await wrapper.get('.icon_grid_view_select').trigger('click');
     expect(wrapper.emitted('select')).toBeUndefined();
   });
 
@@ -64,7 +64,7 @@ describe('IconGridView', () => {
       },
     });
 
-    const items = wrapper.findAll('.icon_grid_view__item');
+    const items = wrapper.findAll('.icon_grid_view_item');
     expect(items[0].classes()).not.toContain('is-selected');
     expect(items[1].classes()).toContain('is-selected');
   });

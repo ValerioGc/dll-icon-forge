@@ -20,7 +20,7 @@ describe('IconCollectionView', () => {
     expect(wrapper.findComponent({ name: 'IconListView' }).exists()).toBe(false);
     expect(wrapper.findComponent({ name: 'IconGridView' }).exists()).toBe(false);
     expect(wrapper.get('select').attributes('disabled')).toBeDefined();
-    wrapper.findAll('.icon_collection_view__view_button').forEach((button) => {
+    wrapper.findAll('.icon_collection_view_view_button').forEach((button) => {
       expect(button.attributes('disabled')).toBeDefined();
     });
   });
@@ -39,15 +39,15 @@ describe('IconCollectionView', () => {
     expect(wrapper.get('select').attributes('disabled')).toBeUndefined();
     expect(wrapper.findComponent({ name: 'IconGridView' }).exists()).toBe(true);
     expect(wrapper.findComponent({ name: 'IconListView' }).exists()).toBe(false);
-    expect(wrapper.get('.icon_collection_view__view_button[title="Lista"]').attributes('aria-label')).toBe('Lista');
-    expect(wrapper.get('.icon_collection_view__view_button[title="Lista"]').attributes('disabled')).toBeUndefined();
-    expect(wrapper.find('.icon_collection_view__view_button[title="Lista"] img').exists()).toBe(true);
-    expect(wrapper.get('.icon_collection_view__view_button[title="Griglia"]').attributes('aria-label')).toBe('Griglia');
-    expect(wrapper.get('.icon_collection_view__view_button[title="Griglia"]').attributes('disabled')).toBeUndefined();
-    expect(wrapper.find('.icon_collection_view__view_button[title="Griglia"] img').exists()).toBe(true);
+    expect(wrapper.get('.icon_collection_view_view_button[title="Lista"]').attributes('aria-label')).toBe('Lista');
+    expect(wrapper.get('.icon_collection_view_view_button[title="Lista"]').attributes('disabled')).toBeUndefined();
+    expect(wrapper.find('.icon_collection_view_view_button[title="Lista"] img').exists()).toBe(true);
+    expect(wrapper.get('.icon_collection_view_view_button[title="Griglia"]').attributes('aria-label')).toBe('Griglia');
+    expect(wrapper.get('.icon_collection_view_view_button[title="Griglia"]').attributes('disabled')).toBeUndefined();
+    expect(wrapper.find('.icon_collection_view_view_button[title="Griglia"] img').exists()).toBe(true);
 
     const listButton = wrapper
-      .findAll('.icon_collection_view__view_button')
+      .findAll('.icon_collection_view_view_button')
       .find((b) => b.attributes('title') === 'Lista');
     await listButton?.trigger('click');
     await vi.dynamicImportSettled();

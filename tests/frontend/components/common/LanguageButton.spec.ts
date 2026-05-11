@@ -19,8 +19,8 @@ describe('LanguageButton', () => {
     await vi.dynamicImportSettled();
 
     expect(wrapper.text()).toContain('IT');
-    expect(wrapper.get('.language_selector__trigger img').attributes('alt')).toBe('IT');
-    expect(wrapper.find('.language_selector__dropdown').exists()).toBe(false);
+    expect(wrapper.get('.language_selector_trigger img').attributes('alt')).toBe('IT');
+    expect(wrapper.find('.language_selector_dropdown').exists()).toBe(false);
   });
 
   it('opens the dropdown on trigger click and lists all supported languages', async () => {
@@ -31,8 +31,8 @@ describe('LanguageButton', () => {
     await wrapper.get('button').trigger('click');
     await vi.dynamicImportSettled();
 
-    expect(wrapper.find('.language_selector__dropdown').exists()).toBe(true);
-    expect(wrapper.findAll('.language_selector__option')).toHaveLength(5);
+    expect(wrapper.find('.language_selector_dropdown').exists()).toBe(true);
+    expect(wrapper.findAll('.language_selector_option')).toHaveLength(5);
   });
 
   it('does not open the dropdown on hover', async () => {
@@ -43,8 +43,8 @@ describe('LanguageButton', () => {
     await wrapper.get('.language_selector').trigger('mouseenter');
     await vi.dynamicImportSettled();
 
-    expect(wrapper.find('.language_selector__dropdown').exists()).toBe(false);
-    expect(wrapper.get('.language_selector__trigger').attributes('aria-expanded')).toBe('false');
+    expect(wrapper.find('.language_selector_dropdown').exists()).toBe(false);
+    expect(wrapper.get('.language_selector_trigger').attributes('aria-expanded')).toBe('false');
   });
 
   it('selects a language and closes the dropdown', async () => {
@@ -57,13 +57,13 @@ describe('LanguageButton', () => {
     await vi.dynamicImportSettled();
 
     const enOption = wrapper
-      .findAll('.language_selector__option')
+      .findAll('.language_selector_option')
       .find((o) => o.text().includes('eng'))!;
 
     await enOption.trigger('click');
 
     expect(settings.language).toBe('en');
-    expect(wrapper.get('.language_selector__trigger').attributes('aria-expanded')).toBe('false');
+    expect(wrapper.get('.language_selector_trigger').attributes('aria-expanded')).toBe('false');
     expect(wrapper.text()).toContain('EN');
   });
 
@@ -75,7 +75,7 @@ describe('LanguageButton', () => {
     await wrapper.get('button').trigger('click');
     await vi.dynamicImportSettled();
 
-    const activeOptions = wrapper.findAll('.language_selector__option--active');
+    const activeOptions = wrapper.findAll('.language_selector_option--active');
 
     expect(activeOptions).toHaveLength(1);
     expect(activeOptions[0].text()).toContain('ita');
@@ -89,10 +89,10 @@ describe('LanguageButton', () => {
 
     await wrapper.get('button').trigger('click');
     await vi.dynamicImportSettled();
-    expect(wrapper.find('.language_selector__dropdown').exists()).toBe(true);
+    expect(wrapper.find('.language_selector_dropdown').exists()).toBe(true);
 
     await wrapper.get('button').trigger('click');
-    expect(wrapper.get('.language_selector__trigger').attributes('aria-expanded')).toBe('false');
+    expect(wrapper.get('.language_selector_trigger').attributes('aria-expanded')).toBe('false');
   });
 
   it('closes the dropdown when the Escape key is pressed', async () => {
@@ -102,12 +102,12 @@ describe('LanguageButton', () => {
 
     await wrapper.get('button').trigger('click');
     await vi.dynamicImportSettled();
-    expect(wrapper.find('.language_selector__dropdown').exists()).toBe(true);
+    expect(wrapper.find('.language_selector_dropdown').exists()).toBe(true);
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.get('.language_selector__trigger').attributes('aria-expanded')).toBe('false');
+    expect(wrapper.get('.language_selector_trigger').attributes('aria-expanded')).toBe('false');
   });
 
   it('closes the dropdown on an outside click', async () => {
@@ -117,12 +117,12 @@ describe('LanguageButton', () => {
 
     await wrapper.get('button').trigger('click');
     await vi.dynamicImportSettled();
-    expect(wrapper.find('.language_selector__dropdown').exists()).toBe(true);
+    expect(wrapper.find('.language_selector_dropdown').exists()).toBe(true);
 
     document.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await wrapper.vm.$nextTick();
 
-    expect(wrapper.get('.language_selector__trigger').attributes('aria-expanded')).toBe('false');
+    expect(wrapper.get('.language_selector_trigger').attributes('aria-expanded')).toBe('false');
   });
 
   it('removes document event listeners on unmount without error', async () => {
