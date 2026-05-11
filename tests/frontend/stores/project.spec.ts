@@ -230,20 +230,22 @@ describe('project store', () => {
     const { notify } = await import('@/services/notifications');
     const project = setupProjectStore();
 
-    await project.submitProject();
+    await expect(project.submitProject()).resolves.toBe(false);
     expect(project.buildState).toBe('error');
     expect(project.lastError).toContain('Aggiungi');
+    expect(project.lastNotice).toBeNull();
     expect(notify).toHaveBeenLastCalledWith('Operazione non completata', expect.stringContaining('Aggiungi'));
 
     project.addFiles([new File(['txt'], 'bad.txt', { type: 'text/plain' })]);
-    await project.submitProject();
+    await expect(project.submitProject()).resolves.toBe(false);
     expect(project.buildState).toBe('error');
     expect(project.lastError).toContain('non validi');
+    expect(project.lastNotice).toBeNull();
     expect(notify).toHaveBeenLastCalledWith('Operazione non completata', expect.stringContaining('non validi'));
 
     project.clearIcons();
     project.addFiles([makePng('ok.png')]);
-    await project.submitProject();
+    await expect(project.submitProject()).resolves.toBe(true);
     expect(project.buildState).toBe('success');
     expect(project.outputPath).toBe('C:\\out\\icons.dll');
     expect(tauriProjectMocks.buildDll).toHaveBeenLastCalledWith({
@@ -251,6 +253,10 @@ describe('project store', () => {
       icons: [{ id: project.icons[0].id }],
     });
     expect(project.lastError).toBeNull();
+    expect(project.lastNotice).toMatchObject({
+      type: 'success',
+      title: 'Creazione salvata',
+    });
     expect(notify).toHaveBeenLastCalledWith('Creazione salvata', expect.stringContaining('DLL'));
   });
 
@@ -370,7 +376,7 @@ describe('project store', () => {
 
     project.addFiles([makePng('c.png')]);
     expect(project.dirty).toBe(true);
-    await project.submitProject();
+    await expect(project.submitProject()).resolves.toBe(true);
     expect(project.buildState).toBe('success');
     expect(project.dirty).toBe(false);
   });
@@ -381,7 +387,7 @@ describe('project store', () => {
     tauriProjectMocks.chooseOutputDll.mockResolvedValueOnce(null);
 
     project.addFiles([makePng('a.png')]);
-    await project.submitProject();
+    await expect(project.submitProject()).resolves.toBe(false);
 
     expect(project.buildState).toBe('idle');
     expect(project.dirty).toBe(true);
@@ -396,7 +402,7 @@ describe('project store', () => {
     tauriProjectMocks.buildDll.mockRejectedValueOnce({ message: 'output non scrivibile' });
 
     project.addFiles([makePng('a.png')]);
-    await project.submitProject();
+    await expect(project.submitProject()).resolves.toBe(false);
 
     expect(project.buildState).toBe('error');
     expect(project.dirty).toBe(true);
@@ -412,7 +418,7 @@ describe('project store', () => {
     project.$patch({ dirty: false });
 
     project.addFiles([new File(['txt'], 'bad2.txt', { type: 'text/plain' })]);
-    await project.submitProject();
+    await expect(project.submitProject()).resolves.toBe(false);
     expect(project.buildState).toBe('error');
     expect(project.dirty).toBe(true);
   });
@@ -422,16 +428,20 @@ describe('project store', () => {
     const project = setupProjectStore();
 
     project.setMode('edit');
-    await project.submitProject();
+    await expect(project.submitProject()).resolves.toBe(false);
     expect(project.buildState).toBe('error');
     expect(notify).toHaveBeenLastCalledWith('Operazione non completata', expect.stringContaining('file esistente'));
 
     project.setEditSourceFile(new File(['dll'], 'existing.dll'));
     project.addFiles([makePng('ok.png')]);
-    await project.submitProject();
+    await expect(project.submitProject()).resolves.toBe(true);
 
     expect(project.buildState).toBe('success');
     expect(tauriProjectMocks.chooseOutputDll).toHaveBeenLastCalledWith('existing-packed.dll');
+    expect(project.lastNotice).toMatchObject({
+      type: 'success',
+      title: 'Modifica salvata',
+    });
     expect(notify).toHaveBeenLastCalledWith('Modifica salvata', expect.stringContaining('confermate'));
   });
 });

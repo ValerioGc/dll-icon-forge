@@ -117,6 +117,39 @@ describe('ItemView', () => {
     expect(buildBtn()?.attributes('disabled')).toBeUndefined();
   });
 
+  it('emits home after a successful create submit', async () => {
+    const wrapper = mountComponent(ItemView, { props: { mode: 'create' } });
+    const project = useProjectStore();
+    const submitSpy = vi.spyOn(project, 'submitProject').mockResolvedValueOnce(true);
+
+    project.addFiles([new File(['png'], 'icon.png', { type: 'image/png' })]);
+    await wrapper.vm.$nextTick();
+
+    await wrapper.findAll('button').find((button) => button.text().includes('Build'))?.trigger('click');
+
+    expect(submitSpy).toHaveBeenCalledOnce();
+    expect(wrapper.emitted('home')).toHaveLength(1);
+  });
+
+  it('shows the success notice in edit mode without leaving the view', async () => {
+    const wrapper = mountComponent(ItemView, { props: { mode: 'edit' } });
+    const project = useProjectStore();
+
+    project.setEditSourceFile(new File(['dll'], 'existing.dll'));
+    project.setLastNotice({
+      type: 'success',
+      title: 'Modifica salvata',
+      body: 'Le modifiche sono state confermate e salvate nella DLL.',
+    });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('.item_view_notice').exists()).toBe(true);
+    expect(wrapper.text()).toContain('Modifica salvata');
+
+    await wrapper.get('.item_view_notice button').trigger('click');
+    expect(project.lastNotice).toBeNull();
+  });
+
   it('shows confirm dialog on delete click and removes icons only after confirm', async () => {
     const wrapper = mountComponent(ItemView, { props: { mode: 'create' } });
     const project = useProjectStore();

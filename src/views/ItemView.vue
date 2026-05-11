@@ -104,6 +104,13 @@ function handleConfirmDelete(): void {
     project.removeSelectedIcons();
 }
 
+async function handleSubmit(): Promise<void> {
+    const submitted = await project.submitProject();
+    if (submitted && props.mode === 'create') {
+        emit('home');
+    }
+}
+
 </script>
 
 <template>
@@ -162,6 +169,16 @@ function handleConfirmDelete(): void {
             </button>
         </div>
 
+        <div v-if="project.lastNotice && props.mode === 'edit'" class="item_view_notice" role="status">
+            <div>
+                <strong>{{ project.lastNotice.title }}</strong>
+                <span>{{ project.lastNotice.body }}</span>
+            </div>
+            <button type="button" :aria-label="t('common.dismiss')" @click="project.setLastNotice(null)">
+                x
+            </button>
+        </div>
+
         <footer v-if="!isEditLocked" class="item_view_footer">
             <p>{{ itemCountLabel }}</p>
 
@@ -169,7 +186,7 @@ function handleConfirmDelete(): void {
                 class="item_button item_button--primary"
                 :disabled="isSubmitDisabled"
                 :aria-disabled="isSubmitDisabled"
-                @click.prevent="project.submitProject"
+                @click.prevent="handleSubmit"
             >
                 <img class="ui_icon item_button_icon" src="@/assets/icons/actions/save.svg" alt="" />
                 {{ t('common.submit') }}
@@ -298,6 +315,46 @@ function handleConfirmDelete(): void {
 
             &:hover {
                 opacity: .7;
+            }
+        }
+    }
+
+    &_notice {
+        @extend %fx_between_center;
+        gap: .75rem;
+        padding: .7rem 1rem;
+        border: 1px solid var(--color-accent);
+        border-radius: .5rem;
+        background: var(--color-accent-soft);
+        color: var(--color-text);
+        font-size: .9rem;
+        line-height: 1.45;
+
+        div {
+            @extend %grid_stack;
+            gap: .2rem;
+        }
+
+        strong {
+            color: var(--color-heading);
+        }
+
+        span {
+            color: var(--color-muted);
+        }
+
+        button {
+            border: 0;
+            background: transparent;
+            color: var(--color-muted);
+            cursor: pointer;
+            font-weight: 800;
+            flex-shrink: 0;
+
+            &:hover,
+            &:focus-visible {
+                color: var(--color-text);
+                outline: none;
             }
         }
     }

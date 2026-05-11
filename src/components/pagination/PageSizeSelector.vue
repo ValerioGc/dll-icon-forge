@@ -12,6 +12,8 @@ const props = withDefaults(defineProps<{
     disabled: false,
 });
 
+const selectId = 'page-size-selector';
+
 const emit = defineEmits<{
     (e: 'change', value: PageSize): void;
 }>();
@@ -28,10 +30,12 @@ function handleChange(event: Event): void {
 </script>
 
 <template>
-    <label class="page_size_selector">
+    <label class="page_size_selector" :for="selectId">
         <span class="page_size_selector_label">{{ t('pagination.pageSize') }}</span>
         
         <select class="page_size_selector_select"
+            :id="selectId"
+            name="pageSize"
             :value="props.value"
             :disabled="props.disabled"
             @change="handleChange"

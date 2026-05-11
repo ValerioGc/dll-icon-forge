@@ -3,6 +3,8 @@
 import { ref } from 'vue';
 import uploadIcon from '@/assets/icons/actions/upload.svg';
 
+let nextInputId = 0;
+
 const props = withDefaults(defineProps<{
     title: string;
     description: string;
@@ -26,6 +28,8 @@ const emit = defineEmits<{
 
 const input = ref<HTMLInputElement | null>(null);
 const isDragging = ref(false);
+const inputId = `file-drop-zone-input-${++nextInputId}`;
+const inputName = `${inputId}-file`;
 
 function openFilePicker(): void {
     if (props.disabled)
@@ -105,6 +109,8 @@ function handleDrop(event: DragEvent): void {
         </button>
 
         <input ref="input"
+            :id="inputId"
+            :name="inputName"
             type="file"
             class="file_drop_zone_input"
             :accept="accept"

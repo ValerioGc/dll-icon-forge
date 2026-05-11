@@ -252,6 +252,7 @@ export const useProjectStore = defineStore('project', () => {
 
     icons.value.push(...newIcons);
     dirty.value = true;
+    lastNotice.value = null;
 
     const unsupportedCount = fileArray.filter((f) => !isSupportedFile(f)).length;
     if (unsupportedCount > 0) {
@@ -332,6 +333,7 @@ export const useProjectStore = defineStore('project', () => {
     cleanupPreview(removed);
     selectedIconIds.value = selectedIconIds.value.filter((existing) => existing !== id);
     dirty.value = true;
+    lastNotice.value = null;
     clampPage();
   }
 
@@ -349,6 +351,7 @@ export const useProjectStore = defineStore('project', () => {
       return true;
     });
     dirty.value = true;
+    lastNotice.value = null;
     selectedIconIds.value = [];
     clampPage();
   }
