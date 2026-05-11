@@ -170,7 +170,7 @@ function handleDrop(event: DragEvent): void {
         &--primary {
             border-color: var(--color-accent);
             background: var(--color-accent);
-            color: #ffffff;
+            color: var(--color-on-accent);
             
             &:hover:not(:disabled),
             &:focus-visible:not(:disabled) {
@@ -185,7 +185,7 @@ function handleDrop(event: DragEvent): void {
 }
 
 .invert {
-    filter: invert(1);
+    filter: var(--icon-on-accent-filter);
 }
 
 @media (max-width: 760px) {

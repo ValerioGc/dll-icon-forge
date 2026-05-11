@@ -1,4 +1,5 @@
 <script setup lang="ts">
+
 import itFlag from '@/assets/flags/it.svg';
 import enFlag from '@/assets/flags/en.svg';
 import frFlag from '@/assets/flags/fr.svg';
@@ -41,19 +42,17 @@ const LANGUAGE_TITLES: Record<AppLocale, string> = {
     es: 'Espanol',
     de: 'Deutsch',
 };
+
 </script>
 
 <template>
-    <ul class="language_selector__dropdown">
-        <li
-            v-for="locale in SUPPORTED_LOCALES"
-            :key="locale"
-            class="language_selector__option_item"
+    <ul class="language_selector_dropdown">
+        <li v-for="locale in SUPPORTED_LOCALES" :key="locale"
+            class="language_selector_option_item"
         >
-            <button
-                type="button"
-                class="language_selector__option"
-                :class="{ 'language_selector__option--active': selectedLocale === locale }"
+            <button type="button"
+                class="language_selector_option"
+                :class="{ 'language_selector_option--active': selectedLocale === locale }"
                 :aria-label="LANGUAGE_TITLES[locale]"
                 :title="LANGUAGE_TITLES[locale]"
                 @click="emit('select', locale)"
@@ -66,8 +65,9 @@ const LANGUAGE_TITLES: Record<AppLocale, string> = {
 </template>
 
 <style lang="scss" scoped>
+
 .language_selector {
-    &__dropdown {
+    &_dropdown {
         min-width: 5.5rem;
         padding: .3rem;
         margin: 0;
@@ -79,7 +79,7 @@ const LANGUAGE_TITLES: Record<AppLocale, string> = {
         z-index: 50;
     }
 
-    &__option {
+    &_option {
         @extend %fx_start_center;
         width: 100%;
         gap: .5rem;
@@ -107,4 +107,5 @@ const LANGUAGE_TITLES: Record<AppLocale, string> = {
         }
     }
 }
+
 </style>

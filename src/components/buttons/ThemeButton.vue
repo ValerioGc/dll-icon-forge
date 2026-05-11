@@ -15,8 +15,11 @@ const themeImg = computed(() => {
 </script>
 
 <template>
-    <button type="button" class="page_header_button action_button" :aria-label="$t('common.toggleTheme')"
-        @click.prevent="settings.toggleTheme">
+    <button type="button" 
+            class="page_header_button action_button" 
+            :aria-label="$t('common.toggleTheme')"
+            @click.prevent="settings.toggleTheme"
+    >
         <img class="ui_icon themed_icon" :src="themeImg" alt="" />
     </button>
 </template>

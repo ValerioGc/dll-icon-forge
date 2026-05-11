@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import logoUrl from '@/assets/logo.png';
+import logoUrl from '@/assets/logo.svg';
 import LanguageButton from '@/components/buttons/LanguageButton.vue';
 import ThemeButton from '@/components/buttons/ThemeButton.vue';
 
@@ -42,15 +42,13 @@ const emit = defineEmits<{
             padding: 0;
             border: 0;
             border-radius: .6rem;
-            background: transparent;
             cursor: pointer;
         }
 
         &_logo {
-            width: 2.5rem;
-            height: 2.5rem;
+            width: 2.75rem;
+            height: 2.75rem;
             border-radius: .5rem;
-            background: var(--color-placeholder);
         }
 
         &_actions {

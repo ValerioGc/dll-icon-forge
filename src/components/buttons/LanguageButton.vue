@@ -1,8 +1,9 @@
 <script setup lang="ts">
+
 import { computed, defineAsyncComponent, ref, onMounted, onBeforeUnmount, watch } from 'vue';
-import chevronDown from '@/assets/icons/navigation/chevron-down.svg';
-import { useSettingsStore } from '@/stores/settings';
 import type { AppLocale } from '@/i18n';
+import { useSettingsStore } from '@/stores/settings';
+import chevronDown from '@/assets/icons/navigation/chevron-down.svg';
 
 const settings = useSettingsStore();
 const LanguageDropdown = defineAsyncComponent(() => import('@/components/buttons/LanguageDropdown.vue'));
@@ -32,15 +33,9 @@ function selectLocale(locale: AppLocale): void {
 
 function toggleClickOpen(): void {
     clickOpen.value = !clickOpen.value;
-    if (clickOpen.value) {
+    if (clickOpen.value) 
         hasOpened.value = true;
-    }
-}
-
-function handleMouseEnter(): void {
-    hoverOpen.value = true;
-    hasOpened.value = true;
-}
+}   
 
 watch(
     () => settings.language,
@@ -78,50 +73,42 @@ onBeforeUnmount(() => {
     document.removeEventListener('click', handleOutsideClick);
     document.removeEventListener('keydown', handleKeyDown);
 });
+
 </script>
 
 <template>
-    <div
-        class="language_selector"
-        ref="root"
-        @mouseenter="handleMouseEnter"
-        @mouseleave="hoverOpen = false"
-    >
-        <button
-            type="button"
-            class="language_selector__trigger action_button"
+    <div class="language_selector" ref="root">
+        <button type="button"
+            class="language_selector_trigger action_button"
             :aria-label="$t('common.toggleLocale')"
             :aria-expanded="isOpen"
             @click="toggleClickOpen"
         >
             <img v-if="currentFlag" class="ui_icon" :src="currentFlag" :alt="settings.language.toUpperCase()" />
             <span>{{ settings.language.toUpperCase() }}</span>
-            <img
-                class="ui_icon themed_icon language_selector__chevron"
-                :class="{ 'language_selector__chevron--open': isOpen }"
+            <img class="ui_icon themed_icon language_selector_chevron"
+                :class="{ 'language_selector_chevron--open': isOpen }"
                 :src="chevronDown"
                 alt=""
             />
         </button>
 
-        <div v-if="hasOpened" v-show="isOpen" class="language_selector__dropdown_shell">
-            <LanguageDropdown
-                :selected-locale="settings.language"
-                @select="selectLocale"
-            />
+        <div v-if="hasOpened" v-show="isOpen" class="language_selector_dropdown_shell">
+            <LanguageDropdown :selected-locale="settings.language" @select="selectLocale" />
         </div>
     </div>
 </template>
 
 <style lang="scss" scoped>
+
 .language_selector {
     position: relative;
 
-    &__trigger {
+    &_trigger {
         @extend %header_control;
     }
 
-    &__chevron {
+    &_chevron {
         width: 1rem;
         height: 1rem;
         transition: transform .15s ease;
@@ -131,11 +118,12 @@ onBeforeUnmount(() => {
         }
     }
 
-    &__dropdown_shell {
+    &_dropdown_shell {
         position: absolute;
         top: calc(100% + .4rem);
         right: 0;
         z-index: 50;
     }
 }
+
 </style>

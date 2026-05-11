@@ -1,7 +1,8 @@
 <script lang="ts" setup>
+
 import { useI18n } from 'vue-i18n';
 import { useProjectStore } from '@/stores/project';
-import type { ProjectMode } from '@/types/Project';
+import type { ProjectMode } from '@/types/modes';
 
 const { t } = useI18n();
 const project = useProjectStore();
@@ -10,46 +11,70 @@ const emit = defineEmits<{
     (e: 'selectMode', newMode: ProjectMode): void;
 }>();
 
-</script>
+interface AppMode {
+    id: ProjectMode;
+    title: string;
+    hint: string;
+    icon: string;
+}
 
+import plus from '@/assets/icons/actions/plus.svg';
+import edit from '@/assets/icons/actions/edit.svg';
+
+const modes: AppMode[] =
+[
+    {
+        id: 'create',
+        title: t('common.createMode'),
+        hint: t('homeViewCreateHint'),
+        icon: plus,
+    },
+    {
+        id: 'edit',
+        title: t('common.editMode'),
+        hint: t('homeViewEditHint'),
+        icon: edit,
+    },
+];
+
+</script>
 
 <template>
     <section class="home_view">
+
         <div class="home_view_intro">
             <h1>{{ t('homeView') }}</h1>
             <p>{{ t('homeViewDesc') }}</p>
         </div>
 
-        <div
-            v-if="project.lastNotice"
+        <!-- Notice area -->
+        <div v-if="project.lastNotice"
             class="home_view_notice"
             :class="`home_view_notice--${project.lastNotice.type}`"
-            role="status"
         >
-            <div>
+            <output class="home_view_notice_content">
                 <strong>{{ project.lastNotice.title }}</strong>
                 <span>{{ project.lastNotice.body }}</span>
-            </div>
+            </output>
+            
             <button type="button" :aria-label="t('common.dismiss')" @click="project.setLastNotice(null)">
-                x
+                <img class="ui_icon themed_icon" src="@/assets/icons/actions/close.svg" alt="" aria-hidden="true">
             </button>
         </div>
 
         <div class="home_view_mode" aria-label="Project mode">
             <p>{{ t('homeViewChooseMode') }}</p>
-            <button type="button" class="mode_button surface" @click.prevent="emit('selectMode', 'create')">
+
+            <!-- App modes buttons -->
+            <button v-for="mode in modes" :key="mode.id"
+                    type="button" class="mode_button surface" 
+                    @click.prevent="emit('selectMode', mode.id)" 
+            >
                 <span class="mode_button_title">
-                    <img class="ui_icon mode_button_icon themed_icon" src="@/assets/icons/actions/plus.svg" alt="" aria-hidden="true">
-                    <span>{{ t('common.createMode') }}</span>
+                    <img class="ui_icon mode_button_icon themed_icon" :src="mode.icon" alt="" aria-hidden="true" />
+                    <span>{{ mode.title }}</span>
                 </span>
-                <small>{{ t('homeViewCreateHint') }}</small>
-            </button>
-            <button type="button" class="mode_button surface" @click.prevent="emit('selectMode', 'edit')">
-                <span class="mode_button_title">
-                    <img class="ui_icon mode_button_icon themed_icon" src="@/assets/icons/actions/edit.svg" alt="" aria-hidden="true">
-                    <span>{{ t('common.editMode') }}</span>
-                </span>
-                <small>{{ t('homeViewEditHint') }}</small>
+                <small>{{ mode.hint }}</small>
             </button>
         </div>
     </section>
@@ -58,24 +83,27 @@ const emit = defineEmits<{
 <style lang="scss" scoped>
 
 .home_view {
+    overflow-y: hidden;
     width: min(920px, 100%);
     @extend %grid_stack;
     gap: 2rem;
+
+    p,h1 {
+        margin: 0;
+    }
     
     &_intro {
         @extend %grid_stack;
         gap: .75rem;
 
         h1 {
-            margin: 0;
             font-size: clamp(2rem, 4vw, 3.75rem);
-            line-height: 1;
+            line-height: 1.2;
             color: var(--color-heading);
         }
 
         p {
             max-width: 660px;
-            margin: 0;
             font-size: 1.05rem;
             line-height: 1.6;
             color: var(--color-muted);
@@ -89,9 +117,9 @@ const emit = defineEmits<{
 
         > p {
             grid-column: 1 / -1;
-            margin: 0;
             color: var(--color-text);
             font-weight: 700;
+            margin-bottom: .75rem;
         }
     }
 }
@@ -105,7 +133,7 @@ const emit = defineEmits<{
     background: var(--color-accent-soft);
     color: var(--color-text);
 
-    div {
+    &_content {
         @extend %grid_stack;
         gap: .2rem;
     }
@@ -135,7 +163,7 @@ const emit = defineEmits<{
 }
 
 .mode_button {
-    min-height: 9rem;
+    min-height: 7.5rem;
     @extend %grid_stack;
     align-content: space-between;
     gap: .75rem;
@@ -160,13 +188,14 @@ const emit = defineEmits<{
     }
 
     &_title {
-        font-size: 1.2rem;
+        font-size: 1.5rem;
         font-weight: 800;
     }
-
+    
     &_icon {
-        width: 1.75rem;
-        height: 1.75rem;
+        width: 1.7rem;
+        height: 1.7rem;
+        margin-right: .5rem;
     }
 }
 

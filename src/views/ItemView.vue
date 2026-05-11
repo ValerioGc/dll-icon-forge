@@ -10,10 +10,12 @@ import FileDropZone from '@/components/upload/FileDropZone.vue';
 
 import { chooseExistingDll, chooseIconSources, ipcErrorMessage } from '@/services/tauriProject';
 import { useProjectStore } from '@/stores/project';
-import type { ProjectMode } from '@/types/Project';
+import type { ProjectMode } from '@/types/modes';
 
 const ConfirmDialog = defineAsyncComponent(() => import('@/components/dialogs/ConfirmDialog.vue'));
 
+
+// CHECK
 defineOptions({
     name: 'ItemView',
 });
@@ -70,7 +72,8 @@ const deleteConfirmMessage = computed(() => {
 
 function handleEditSourceFiles(files: File[]): void {
     const [file] = files;
-    if (file) project.setEditSourceFile(file);
+    if (file) 
+        project.setEditSourceFile(file);
 }
 
 function handleIconFiles(files: File[]): void {
@@ -80,7 +83,8 @@ function handleIconFiles(files: File[]): void {
 async function handleChooseEditSource(): Promise<void> {
     try {
         const path = await chooseExistingDll();
-        if (path) await project.loadExistingDllPath(path);
+        if (path) 
+            await project.loadExistingDllPath(path);
     } catch (error) {
         project.setLastError(ipcErrorMessage(error));
     }
@@ -106,17 +110,25 @@ function handleConfirmDelete(): void {
 
 async function handleSubmit(): Promise<void> {
     const submitted = await project.submitProject();
-    if (submitted && props.mode === 'create') {
+    if (submitted && props.mode === 'create')
         emit('home');
-    }
 }
 
 </script>
 
 <template>
     <div class="item_view">
+
+        <ConfirmDialog v-if="showConfirmDelete" 
+                    :title="t('confirm.deleteTitle')" 
+                    :message="deleteConfirmMessage"
+                    @confirm="handleConfirmDelete" 
+                    @cancel="showConfirmDelete = false" 
+        />
+        
+        <!-- Back button -->
         <button type="button" class="back_button" @click.prevent="emit('home')">
-            <img class="ui_icon back_button_icon themed_icon" src="@/assets/icons/navigation/back.svg" alt="" />
+            <img class="ui_icon back_button_icon" src="@/assets/icons/navigation/back.svg" alt="" />
             {{ t('common.backHome') }}
         </button>
 
@@ -125,21 +137,24 @@ async function handleSubmit(): Promise<void> {
             <p>{{ description }}</p>
         </header>
 
+        <!-- Existing file drop zones -->
         <FileDropZone v-if="props.mode === 'edit'"
             :title="t('editSourceTitle')"
             :description="project.sourceLabel ?? t('editSourceEmpty')"
             :button-text="t('common.chooseExistingFile')"
             accept=".dll"
+            primary
             native-picker
             @files="handleEditSourceFiles"
             @browse="handleChooseEditSource"
         />
 
+        <!-- Icon drop zone upload -->
         <FileDropZone v-if="!isEditLocked"
             :title="t('dropZoneTitle')"
             :description="t('dropZoneDesc')"
             :button-text="t('common.chooseFile')"
-            accept=".ico,.png,.jpg,.jpeg,.bmp,image/png,image/jpeg,image/bmp,image/x-icon"
+            accept=".ico,.png,image/png,image/x-icon"
             multiple
             primary
             native-picker
@@ -147,6 +162,7 @@ async function handleSubmit(): Promise<void> {
             @browse="handleChooseIconSources"
         />
 
+        <!-- Item view content -->
         <div v-if="!isEditLocked" class="item_view_content">
             <MenuTab
                 :selected-count="selectedCount"
@@ -155,9 +171,10 @@ async function handleSubmit(): Promise<void> {
             />
 
             <div class="item_view_collection">
+
                 <IconCollectionView />
                 <div v-if="isBuilding" class="item_view_collection_overlay">
-                    <span class="item_view_collection_spinner" aria-hidden="true" />
+                    <span class="item_view_collection_spinner" aria-hidden="true"></span>
                 </div>
             </div>
         </div>
@@ -165,17 +182,17 @@ async function handleSubmit(): Promise<void> {
         <div v-if="lastError" class="item_view_error">
             <span>{{ lastError }}</span>
             <button type="button" class="item_view_error_close" :aria-label="t('common.dismiss')" @click="project.setLastError(null)">
-                ✕
+                <img class="ui_icon themed_icon" src="@/assets/icons/actions/close.svg" alt="" aria-hidden="true" />
             </button>
         </div>
 
-        <div v-if="project.lastNotice && props.mode === 'edit'" class="item_view_notice" role="status">
-            <div>
+        <div v-if="project.lastNotice && props.mode === 'edit'" class="item_view_notice">
+            <output class="item_view_notice_content">
                 <strong>{{ project.lastNotice.title }}</strong>
                 <span>{{ project.lastNotice.body }}</span>
-            </div>
+            </output>
             <button type="button" :aria-label="t('common.dismiss')" @click="project.setLastNotice(null)">
-                x
+                <img class="ui_icon themed_icon" src="@/assets/icons/actions/close.svg" alt="" aria-hidden="true" />
             </button>
         </div>
 
@@ -192,14 +209,6 @@ async function handleSubmit(): Promise<void> {
                 {{ t('common.submit') }}
             </button>
         </footer>
-
-        <ConfirmDialog
-            v-if="showConfirmDelete"
-            :title="t('confirm.deleteTitle')"
-            :message="deleteConfirmMessage"
-            @confirm="handleConfirmDelete"
-            @cancel="showConfirmDelete = false"
-        />
     </div>
 </template>
 
@@ -212,22 +221,35 @@ async function handleSubmit(): Promise<void> {
     width: max-content;
     min-height: 2.5rem;
     gap: .5rem;
-    background: transparent;
     border-radius: 6px;
     padding: .5rem;
-    color: var(--color-muted);
     font-weight: 700;
     cursor: pointer;
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-on-accent);
+    transition:
+        border-color .16s ease,
+        background .16s ease,
+        color .16s ease,
+        transform .16s ease;
 
     &:hover,
     &:focus-visible {
-        color: var(--color-text);
+        border-color: var(--color-accent-hover);
+        background: var(--color-accent-hover);
+        color: var(--color-on-accent);
         outline: none;
     }
 
+    &:active {
+        transform: translateY(1px);
+    }
+
     &_icon {
-        width: 1rem;
-        height: 1rem;
+        width: 1.25rem;
+        height: 1.25rem;
+        filter: var(--icon-on-accent-filter);
     }
 }
 
@@ -330,7 +352,7 @@ async function handleSubmit(): Promise<void> {
         font-size: .9rem;
         line-height: 1.45;
 
-        div {
+        &_content {
             @extend %grid_stack;
             gap: .2rem;
         }
@@ -414,6 +436,7 @@ async function handleSubmit(): Promise<void> {
 
         &:hover:not(:disabled),
         &:focus-visible:not(:disabled) {
+            border-color: var(--color-accent-hover);
             background: var(--color-accent-hover);
         }
     }
