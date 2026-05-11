@@ -4,98 +4,24 @@ import { t } from '@/i18n';
 import { notify } from '@/services/notifications';
 import {
   addIconSource,
-  buildDll,
-  chooseOutputDll,
-  clearBuildCache,
-  dropBuildIcon,
   fromBackendIcon,
   ipcErrorMessage,
   loadExistingDll,
-  removePreview,
 } from '@/services/tauriProject';
 import { useSettingsStore } from '@/stores/settings';
-import type {
-  BuildState,
-  IconSize,
-  ProjectNotice,
-  ProjectIcon,
-  ProjectMode,
-  SourceKind,
-} from '@/types/Project';
-
-const SUPPORTED_EXTENSIONS = ['.ico', '.png'] as const;
-
-function isSupportedFile(file: File): boolean {
-  const name = file.name.toLowerCase();
-  return SUPPORTED_EXTENSIONS.some((ext) => name.endsWith(ext));
-}
-
-function detectInitialSizes(file: File): Promise<IconSize[]> {
-  // Provvisorio per fase 1: leggiamo la size del PNG via Image; per .ico
-  // serve il backend (sez. 6). Restituiamo array vuoto se non determinabile.
-  if (!file.type.startsWith('image/')) {
-    return Promise.resolve([]);
-  }
-
-  return new Promise((resolve) => {
-    const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve([{ width: img.naturalWidth, height: img.naturalHeight }]);
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve([]);
-    };
-    img.src = url;
-  });
-}
-
-function createProjectIcon(file: File, sourceKind: SourceKind = 'imported'): ProjectIcon {
-  const preview = file.type.startsWith('image/') ? URL.createObjectURL(file) : '';
-
-  return {
-    id: crypto.randomUUID(),
-    name: file.name,
-    preview,
-    previewPath: null,
-    status: isSupportedFile(file) ? 'ready' : 'error',
-    sourceKind,
-    availableSizes: [],
-    error: isSupportedFile(file) ? null : t('notifications.unsupportedFiles'),
-  };
-}
-
-function revokePreviewUrl(icon: ProjectIcon): void {
-  if (icon.preview.startsWith('blob:')) {
-    URL.revokeObjectURL(icon.preview);
-  }
-}
-
-function cleanupPreview(icon: ProjectIcon): void {
-  revokePreviewUrl(icon);
-  void dropBuildIcon(icon.id).catch(() => undefined);
-  if (icon.previewPath) {
-    void removePreview(icon.previewPath).catch(() => undefined);
-  }
-}
-
-function basename(path: string): string {
-  return path.split(/[\\/]/).pop() || path;
-}
-
-function defaultOutputPath(
-  mode: ProjectMode | null,
-  sourceLabel: string | null,
-  existingOutput: string | null,
-): string | null {
-  if (existingOutput) return existingOutput;
-  if (mode === 'edit' && sourceLabel) {
-    return sourceLabel.replace(/\.dll$/i, '') + '-packed.dll';
-  }
-  return 'icons.dll';
-}
+import type { BuildState } from '@/types/build';
+import type { ProjectIcon } from '@/types/icons';
+import type { ProjectMode } from '@/types/modes';
+import type { ProjectNotice } from '@/types/notifications';
+import {
+  basename,
+  createProjectIcon,
+  detectInitialSizes,
+  isSupportedFile,
+} from './projectModules/files';
+import { useProjectPagination } from './projectModules/pagination';
+import { cleanupPreview, cleanupProjectPreviews } from './projectModules/resources';
+import { submitProjectBuild } from './projectModules/submit';
 
 export const useProjectStore = defineStore('project', () => {
   const settings = useSettingsStore();
@@ -113,21 +39,19 @@ export const useProjectStore = defineStore('project', () => {
   const lastError = ref<string | null>(null);
   const lastNotice = ref<ProjectNotice | null>(null);
 
-  const page = ref(0);
-
-  const totalPages = computed(() => {
-    return Math.max(1, Math.ceil(icons.value.length / settings.pageSize));
-  });
-
-  const paginatedIcons = computed(() => {
-    const start = page.value * settings.pageSize;
-    return icons.value.slice(start, start + settings.pageSize);
-  });
-
-  const canGoNext = computed(() => page.value < totalPages.value - 1);
-  const canGoPrevious = computed(() => page.value > 0);
-
-  const currentPageGlobalStart = computed(() => page.value * settings.pageSize);
+  const {
+    page,
+    totalPages,
+    paginatedIcons,
+    canGoNext,
+    canGoPrevious,
+    currentPageGlobalStart,
+    clampPage,
+    resetPage,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+  } = useProjectPagination(icons, () => settings.pageSize);
 
   const selectedCount = computed(() => selectedIconIds.value.length);
 
@@ -143,58 +67,39 @@ export const useProjectStore = defineStore('project', () => {
     return mode.value !== 'edit' || sourceLabel.value !== null;
   });
 
+  function resetProjectState(options: { keepOutputPath?: boolean; keepNotice?: boolean } = {}): void {
+    clearIcons();
+    sourceLabel.value = null;
+    sourcePath.value = null;
+    buildState.value = 'idle';
+    lastError.value = null;
+    page.value = 0;
+    dirty.value = false;
+
+    if (!options.keepOutputPath)
+      outputPath.value = null;
+
+    if (!options.keepNotice)
+      lastNotice.value = null;
+  }
+
   function isSelected(id: string): boolean {
     return selectedIconIds.value.includes(id);
   }
 
-  function clampPage(): void {
-    if (page.value > totalPages.value - 1) {
-      page.value = Math.max(0, totalPages.value - 1);
-    }
-  }
-
-  function resetPage(): void {
-    page.value = 0;
-  }
-
-  function goToPage(next: number): void {
-    page.value = Math.min(Math.max(0, next), totalPages.value - 1);
-  }
-
-  function goToNextPage(): void {
-    if (canGoNext.value) {
-      page.value += 1;
-    }
-  }
-
-  function goToPreviousPage(): void {
-    if (canGoPrevious.value) {
-      page.value -= 1;
-    }
+  function selectFirstIconIfEmpty(candidates: ProjectIcon[]): void {
+    if (selectedIconIds.value.length === 0 && candidates[0])
+      selectedIconIds.value = [candidates[0].id];
   }
 
   function setMode(nextMode: ProjectMode): void {
-    clearIcons();
+    resetProjectState({ keepOutputPath: true });
     mode.value = nextMode;
-    sourceLabel.value = null;
-    sourcePath.value = null;
-    buildState.value = 'idle';
-    lastError.value = null;
-    lastNotice.value = null;
-    page.value = 0;
-    dirty.value = false;
   }
 
   function goHome(): void {
-    clearIcons();
+    resetProjectState({ keepNotice: true });
     mode.value = null;
-    sourceLabel.value = null;
-    sourcePath.value = null;
-    outputPath.value = null;
-    buildState.value = 'idle';
-    lastError.value = null;
-    page.value = 0;
-    dirty.value = false;
   }
 
   function setEditSourceFile(file: File): void {
@@ -202,9 +107,10 @@ export const useProjectStore = defineStore('project', () => {
       const msg = t('notifications.invalidEditSource');
       lastError.value = msg;
       lastNotice.value = null;
-      void notify(t('notifications.errorTitle'), msg);
+      notify(t('notifications.errorTitle'), msg);
       return;
     }
+
     sourceLabel.value = file.name;
     lastError.value = null;
     lastNotice.value = null;
@@ -215,6 +121,7 @@ export const useProjectStore = defineStore('project', () => {
     if (!path.toLowerCase().endsWith('.dll')) {
       const msg = t('notifications.invalidEditSource');
       lastError.value = msg;
+      lastNotice.value = null;
       await notify(t('notifications.errorTitle'), msg);
       return;
     }
@@ -234,9 +141,8 @@ export const useProjectStore = defineStore('project', () => {
       buildState.value = 'idle';
       resetPage();
 
-      if (loaded.warnings.length > 0) {
+      if (loaded.warnings.length > 0)
         await notify(t('notifications.warningTitle'), lastError.value ?? '');
-      }
     } catch (error) {
       const msg = ipcErrorMessage(error);
       lastError.value = msg;
@@ -248,36 +154,34 @@ export const useProjectStore = defineStore('project', () => {
 
   function addFiles(files: FileList | File[]): void {
     const fileArray = Array.from(files);
-    const newIcons = fileArray.map((file) => createProjectIcon(file, 'imported'));
+    const newIcons = fileArray.map((file) => createProjectIcon(file));
 
     icons.value.push(...newIcons);
     dirty.value = true;
     lastNotice.value = null;
 
-    const unsupportedCount = fileArray.filter((f) => !isSupportedFile(f)).length;
+    const unsupportedCount = fileArray.filter((file) => !isSupportedFile(file)).length;
     if (unsupportedCount > 0) {
       const msg = t('notifications.unsupportedFiles');
       lastError.value = msg;
       lastNotice.value = null;
-      void notify(t('notifications.errorTitle'), msg);
+      notify(t('notifications.errorTitle'), msg);
     }
 
-    if (selectedIconIds.value.length === 0 && newIcons.length > 0) {
-      selectedIconIds.value = [newIcons[0].id];
-    }
+    selectFirstIconIfEmpty(newIcons);
 
     void Promise.all(
       newIcons.map(async (icon, index) => {
         const sizes = await detectInitialSizes(fileArray[index]);
-        if (sizes.length > 0) {
+        if (sizes.length > 0)
           icon.availableSizes = sizes;
-        }
       }),
     );
   }
 
   async function addIconSources(paths: string[]): Promise<void> {
-    if (paths.length === 0) return;
+    if (paths.length === 0)
+      return;
 
     buildState.value = 'validating';
     const imported: ProjectIcon[] = [];
@@ -295,9 +199,7 @@ export const useProjectStore = defineStore('project', () => {
 
     if (imported.length > 0) {
       icons.value.push(...imported);
-      if (selectedIconIds.value.length === 0) {
-        selectedIconIds.value = [imported[0].id];
-      }
+      selectFirstIconIfEmpty(imported);
       dirty.value = true;
       lastError.value = null;
       lastNotice.value = null;
@@ -325,9 +227,8 @@ export const useProjectStore = defineStore('project', () => {
   function removeIcon(id: string): void {
     const index = icons.value.findIndex((icon) => icon.id === id);
 
-    if (index === -1) {
+    if (index === -1)
       return;
-    }
 
     const [removed] = icons.value.splice(index, 1);
     cleanupPreview(removed);
@@ -338,9 +239,8 @@ export const useProjectStore = defineStore('project', () => {
   }
 
   function removeSelectedIcons(): void {
-    if (selectedIconIds.value.length === 0) {
+    if (selectedIconIds.value.length === 0)
       return;
-    }
 
     const idsToRemove = new Set(selectedIconIds.value);
     icons.value = icons.value.filter((icon) => {
@@ -365,17 +265,7 @@ export const useProjectStore = defineStore('project', () => {
   }
 
   async function cleanupPreviews(): Promise<void> {
-    const currentIcons = [...icons.value];
-    currentIcons.forEach(revokePreviewUrl);
-    await Promise.all(
-      [
-        ...currentIcons
-          .map((icon) => icon.previewPath)
-          .filter((path): path is string => Boolean(path))
-          .map((path) => removePreview(path).catch(() => undefined)),
-        clearBuildCache().catch(() => undefined),
-      ],
-    );
+    await cleanupProjectPreviews([...icons.value]);
   }
 
   function setDraggingFiles(isDragging: boolean): void {
@@ -395,75 +285,17 @@ export const useProjectStore = defineStore('project', () => {
   }
 
   async function submitProject(): Promise<boolean> {
-    if (!canEditProject.value) {
-      lastError.value = t('notifications.noEditSource');
-      lastNotice.value = null;
-      buildState.value = 'error';
-      await notify(t('notifications.errorTitle'), lastError.value);
-      return false;
-    }
-
-    if (icons.value.length === 0) {
-      lastError.value = t('notifications.noIcons');
-      lastNotice.value = null;
-      buildState.value = 'error';
-      await notify(t('notifications.errorTitle'), lastError.value);
-      return false;
-    }
-
-    buildState.value = 'validating';
-
-    const invalidIcons = icons.value.filter((icon) => icon.status === 'error');
-
-    if (invalidIcons.length > 0) {
-      lastError.value = t('notifications.invalidIcons', { count: invalidIcons.length });
-      lastNotice.value = null;
-      buildState.value = 'error';
-      await notify(t('notifications.errorTitle'), lastError.value);
-      return false;
-    }
-
-    buildState.value = 'building';
-
-    const selectedOutputPath = await chooseOutputDll(
-      defaultOutputPath(mode.value, sourceLabel.value, outputPath.value),
-    );
-
-    if (!selectedOutputPath) {
-      buildState.value = 'idle';
-      return false;
-    }
-
-    try {
-      const result = await buildDll({
-        outputPath: selectedOutputPath,
-        icons: icons.value.map((icon) => ({ id: icon.id })),
-      });
-
-      outputPath.value = result.outputPath;
-      buildState.value = 'success';
-      lastError.value = null;
-      dirty.value = false;
-      const notice = {
-        type: 'success' as const,
-        title: mode.value === 'edit'
-          ? t('notifications.editSavedTitle')
-          : t('notifications.createSavedTitle'),
-        body: mode.value === 'edit'
-          ? t('notifications.editSavedBody')
-          : t('notifications.createSavedBody'),
-      };
-      lastNotice.value = notice;
-      await notify(notice.title, notice.body);
-      return true;
-    } catch (error) {
-      const msg = ipcErrorMessage(error);
-      lastError.value = msg;
-      lastNotice.value = null;
-      buildState.value = 'error';
-      await notify(t('notifications.errorTitle'), msg);
-      return false;
-    }
+    return submitProjectBuild({
+      mode,
+      icons,
+      sourceLabel,
+      outputPath,
+      dirty,
+      buildState,
+      lastError,
+      lastNotice,
+      canEditProject,
+    });
   }
 
   return {

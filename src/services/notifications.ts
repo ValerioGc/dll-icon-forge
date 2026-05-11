@@ -11,9 +11,8 @@ let cachedGranted: boolean | null = null;
   * @returns {Promise<boolean>} - Returns true if the permission has been granted
 */
 async function ensurePermission(): Promise<boolean> {
-  if (cachedGranted !== null) {
+  if (cachedGranted !== null)
     return cachedGranted;
-  }
 
   let granted = await isPermissionGranted();
   if (!granted) {
@@ -29,9 +28,8 @@ export async function notify(title: string, body: string): Promise<void> {
   try {
     const granted = await ensurePermission();
 
-    if (!granted) {
+    if (!granted)
       return;
-    }
 
     sendNotification({ title, body });
   } catch (err) {

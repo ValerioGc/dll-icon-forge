@@ -1,25 +1,19 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
-import type { BuildOptions, BuildResult, IconSize, ProjectIcon, SourceKind } from '@/types/Project';
+import type { BuildOptions, BuildResult } from '@/types/build';
+import type { IconSize, ProjectIcon, SourceKind } from '@/types/icons';
+import type { BackendLoadedDll, BackendProjectIcon, IpcErrorPayload } from '@/types/tauri';
 
-export interface BackendProjectIcon {
-  id: string;
-  name: string;
-  sourceKind: 'png' | 'ico' | 'extracted';
-  availableSizes: number[];
-  status: 'ready' | 'error';
-  error: string | null;
-  previewPath: string | null;
-}
+type DialogSelection = string | string[] | null;
 
-export interface LoadedDll {
-  icons: BackendProjectIcon[];
-  warnings: unknown[];
-}
+const DLL_FILTER = { name: 'DLL', extensions: ['dll'] };
+const ICON_SOURCE_FILTER = { name: 'Icone', extensions: ['ico', 'png'] };
 
-export interface IpcErrorPayload {
-  code?: string;
-  message?: string;
+function toSelectedPaths(selection: DialogSelection): string[] {
+  if (!selection)
+    return [];
+
+  return Array.isArray(selection) ? selection : [selection];
 }
 
 function toSize(size: number): IconSize {
@@ -27,14 +21,23 @@ function toSize(size: number): IconSize {
 }
 
 function toUiSourceKind(kind: BackendProjectIcon['sourceKind']): SourceKind {
-  return kind === 'extracted' ? 'extracted' : 'imported';
+  switch (kind) {
+    case 'extracted':
+      return 'extracted';
+    case 'ico':
+    case 'png':
+      return 'imported';
+  }
 }
 
 export function ipcErrorMessage(error: unknown): string {
-  if (typeof error === 'string') return error;
+  if (typeof error === 'string') 
+    return error;
+  
   if (error && typeof error === 'object' && 'message' in error) {
     const payload = error as IpcErrorPayload;
-    if (payload.message) return payload.message;
+    if (payload.message) 
+      return payload.message;
   }
   return 'Operazione non riuscita';
 }
@@ -55,29 +58,28 @@ export function fromBackendIcon(icon: BackendProjectIcon): ProjectIcon {
 export async function chooseExistingDll(): Promise<string | null> {
   return open({
     multiple: false,
-    filters: [{ name: 'DLL', extensions: ['dll'] }],
+    filters: [DLL_FILTER],
   });
 }
 
 export async function chooseIconSources(): Promise<string[]> {
   const selected = await open({
     multiple: true,
-    filters: [{ name: 'Icone', extensions: ['ico', 'png'] }],
+    filters: [ICON_SOURCE_FILTER],
   });
 
-  if (!selected) return [];
-  return Array.isArray(selected) ? selected : [selected];
+  return toSelectedPaths(selected);
 }
 
 export async function chooseOutputDll(defaultPath?: string | null): Promise<string | null> {
   return save({
     defaultPath: defaultPath ?? undefined,
-    filters: [{ name: 'DLL', extensions: ['dll'] }],
+    filters: [DLL_FILTER],
   });
 }
 
-export async function loadExistingDll(path: string): Promise<LoadedDll> {
-  return invoke<LoadedDll>('load_existing_dll', { path });
+export async function loadExistingDll(path: string): Promise<BackendLoadedDll> {
+  return invoke<BackendLoadedDll>('load_existing_dll', { path });
 }
 
 export async function buildDll(options: BuildOptions): Promise<BuildResult> {

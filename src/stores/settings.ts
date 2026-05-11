@@ -36,9 +36,8 @@ function detectSystemLanguage(): Language {
 function readStoredSettings(): Partial<SettingsState> {
   const raw = localStorage.getItem(STORAGE_KEY);
 
-  if (!raw) {
+  if (!raw) 
     return {};
-  }
 
   try {
     return JSON.parse(raw) as Partial<SettingsState>;
