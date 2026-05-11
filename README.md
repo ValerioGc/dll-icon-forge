@@ -126,8 +126,6 @@ cargo test
 Manual tests still tracked in the roadmap:
 
 - temporary folder removal / preview recreation
-- create flow
-- edit flow
 - CI/release pipeline validation
 
 ## License
