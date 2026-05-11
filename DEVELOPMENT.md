@@ -12,19 +12,17 @@ Technical notes for working on **Win DLL Packer**. End-user instructions live in
 | Build | Vite |
 | Styling | SCSS, shared partials, CSS variables |
 | i18n | vue-i18n (`it`, `en`, `fr`, `es`, `de`) |
-| Native backend | Rust (not yet implemented — see roadmap) |
+| Native backend | Rust |
 | Packaging | Tauri bundle targets: `nsis`, `msi` (Windows only) |
 
 ## Prerequisites
 
-### Windows host development
+Install on Windows:
 
-Install:
-
-- Node.js 20+
-- Rust toolchain (`rustup`) — required only when working on `src-tauri/`
-- Visual Studio Build Tools with Desktop C++ — required for Rust/Tauri compilation
-- WebView2 Runtime — bundled by the NSIS installer for end users
+- Node.js 20+.
+- Rust toolchain via `rustup`.
+- Visual Studio Build Tools with Desktop C++.
+- WebView2 Runtime.
 
 Useful checks:
 
@@ -35,7 +33,7 @@ rustc --version
 cargo --version
 ```
 
-## Project setup
+## Project Setup
 
 ```powershell
 npm install
@@ -47,40 +45,40 @@ If you need to regenerate app icons:
 npm run tauri icon path\to\icon.png
 ```
 
-## Main commands
+## Main Commands
 
-Run only the Vite frontend (no Tauri, no Rust required):
+Run only the Vite frontend:
 
 ```powershell
 npm run dev
 ```
 
-Type-check + build the frontend bundle:
+Type-check and build the frontend bundle:
 
 ```powershell
 npm run build
 ```
 
-Run the desktop app in development (requires Rust toolchain):
+Run the desktop app in development:
 
 ```powershell
 npm run tauri dev
 ```
 
-Build the Windows installer:
+Build Windows installers:
 
 ```powershell
 npm run tauri build
 ```
 
-The local Windows installer is generated under:
+Output:
 
 ```text
 src-tauri/target/release/bundle/nsis/
 src-tauri/target/release/bundle/msi/
 ```
 
-Bundle visualizer (outputs `dist/stats.html`):
+Bundle visualizer:
 
 ```powershell
 npm run analyze
@@ -102,17 +100,17 @@ Run a single spec file:
 npx vitest run tests/frontend/stores/project.spec.ts
 ```
 
-Filter by test name:
-
-```powershell
-npx vitest run -t "adds files"
-```
-
-Rust (only once `src-tauri/` is implemented — currently stale):
+Rust:
 
 ```powershell
 npm run test:rust
-npm run test:rust:coverage
+```
+
+Equivalent direct command:
+
+```powershell
+cd src-tauri
+cargo test
 ```
 
 Combined coverage:
@@ -121,90 +119,120 @@ Combined coverage:
 npm run coverage
 ```
 
-Current frontend testing stack:
+Current known automatic checks:
 
-- Vitest
-- Vue Test Utils
-- happy-dom
+- `npm run build`: green.
+- `npm run test`: 113 frontend tests green.
+- `cargo test`: 108 Rust tests green, 1 manual DLL inspection test ignored.
 
-Frontend tests live in:
-
-```text
-tests/frontend/
-```
-
-Rust tests will live in:
-
-```text
-src-tauri/src/tests/
-```
-
-## SonarQube
-
-Project config: [sonar-project.properties](sonar-project.properties).
-Docker compose: [.docker/docker-compose.sonar.yml](.docker/docker-compose.sonar.yml) (image `sonarqube:community`, container `dll-packer-sonarqube`, exposed on port `9000`).
-
-### Run the SonarQube server (Docker)
+The ignored manual Rust test can generate a repeatable DLL for inspection:
 
 ```powershell
-npm run docker:sonar:up      # start in background
-npm run docker:sonar:logs    # follow logs
-npm run docker:sonar:down    # stop
+cd src-tauri
+cargo test generate_manual_check_dll -- --ignored --nocapture
 ```
 
-Web UI at `http://localhost:9000`.
-
-### Run the analysis
-
-Generate coverage and run the scanner in one shot:
-
-```powershell
-npm run sonar:coverage
-```
-
-Run the scanner only (assumes coverage reports already exist):
-
-```powershell
-npm run sonar
-```
-
-Expected report paths picked up by the scanner:
+Output:
 
 ```text
-coverage/lcov.info
-src-tauri/target/llvm-cov/lcov.info
+src-tauri/target/manual-check/win-dll-packer-manual-check.dll
 ```
 
-## Release workflow
+## Manual Validation Before v1
 
-GitHub Actions release workflow lives in:
+Track the authoritative checklist in [.claude/ROADMAP.MD](.claude/ROADMAP.MD).
+
+Required manual checks:
+
+- Remove `%TEMP%\win-dll-packer`, then verify preview recreation and cleanup behavior.
+- Create mode: import icons, build DLL, reopen/inspect output.
+- Edit mode: load existing DLL, modify icon list, build DLL, reopen/inspect output.
+- Pipeline: validate PR CI and a pre-release tag that creates draft `.exe` and `.msi` artifacts.
+
+## Architecture Notes
+
+### Frontend
 
 ```text
-.github/workflows/release.yml
+src/
+|-- assets/         <- SVG icons, flag images, logo
+|-- components/
+|   |-- buttons/    <- LanguageButton, ThemeButton
+|   |-- dialogs/    <- ConfirmDialog
+|   |-- explorer/   <- IconCollectionView, IconListView, IconGridView, MenuTab
+|   |-- layout/     <- PageHeader, PageFooter
+|   |-- pagination/ <- PaginationControls, PageSizeSelector
+|   `-- upload/     <- FileDropZone
+|-- i18n/           <- vue-i18n setup
+|-- locales/        <- it, en, fr, es, de
+|-- services/       <- Tauri command wrappers and notifications
+|-- stores/         <- Pinia stores
+|-- styles/         <- SCSS partials and main stylesheet
+|-- types/          <- shared frontend types
+`-- views/          <- HomeView, ItemView
 ```
+
+State lives in Pinia stores. Components stay mostly presentational and call store actions or service wrappers.
+
+### Backend
+
+Rust entry points live in `src-tauri/src/`.
+
+Key modules:
+
+| Module | Responsibility |
+| --- | --- |
+| `icons/` | Read `.ico`/`.png`, validate, normalize target sizes, write preview PNGs, IPC types/errors. |
+| `dll/read.rs` | Windows-only DLL loading and icon resource extraction. |
+| `dll/write.rs` | Pure resource planning and `RT_GROUP_ICON` binary writer. |
+| `dll/template.rs` | Embedded resource-only DLL template. |
+| `dll/update.rs` | Windows resource update wrapper around `BeginUpdateResourceW` / `UpdateResourceW` / `EndUpdateResourceW`. |
+| `dll/build.rs` | Build orchestration: copy template, write resources, replace final output. |
+| `build_cache.rs` | In-memory cache that maps frontend icon ids to normalized backend icon data. |
+| `lib.rs` | Tauri commands and app setup. |
+
+Important backend behavior:
+
+- DLL read/build code is Windows-only and returns `PlatformNotSupported` elsewhere.
+- Generated DLLs are resource-only.
+- `RT_ICON` resources are PNG bytes.
+- Resource reads/writes are serialized through a shared lock to avoid Windows loader/resource races in parallel tests.
+
+## Tauri Commands
+
+Current command surface:
+
+| Command | Purpose |
+| --- | --- |
+| `add_icon_source(path)` | Import `.ico`/`.png`, create preview and cache build data. |
+| `load_existing_dll(path)` | Extract icons from a DLL and replace build cache. |
+| `build_dll(options)` | Generate the output DLL from cached icons. |
+| `remove_preview(path)` | Remove a preview file idempotently. |
+| `drop_build_icon(id)` | Remove one icon from build cache. |
+| `clear_build_cache()` | Clear build cache. |
+
+## Release Workflow
+
+GitHub Actions:
+
+- `.github/workflows/ci.yml`
+- `.github/workflows/release.yml`
 
 Current behavior:
 
-- triggers on tags matching `v*.*.*`
-- runs frontend tests, Rust tests, and a frontend build smoke check first
-- verifies that the tag version matches `package.json` and `src-tauri/tauri.conf.json`
-- builds Windows bundles on `windows-latest`
-- uploads artifacts and creates a draft GitHub release
-- uses `CHANGELOG.txt` as the release notes body
-- clears `CHANGELOG.txt` on `main` after a successful release
-
-Known issues to fix before first release (roadmap sez. 5):
-
-- `test` job runs on `ubuntu-22.04` but Rust DLL tests use Windows-only APIs — move to `windows-latest` or gate with `#[cfg(target_os = "windows")]`
-- `build` matrix includes `macos-latest` and `ubuntu-22.04` — remove, Windows only
-- No `ci.yml` workflow for push/PR — add lint, type-check, vitest, cargo test
-- Node version pinned to major `20` — pin to exact version for reproducible builds
+- CI runs on `windows-latest`.
+- Node is pinned to `22.14.0`.
+- CI runs frontend tests, Rust tests and frontend build.
+- Release tags match `v*.*.*`.
+- Release validates version alignment between tag, `package.json` and `src-tauri/tauri.conf.json`.
+- Release requires non-empty `CHANGELOG.txt`.
+- Release builds Windows `nsis` and `msi` bundles and creates a draft GitHub release.
 
 Release prerequisites:
 
-- `main` must exist on the remote (workflow pushes changelog cleanup commit there)
-- `CHANGELOG.txt` must exist and must not be empty
-- tag must match the project version, for example:
+- `main` exists on the remote.
+- `CHANGELOG.txt` exists and is not empty.
+- Tag matches the project version, for example:
 
 ```text
 tag: v0.1.0
@@ -212,37 +240,31 @@ package.json: 0.1.0
 src-tauri/tauri.conf.json: 0.1.0
 ```
 
-## Architecture notes
+## SonarQube
 
-### Frontend
+Project config: [sonar-project.properties](sonar-project.properties).
+Docker compose: [.docker/docker-compose.sonar.yml](.docker/docker-compose.sonar.yml).
 
-```text
-src/
-├── assets/         ← SVG icons, flag images, logo
-├── components/
-│   ├── HomeView.vue
-│   ├── ItemView.vue
-│   ├── buttons/    ← LanguageButton, ThemeButton
-│   ├── common/     ← FileDropZone, PaginationControls, PageSizeSelector, ConfirmDialog
-│   ├── explorer/   ← IconCollectionView, IconListView, IconGridView, MenuTab
-│   └── layout/     ← PageHeader, PageFooter
-├── i18n/           ← vue-i18n setup, SUPPORTED_LOCALES, setLocale helper
-├── locales/        ← it.json, en.json, fr.json, es.json, de.json
-├── services/
-│   └── notifications.ts   ← wrapper @tauri-apps/plugin-notification
-├── stores/
-│   ├── project.ts  ← mode, icons, selection, pagination, build state
-│   └── settings.ts ← language, theme, viewMode, pageSize + localStorage persistence
-├── styles/         ← main.scss + partials (_vars, _reset, _placeholders)
-└── types/
-    └── Project.ts  ← ProjectIcon, ProjectMode, IconSize, BuildState, BuildOptions
+Run the server:
+
+```powershell
+npm run docker:sonar:up
+npm run docker:sonar:logs
+npm run docker:sonar:down
 ```
 
-State lives entirely in Pinia stores. Components are presentation-only and emit events up.
+Run analysis:
 
-### Backend (not yet implemented)
+```powershell
+npm run sonar:coverage
+```
 
-Rust entry points will be in `src-tauri/src/`. The current content of `src-tauri/` is carried over from a previous project and should not be used as reference. See roadmap sections 1-4 for the planned implementation.
+Expected report paths:
+
+```text
+coverage/lcov.info
+src-tauri/target/llvm-cov/lcov.info
+```
 
 ## Styling
 
@@ -256,9 +278,9 @@ src/styles/partials/
 
 Current layers:
 
-- `_vars.scss` — CSS variables for theme colors/shadows/filters, defined for both `[data-theme="light"]` and `[data-theme="dark"]`
-- `_reset.scss` — minimal CSS reset
-- `_placeholders.scss` — `%fx_center`, `%fx_between_center`, `%fx_start_center`, `%fx_inline_center`, `%grid_stack`, `%grid_center`, `%visually_hidden`, `%header_control`
+- `_vars.scss`: CSS variables for themes.
+- `_reset.scss`: minimal CSS reset.
+- `_placeholders.scss`: common layout placeholders.
 
 Components import placeholders with:
 
@@ -266,4 +288,4 @@ Components import placeholders with:
 @use '@/styles/partials/placeholders' as *;
 ```
 
-Use BEM naming (`block__element--modifier`) and `is-*` state classes. No Tailwind, no CSS-in-JS.
+Use BEM naming and `is-*` state classes. No Tailwind, no CSS-in-JS.

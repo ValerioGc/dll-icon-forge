@@ -1,107 +1,134 @@
-# WIN DLL PACKER
+# Win DLL Packer
 
-Early desktop tool for creating and editing Windows resource-only `.dll` files used as icon libraries, built with Tauri, Vue, and Rust.
+Desktop tool for creating and editing Windows resource-only `.dll` files used as icon libraries, built with Tauri, Vue, and Rust.
 
-This is still a prototype. The frontend (project setup, drag and drop, preview list, theme and i18n) is in place; the Rust backend that actually reads and writes DLLs is not implemented yet. Expect rough edges and missing features.
+The app works locally: it imports `.ico` and `.png` files, reads existing icon DLLs, generates resource-only DLLs, and writes the output path chosen through the native save dialog.
 
-Roadmap, architecture notes, testing, and SonarQube are documented in [.claude/ROADMAP.MD](.claude/ROADMAP.MD) and [CLAUDE.md](CLAUDE.md).
+Roadmap and final validation checklist live in [.claude/ROADMAP.MD](.claude/ROADMAP.MD). Development notes live in [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ![Win DLL Packer screenshot](docs/screenshots/app-main.png)
 
-## Current status
+## Current Status
 
-- Frontend create/edit flow is working with mock validation
-- Real DLL read/write is not implemented yet (Rust backend is a placeholder)
-- Windows is the only target planned for v1; macOS and Linux are out of scope
-- The project is usable as a UI preview, but cannot yet produce a real `.dll`
+- Create mode is wired to the Rust backend and can generate a real `.dll`.
+- Edit mode can load an existing DLL, extract readable icon groups, and rebuild to a new DLL.
+- Windows is the only supported target for v1.
+- CI and release workflows are configured and still need final validation with a PR and pre-release tag.
 
-## Current features
+## Features
 
-- Create mode: import `.ico` and `.png` files via drag and drop or file picker
-- Edit mode: load an existing project/DLL file before unlocking icon controls (mock only)
-- Reusable drop zone shared between source file and icons
-- Icon preview list with selection and per-item delete
-- Toolbar with delete action (disabled when the list is empty)
-- Header with logo, language toggle, and theme toggle
-- Footer with app version and GitHub link
-- Dark and light theme with persistent preference
-- UI in Italian, English, French, Spanish and German
-- Native Windows notifications wired to the submit flow (placeholder)
-
-## Planned features
-
-- Real DLL generation from imported icons (`RT_GROUP_ICON` + `RT_ICON`)
-- Real DLL read in edit mode, with extraction of existing icons
-- Native open/save dialogs via Tauri
-- Confirmation prompts on destructive actions (roadmap sez. 4)
-- GitHub Actions release pipeline for Windows installers (roadmap sez. 5)
+- Create mode: import `.ico` and `.png` files via drag and drop or native file picker.
+- Edit mode: load an existing `.dll` and extract icon resources.
+- Native dialogs for opening icons, opening DLLs, and saving generated DLLs.
+- Resource-only DLL generation using `RT_GROUP_ICON` and `RT_ICON`.
+- PNG-backed icon resources for 16, 32, 48 and 256 px sizes.
+- Icon preview list/grid with selection and delete actions.
+- Temporary backend preview files shown through Tauri asset protocol.
+- Cleanup for preview files and build cache.
+- Dirty-state guard before leaving or closing with unsaved changes.
+- Dark/light theme and UI language support for Italian, English, French, Spanish and German.
+- Windows notifications for success, warnings and errors.
 
 ## Requirements
 
-- Windows 10 or 11 (64-bit)
-- The icons you want to pack (`.ico` or `.png` for v1)
+- Windows 10 or 11, 64-bit.
+- Input icons in `.ico` or `.png` format.
 
 For development:
 
-- Node.js 20+
-- Rust toolchain (`rustup`) — required only when the Rust backend is implemented
+- Node.js 20+.
+- Rust toolchain via `rustup`.
+- Visual Studio Build Tools with Desktop C++.
+- WebView2 Runtime.
 
 ## Installation
 
-Installer is not yet published. Once the release pipeline (roadmap sez. 5) is in place:
+Installer packages are produced by the release workflow and are expected as:
 
-1. Download the latest installer from Releases:
-   `Win DLL Packer_<version>_x64-setup.exe`
-2. Run the installer.
-3. Launch **Win DLL Packer** from the Start menu.
+```text
+Win DLL Packer_<version>_x64-setup.exe
+Win DLL Packer_<version>_x64_en-US.msi
+```
 
-## Quick start
+Until the first public release is validated, build locally with:
 
-1. Install Win DLL Packer
-2. Open the app and choose **Create**
-3. Drag your `.ico` / `.png` files into the drop zone
-4. Review the preview list and remove what you don't need
-5. Click **Build DLL** to generate the resource-only `.dll`
+```powershell
+npm install
+npm run tauri build
+```
 
-To start from an existing DLL or project, choose **Edit** instead and load the source file first.
+Installer artifacts are generated under:
 
-## First run
+```text
+src-tauri/target/release/bundle/nsis/
+src-tauri/target/release/bundle/msi/
+```
 
-By default the app does not require any external service. All work happens locally on the machine.
+## Quick Start
 
-When no project is open, the home screen lets you choose between **Create** (start from scratch) and **Edit** (open an existing DLL or project file).
+### Create A New DLL
 
-## Data storage
+1. Open the app and choose **Create**.
+2. Add `.ico` or `.png` files.
+3. Review previews and remove anything you do not want.
+4. Click **Build DLL**.
+5. Choose the output `.dll` path in the save dialog.
 
-Win DLL Packer stores app data locally on your machine.
+### Edit From An Existing DLL
 
-### Settings
+1. Open the app and choose **Edit**.
+2. Load an existing `.dll`.
+3. Review extracted icons.
+4. Remove icons or add new `.ico` / `.png` files.
+5. Click **Build DLL** and choose a new output path.
 
-Theme and language are persisted in the browser-side `localStorage` of the WebView under the key:
+The app writes a new DLL. It does not modify the original DLL in place.
+
+## Data Storage
+
+Theme and language are stored in WebView `localStorage` under:
 
 ```text
 win-dll-packer:settings
 ```
 
-### Project files
+Temporary previews are stored under:
 
-Generated `.dll` files are written to the path the user chooses through the save dialog. The app does not maintain a private project library and does not save session state between runs.
+```text
+%TEMP%\win-dll-packer
+```
+
+Generated DLLs are written only to the path selected in the save dialog. The app does not keep a project library and does not persist sessions between runs.
 
 ## Privacy
 
-Win DLL Packer runs entirely offline. No telemetry, no cloud calls, no third-party services. Files you import never leave your machine.
+Win DLL Packer runs entirely offline. Files you import never leave your machine. There is no telemetry and no cloud service.
 
-## Known limitations
+## Known Limitations
 
-- Real DLL read and write are not implemented yet
-- Only `.ico` and `.png` are accepted for v1
-- The "Edit" source file is currently accepted without validation (any dropped file is treated as the source)
-- No confirmation prompt on destructive actions (delete, clear, mode switch with unsaved changes) — planned in roadmap sez. 4
-- Windows is the only supported target
+- Windows only for v1.
+- Input formats are limited to `.ico` and `.png`.
+- Generated DLLs are resource-only icon libraries.
+- Existing DLLs are rebuilt into a new output DLL; non-icon resources are not preserved in v1.
+- Session persistence and advanced image editing are out of scope for v1.
 
-## Keyboard shortcuts
+## Verification
 
-No custom shortcuts are bound yet. Standard browser/WebView shortcuts apply (`Tab` for focus, `Enter` to activate the focused button, `Esc` to dismiss native dialogs when implemented).
+Current automatic checks:
+
+```powershell
+npm run build
+npm run test
+cd src-tauri
+cargo test
+```
+
+Manual tests still tracked in the roadmap:
+
+- temporary folder removal / preview recreation
+- create flow
+- edit flow
+- CI/release pipeline validation
 
 ## License
 
