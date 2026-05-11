@@ -31,6 +31,10 @@ export interface BuildOptions {
   icons: BuildIconInput[];
 }
 
+export interface BuildResult {
+  outputPath: string;
+}
+
 export const DEFAULT_TARGET_SIZES: number[] = [16, 32, 48, 256];
 
 export const DEFAULT_BUILD_OPTIONS: BuildOptions = {

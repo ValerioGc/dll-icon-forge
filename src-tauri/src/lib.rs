@@ -9,7 +9,9 @@ use std::{
 
 use build_cache::{BuildCache, CachedBuildIcon};
 use dll::LoadedDll;
-use icons::{IconError, IconStatus, ImportedIcon, IpcError, ProjectIcon};
+use icons::{
+    BuildOptions, BuildResult, IconError, IconStatus, ImportedIcon, IpcError, ProjectIcon,
+};
 use tauri::State;
 
 fn preview_dir() -> PathBuf {
@@ -81,6 +83,11 @@ fn load_existing_dll(path: String, cache: State<'_, BuildCache>) -> Result<Loade
 }
 
 #[tauri::command]
+fn build_dll(options: BuildOptions, cache: State<'_, BuildCache>) -> Result<BuildResult, IpcError> {
+    dll::build_dll(&options, &cache).map_err(Into::into)
+}
+
+#[tauri::command]
 fn remove_preview(path: String) -> Result<(), IpcError> {
     match fs::remove_file(path) {
         Ok(()) => Ok(()),
@@ -108,6 +115,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             add_icon_source,
             load_existing_dll,
+            build_dll,
             remove_preview,
             drop_build_icon,
             clear_build_cache

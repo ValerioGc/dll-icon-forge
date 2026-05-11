@@ -1,6 +1,6 @@
 import { convertFileSrc, invoke } from '@tauri-apps/api/core';
-import { open } from '@tauri-apps/plugin-dialog';
-import type { IconSize, ProjectIcon, SourceKind } from '@/types/Project';
+import { open, save } from '@tauri-apps/plugin-dialog';
+import type { BuildOptions, BuildResult, IconSize, ProjectIcon, SourceKind } from '@/types/Project';
 
 export interface BackendProjectIcon {
   id: string;
@@ -69,8 +69,19 @@ export async function chooseIconSources(): Promise<string[]> {
   return Array.isArray(selected) ? selected : [selected];
 }
 
+export async function chooseOutputDll(defaultPath?: string | null): Promise<string | null> {
+  return save({
+    defaultPath: defaultPath ?? undefined,
+    filters: [{ name: 'DLL', extensions: ['dll'] }],
+  });
+}
+
 export async function loadExistingDll(path: string): Promise<LoadedDll> {
   return invoke<LoadedDll>('load_existing_dll', { path });
+}
+
+export async function buildDll(options: BuildOptions): Promise<BuildResult> {
+  return invoke<BuildResult>('build_dll', { options });
 }
 
 export async function addIconSource(path: string): Promise<BackendProjectIcon> {

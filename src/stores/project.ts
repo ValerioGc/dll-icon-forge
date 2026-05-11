@@ -4,6 +4,8 @@ import { t } from '@/i18n';
 import { notify } from '@/services/notifications';
 import {
   addIconSource,
+  buildDll,
+  chooseOutputDll,
   clearBuildCache,
   dropBuildIcon,
   fromBackendIcon,
@@ -80,6 +82,18 @@ function cleanupPreview(icon: ProjectIcon): void {
 
 function basename(path: string): string {
   return path.split(/[\\/]/).pop() || path;
+}
+
+function defaultOutputPath(
+  mode: ProjectMode | null,
+  sourceLabel: string | null,
+  existingOutput: string | null,
+): string | null {
+  if (existingOutput) return existingOutput;
+  if (mode === 'edit' && sourceLabel) {
+    return sourceLabel.replace(/\.dll$/i, '') + '-packed.dll';
+  }
+  return 'icons.dll';
 }
 
 export const useProjectStore = defineStore('project', () => {
@@ -391,18 +405,39 @@ export const useProjectStore = defineStore('project', () => {
 
     buildState.value = 'building';
 
-    if (mode.value === 'edit') {
-      buildState.value = 'success';
-      lastError.value = null;
-      dirty.value = false;
-      await notify(t('notifications.editSavedTitle'), t('notifications.editSavedBody'));
+    const selectedOutputPath = await chooseOutputDll(
+      defaultOutputPath(mode.value, sourceLabel.value, outputPath.value),
+    );
+
+    if (!selectedOutputPath) {
+      buildState.value = 'idle';
       return;
     }
 
-    buildState.value = 'success';
-    lastError.value = null;
-    dirty.value = false;
-    await notify(t('notifications.createSavedTitle'), t('notifications.createSavedBody'));
+    try {
+      const result = await buildDll({
+        outputPath: selectedOutputPath,
+        icons: icons.value.map((icon) => ({ id: icon.id })),
+      });
+
+      outputPath.value = result.outputPath;
+      buildState.value = 'success';
+      lastError.value = null;
+      dirty.value = false;
+      await notify(
+        mode.value === 'edit'
+          ? t('notifications.editSavedTitle')
+          : t('notifications.createSavedTitle'),
+        mode.value === 'edit'
+          ? t('notifications.editSavedBody')
+          : t('notifications.createSavedBody'),
+      );
+    } catch (error) {
+      const msg = ipcErrorMessage(error);
+      lastError.value = msg;
+      buildState.value = 'error';
+      await notify(t('notifications.errorTitle'), msg);
+    }
   }
 
   return {

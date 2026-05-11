@@ -7,6 +7,41 @@ vi.mock('@/services/notifications', () => ({
   notify: vi.fn(),
 }));
 
+const tauriProjectMocks = vi.hoisted(() => ({
+  buildDll: vi.fn(),
+  chooseOutputDll: vi.fn(),
+  clearBuildCache: vi.fn(),
+  dropBuildIcon: vi.fn(),
+  removePreview: vi.fn(),
+}));
+
+vi.mock('@/services/tauriProject', () => ({
+  addIconSource: vi.fn(),
+  buildDll: tauriProjectMocks.buildDll,
+  chooseOutputDll: tauriProjectMocks.chooseOutputDll,
+  clearBuildCache: tauriProjectMocks.clearBuildCache,
+  dropBuildIcon: tauriProjectMocks.dropBuildIcon,
+  fromBackendIcon: vi.fn((icon) => ({
+    id: icon.id,
+    name: icon.name,
+    preview: icon.previewPath ?? '',
+    previewPath: icon.previewPath,
+    status: icon.status,
+    sourceKind: icon.sourceKind === 'extracted' ? 'extracted' : 'imported',
+    availableSizes: icon.availableSizes.map((size: number) => ({ width: size, height: size })),
+    error: icon.error,
+  })),
+  ipcErrorMessage: vi.fn((error) => {
+    if (typeof error === 'string') return error;
+    if (error && typeof error === 'object' && 'message' in error) {
+      return String((error as { message?: unknown }).message);
+    }
+    return 'Operazione non riuscita';
+  }),
+  loadExistingDll: vi.fn(),
+  removePreview: tauriProjectMocks.removePreview,
+}));
+
 function setupProjectStore() {
   mountComponent({ template: '<div />' });
   return useProjectStore();
@@ -20,6 +55,11 @@ describe('project store', () => {
   beforeEach(() => {
     resetFrontendTestState();
     vi.clearAllMocks();
+    tauriProjectMocks.buildDll.mockImplementation(async ({ outputPath }) => ({ outputPath }));
+    tauriProjectMocks.chooseOutputDll.mockResolvedValue('C:\\out\\icons.dll');
+    tauriProjectMocks.clearBuildCache.mockResolvedValue(undefined);
+    tauriProjectMocks.dropBuildIcon.mockResolvedValue(undefined);
+    tauriProjectMocks.removePreview.mockResolvedValue(undefined);
   });
 
   it('declares the new project state with default values', () => {
@@ -205,6 +245,11 @@ describe('project store', () => {
     project.addFiles([makePng('ok.png')]);
     await project.submitProject();
     expect(project.buildState).toBe('success');
+    expect(project.outputPath).toBe('C:\\out\\icons.dll');
+    expect(tauriProjectMocks.buildDll).toHaveBeenLastCalledWith({
+      outputPath: 'C:\\out\\icons.dll',
+      icons: [{ id: project.icons[0].id }],
+    });
     expect(project.lastError).toBeNull();
     expect(notify).toHaveBeenLastCalledWith('Creazione salvata', expect.stringContaining('DLL'));
   });
@@ -330,6 +375,35 @@ describe('project store', () => {
     expect(project.dirty).toBe(false);
   });
 
+  it('keeps the project dirty when the save dialog is cancelled', async () => {
+    const project = setupProjectStore();
+
+    tauriProjectMocks.chooseOutputDll.mockResolvedValueOnce(null);
+
+    project.addFiles([makePng('a.png')]);
+    await project.submitProject();
+
+    expect(project.buildState).toBe('idle');
+    expect(project.dirty).toBe(true);
+    expect(project.outputPath).toBeNull();
+    expect(tauriProjectMocks.buildDll).not.toHaveBeenCalled();
+  });
+
+  it('keeps dirty and reports an error when the backend build fails', async () => {
+    const { notify } = await import('@/services/notifications');
+    const project = setupProjectStore();
+
+    tauriProjectMocks.buildDll.mockRejectedValueOnce({ message: 'output non scrivibile' });
+
+    project.addFiles([makePng('a.png')]);
+    await project.submitProject();
+
+    expect(project.buildState).toBe('error');
+    expect(project.dirty).toBe(true);
+    expect(project.lastError).toBe('output non scrivibile');
+    expect(notify).toHaveBeenLastCalledWith('Operazione non completata', 'output non scrivibile');
+  });
+
   it('dirty: not reset on failed submitProject', async () => {
     const project = setupProjectStore();
 
@@ -357,6 +431,7 @@ describe('project store', () => {
     await project.submitProject();
 
     expect(project.buildState).toBe('success');
+    expect(tauriProjectMocks.chooseOutputDll).toHaveBeenLastCalledWith('existing-packed.dll');
     expect(notify).toHaveBeenLastCalledWith('Modifica salvata', expect.stringContaining('confermate'));
   });
 });

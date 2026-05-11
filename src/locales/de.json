@@ -50,9 +50,9 @@
     "noIcons": "Fügen Sie mindestens eine ICO- oder PNG-Datei hinzu, bevor Sie bestätigen.",
     "invalidIcons": "Es gibt {count} ungültige Dateien. Entfernen oder ersetzen Sie diese vor dem Speichern.",
     "createSavedTitle": "Erstellung gespeichert",
-    "createSavedBody": "Das Projekt ist bereit für die DLL-Generierung.",
+    "createSavedBody": "Die DLL wurde erzeugt und gespeichert.",
     "editSavedTitle": "Änderungen gespeichert",
-    "editSavedBody": "Ihre Projektänderungen wurden bestätigt.",
+    "editSavedBody": "Ihre Änderungen wurden bestätigt und in der DLL gespeichert.",
     "unsupportedFiles": "Einige Dateien werden nicht unterstützt. Es werden nur ICO und PNG akzeptiert.",
     "invalidEditSource": "Die ausgewählte Datei ist keine gültige DLL. Bitte laden Sie eine .dll-Datei."
   },
