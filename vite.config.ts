@@ -12,7 +12,7 @@ const host = process.env.TAURI_DEV_HOST;
 const packageJson = JSON.parse(
   readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf-8'),
 ) as { version: string };
-const githubUrl = 'https://github.com/ValerioGc/win-dll-packer';
+const githubUrl = 'https://github.com/ValerioGc/dll-icon-forge';
 
 
 export default defineConfig(async ({ mode }) => {

@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const appVersion = import.meta.env.VITE_APP_VERSION ?? 'undefined';
-const githubUrl = import.meta.env.VITE_GITHUB_URL ?? 'https://github.com/ValerioGc/win-dll-packer';
+const githubUrl = import.meta.env.VITE_GITHUB_URL ?? 'https://github.com/ValerioGc/dll-icon-forge';
 
 </script>
 

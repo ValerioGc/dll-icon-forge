@@ -19,7 +19,7 @@ Technical notes for working on **DLL Icon Forge**. Product-facing information li
 
 Install on Windows:
 
-- Node.js 20+.
+- Node.js `22.14.0` recommended, 20+ minimum.
 - Rust toolchain via `rustup`.
 - Visual Studio Build Tools with Desktop C++.
 - WebView2 Runtime.
@@ -140,15 +140,6 @@ Output:
 src-tauri/target/manual-check/dll-icon-forge-manual-check.dll
 ```
 
-## Manual Validation Before v1
-
-Required manual checks:
-
-- Remove `%TEMP%\dll-icon-forge`, then verify preview recreation and cleanup behavior.
-- Create mode: import icons, build DLL, reopen/inspect output.
-- Edit mode: load existing DLL, modify icon list, build DLL, reopen/inspect output.
-- Pipeline: validate PR CI and a pre-release tag that creates draft `.exe` and `.msi` artifacts.
-
 ## Architecture Notes
 
 ### Frontend
@@ -213,32 +204,85 @@ Current command surface:
 
 ## Release Workflow
 
-GitHub Actions:
+GitHub Actions live in:
 
-- `.github/workflows/ci.yml`
-- `.github/workflows/release.yml`
+| Workflow | Trigger | Purpose |
+| --- | --- | --- |
+| `.github/workflows/ci.yml` | push to `main`, pull request | Validate the candidate on Windows. |
+| `.github/workflows/release.yml` | push tag matching `v*.*.*` | Validate, build installers, and create a draft release. |
 
-Current behavior:
+Both workflows pin Node.js to `22.14.0`, install dependencies with `npm ci`, set up the stable Rust toolchain, and cache Rust dependencies for the `src-tauri` workspace.
+The release workflow also uses a GitHub Actions concurrency group per tag, so a newer run for the same tag cancels an older in-progress run.
 
-- CI runs on `windows-latest`.
-- Node is pinned to `22.14.0`.
-- CI runs frontend tests, Rust tests and frontend build.
-- Release tags match `v*.*.*`.
-- Release validates version alignment between tag, `package.json` and `src-tauri/tauri.conf.json`.
-- Release requires non-empty `CHANGELOG.txt`.
-- Release builds Windows `nsis` and `msi` bundles and creates a draft GitHub release.
+### CI
 
-Release prerequisites:
+CI runs on `windows-latest` and executes:
 
-- `main` exists on the remote.
-- `CHANGELOG.txt` exists and is not empty.
-- Tag matches the project version, for example:
+```powershell
+cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+npm run test
+npm run test:rust
+npm run build
+```
+
+### Release Pipeline
+
+The release workflow is tag-driven and split into four jobs:
+
+1. `verify-tag-on-main` runs on `ubuntu-latest`, validates the tag format, fetches `origin/main`, and fails if the tagged commit is not already reachable from `main`.
+2. `test` runs on `windows-latest`, installs dependencies, verifies release metadata, runs Rust format and clippy checks, then runs frontend tests, Rust tests, and the frontend build.
+3. `build-windows` runs on `windows-latest`, builds the Tauri bundles, collects the NSIS `.exe` and MSI `.msi` installers, generates SHA256 checksums, and uploads them as the `windows-installers` artifact.
+4. `create-release` runs on `ubuntu-latest`, downloads `windows-installers`, builds `release-notes.md` from `CHANGELOG.txt`, and creates a draft GitHub release with the installer assets attached.
+
+Release validation checks:
+
+- The workflow trigger accepts tags matching `v*.*.*`, then a stricter regex allows only semantic tags such as `v1.2.3` or `v1.2.3-rc.1`.
+- The tag must point to a commit already included in remote `main`.
+- The tag version, `package.json` version, and `src-tauri/tauri.conf.json` version must match.
+- `CHANGELOG.txt` must exist and must not be empty.
+- The Tauri build must produce at least one NSIS `.exe` and one MSI `.msi`.
+- `SHA256SUMS.txt` is generated from the release assets and attached to the draft release.
+
+Version alignment example:
 
 ```text
 tag: v0.1.0
 package.json: 0.1.0
 src-tauri/tauri.conf.json: 0.1.0
 ```
+
+Local release checklist:
+
+```powershell
+npm ci
+cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+npm run test
+npm run test:rust
+npm run build
+npm run tauri build
+```
+
+Expected installer outputs:
+
+```text
+src-tauri/target/release/bundle/nsis/*.exe
+src-tauri/target/release/bundle/msi/*.msi
+release-assets/SHA256SUMS.txt
+```
+
+Tag and publish the release candidate:
+
+```powershell
+git checkout main
+git pull origin main
+git push origin main
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The GitHub release is created as a draft. The current workflow names the draft release `DLL Icon Forge <tag>` and prepends `# DLL Icon Forge <tag>` to the generated release notes.
 
 ## SonarQube
 

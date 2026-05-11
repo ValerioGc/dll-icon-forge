@@ -1,8 +1,8 @@
+# DLL Icon Forge
+
 <p align="center">
   <img src="src/assets/logo.svg" alt="DLL Icon Forge logo" width="120">
 </p>
-
-# DLL Icon Forge
 
 DLL Icon Forge is a Windows desktop app for creating and editing icon library DLLs.
 
@@ -60,18 +60,16 @@ DLL Icon Forge runs locally on your machine. Files you import are processed offl
 
 ## Current Limitations
 
-- Windows is the only supported platform for the first release.
-- Input image formats are limited to `.ico` and `.png`.
+- Input image formats for now are limited to `.ico` and `.png`.
 - Generated DLLs are icon libraries only.
 - Non-icon resources from existing DLLs are not preserved.
-- Sessions are not persisted between app launches.
 
 ## Planned Improvements
 
 - Better handling of large icon collections.
 - More detailed warnings when an icon group cannot be read from an existing DLL.
-- Possible session/project persistence after the first stable version.
 - More advanced icon inspection and editing tools.
+- Portable version
 
 ## License
 

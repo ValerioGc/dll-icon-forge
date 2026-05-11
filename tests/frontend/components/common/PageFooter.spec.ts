@@ -13,6 +13,6 @@ describe('PageFooter', () => {
 
     expect(wrapper.text()).toContain('Versione 0.1.0');
     expect(link.text()).toBe('GitHub');
-    expect(link.attributes('href')).toBe('https://github.com/ValerioGc/win-dll-packer');
+    expect(link.attributes('href')).toBe('https://github.com/ValerioGc/dll-icon-forge');
   });
 });
