@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
-/// The four target sizes Win DLL Packer supports.
+/// The four target sizes DLL Icon Forge supports.
 pub const SUPPORTED_SIZES: [IconSize; 4] =
     [IconSize::S16, IconSize::S32, IconSize::S48, IconSize::S256];
 

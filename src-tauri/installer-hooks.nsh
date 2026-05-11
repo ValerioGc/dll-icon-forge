@@ -5,7 +5,7 @@
 !macro NSIS_HOOK_POSTUNINSTALL
   ${If} $DeleteAppDataCheckboxState = 1
   ${AndIf} $UpdateMode <> 1
-    RMDir /r "$APPDATA\it.valeriogc.windllpacker"
-    RMDir /r "$LOCALAPPDATA\it.valeriogc.windllpacker"
+    RMDir /r "$APPDATA\it.valeriogc.dlliconforge"
+    RMDir /r "$LOCALAPPDATA\it.valeriogc.dlliconforge"
   ${EndIf}
 !macroend

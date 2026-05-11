@@ -1,5 +1,5 @@
 {
-  "homeView": "Win DLL Packer",
+  "homeView": "DLL Icon Forge",
   "homeViewDesc": "Create a new Windows icon DLL or update an existing one with ordered resources and ready-to-check previews.",
   "homeViewChooseMode": "Where do you want to start?",
   "homeViewCreateHint": "Import ICO or PNG files and generate a new DLL.",

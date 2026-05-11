@@ -744,6 +744,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "dll-icon-forge"
+version = "0.1.0"
+dependencies = [
+ "ico 0.3.0",
+ "image",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-notification",
+ "tempfile",
+ "thiserror 2.0.18",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "dlopen2"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4540,23 +4557,6 @@ dependencies = [
  "thiserror 2.0.18",
  "windows",
  "windows-core",
-]
-
-[[package]]
-name = "win-dll-packer"
-version = "0.1.0"
-dependencies = [
- "ico 0.3.0",
- "image",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-notification",
- "tempfile",
- "thiserror 2.0.18",
- "windows-sys 0.61.2",
 ]
 
 [[package]]

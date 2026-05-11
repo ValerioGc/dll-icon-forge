@@ -17,7 +17,7 @@ type SettingsState = {
   loaded: boolean;
 };
 
-const STORAGE_KEY = 'win-dll-packer:settings';
+const STORAGE_KEY = 'dll-icon-forge:settings';
 
 const DEFAULTS: Omit<SettingsState, 'loaded'> = {
   language: 'en',

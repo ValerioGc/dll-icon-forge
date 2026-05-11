@@ -1,3 +1,3 @@
-Initial release of Win DLL Packer.
+Initial release of DLL Icon Forge.
 
 

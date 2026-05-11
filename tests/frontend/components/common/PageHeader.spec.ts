@@ -12,7 +12,7 @@ describe('PageHeader', () => {
   it('emits home when the brand button is clicked', async () => {
     const wrapper = mountComponent(PageHeader);
 
-    await wrapper.get('button[aria-label="Win DLL Packer"]').trigger('click');
+    await wrapper.get('button[aria-label="DLL Icon Forge"]').trigger('click');
 
     expect(wrapper.emitted('home')).toHaveLength(1);
   });

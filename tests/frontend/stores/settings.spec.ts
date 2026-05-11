@@ -33,7 +33,7 @@ describe('settings store', () => {
   });
 
   it('loads valid persisted settings and ignores invalid values', () => {
-    localStorage.setItem('win-dll-packer:settings', JSON.stringify({
+    localStorage.setItem('dll-icon-forge:settings', JSON.stringify({
       language: 'en',
       theme: 'dark',
     }));
@@ -44,7 +44,7 @@ describe('settings store', () => {
     expect(settings.language).toBe('en');
     expect(settings.theme).toBe('dark');
 
-    localStorage.setItem('win-dll-packer:settings', JSON.stringify({
+    localStorage.setItem('dll-icon-forge:settings', JSON.stringify({
       language: 'fr',
       theme: 'sepia',
     }));
@@ -58,7 +58,7 @@ describe('settings store', () => {
 
   it('accepts all five supported locales from storage', () => {
     for (const lang of ['it', 'en', 'fr', 'es', 'de']) {
-      localStorage.setItem('win-dll-packer:settings', JSON.stringify({ language: lang }));
+      localStorage.setItem('dll-icon-forge:settings', JSON.stringify({ language: lang }));
       const settings = setupSettingsStore();
       settings.load();
       expect(settings.language).toBe(lang);
@@ -84,7 +84,7 @@ describe('settings store', () => {
   });
 
   it('stored preference takes priority over system language', () => {
-    localStorage.setItem('win-dll-packer:settings', JSON.stringify({ language: 'de' }));
+    localStorage.setItem('dll-icon-forge:settings', JSON.stringify({ language: 'de' }));
     mockSystemLanguage('fr-FR');
     const settings = setupSettingsStore();
 
@@ -95,7 +95,7 @@ describe('settings store', () => {
 
   it('falls back to defaults when persisted settings are not valid JSON', () => {
     mockSystemLanguage('it-IT');
-    localStorage.setItem('win-dll-packer:settings', '{broken');
+    localStorage.setItem('dll-icon-forge:settings', '{broken');
     const settings = setupSettingsStore();
 
     settings.load();
@@ -114,7 +114,7 @@ describe('settings store', () => {
 
     expect(settings.language).toBe('en');
     expect(settings.theme).toBe('dark');
-    expect(JSON.parse(localStorage.getItem('win-dll-packer:settings') ?? '{}')).toEqual({
+    expect(JSON.parse(localStorage.getItem('dll-icon-forge:settings') ?? '{}')).toEqual({
       language: 'en',
       theme: 'dark',
       viewMode: 'grid',
@@ -139,14 +139,14 @@ describe('settings store', () => {
     settings.setPageSize(40);
     await new Promise((resolve) => window.setTimeout(resolve, 0));
 
-    expect(JSON.parse(localStorage.getItem('win-dll-packer:settings') ?? '{}')).toMatchObject({
+    expect(JSON.parse(localStorage.getItem('dll-icon-forge:settings') ?? '{}')).toMatchObject({
       viewMode: 'list',
       pageSize: 40,
     });
   });
 
   it('rejects invalid viewMode and pageSize from storage and falls back to defaults', () => {
-    localStorage.setItem('win-dll-packer:settings', JSON.stringify({
+    localStorage.setItem('dll-icon-forge:settings', JSON.stringify({
       viewMode: 'masonry',
       pageSize: 17,
     }));

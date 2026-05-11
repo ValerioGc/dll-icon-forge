@@ -1,6 +1,6 @@
 # Development
 
-Technical notes for working on **Win DLL Packer**. Product-facing information lives in [README.md](README.md).
+Technical notes for working on **DLL Icon Forge**. Product-facing information lives in [README.md](README.md).
 
 ## Stack
 
@@ -137,14 +137,14 @@ cargo test generate_manual_check_dll -- --ignored --nocapture
 Output:
 
 ```text
-src-tauri/target/manual-check/win-dll-packer-manual-check.dll
+src-tauri/target/manual-check/dll-icon-forge-manual-check.dll
 ```
 
 ## Manual Validation Before v1
 
 Required manual checks:
 
-- Remove `%TEMP%\win-dll-packer`, then verify preview recreation and cleanup behavior.
+- Remove `%TEMP%\dll-icon-forge`, then verify preview recreation and cleanup behavior.
 - Create mode: import icons, build DLL, reopen/inspect output.
 - Edit mode: load existing DLL, modify icon list, build DLL, reopen/inspect output.
 - Pipeline: validate PR CI and a pre-release tag that creates draft `.exe` and `.msi` artifacts.

@@ -15,7 +15,7 @@ use icons::{
 use tauri::State;
 
 fn preview_dir() -> PathBuf {
-    std::env::temp_dir().join("win-dll-packer")
+    std::env::temp_dir().join("dll-icon-forge")
 }
 
 fn ensure_preview_dir() -> Result<PathBuf, IconError> {

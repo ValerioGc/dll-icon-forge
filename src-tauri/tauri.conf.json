@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Win DLL Packer",
+  "productName": "DLL Icon Forge",
   "version": "0.1.0",
-  "identifier": "it.valeriogc.windllpacker",
+  "identifier": "it.valeriogc.dlliconforge",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Win DLL Packer",
+        "title": "DLL Icon Forge",
         "width": 1100,
         "height": 750,
         "minWidth": 800,
@@ -27,7 +27,7 @@
       "csp": "default-src 'self'; img-src 'self' data: blob: asset: http://asset.localhost; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src ipc: http://ipc.localhost http: https:",
       "assetProtocol": {
         "enable": true,
-        "scope": ["$TEMP/win-dll-packer/**"]
+        "scope": ["$TEMP/dll-icon-forge/**"]
       }
     }
   },

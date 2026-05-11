@@ -436,14 +436,14 @@ mod tests {
         }
 
         #[test]
-        #[ignore = "generates target/manual-check/win-dll-packer-manual-check.dll for manual inspection"]
+        #[ignore = "generates target/manual-check/dll-icon-forge-manual-check.dll for manual inspection"]
         fn generate_manual_check_dll() {
             let _guard = crate::dll::lock_resource_test();
             let output_dir = Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("target")
                 .join("manual-check");
             std::fs::create_dir_all(&output_dir).unwrap();
-            let output = output_dir.join("win-dll-packer-manual-check.dll");
+            let output = output_dir.join("dll-icon-forge-manual-check.dll");
             let preview_dir = output_dir.join("previews");
             std::fs::create_dir_all(&preview_dir).unwrap();
             let cache = cache_with_icons(vec![

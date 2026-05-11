@@ -1,14 +1,14 @@
 <p align="center">
-  <img src="src/assets/logo.svg" alt="Win DLL Packer logo" width="120">
+  <img src="src/assets/logo.svg" alt="DLL Icon Forge logo" width="120">
 </p>
 
-# Win DLL Packer
+# DLL Icon Forge
 
-Win DLL Packer is a Windows desktop app for creating and editing icon library DLLs.
+DLL Icon Forge is a Windows desktop app for creating and editing icon library DLLs.
 
 It helps you collect `.ico` and `.png` files, preview them, organize the icon list, and generate a resource-only `.dll` that can be used as a Windows icon library. Existing DLLs can also be opened, inspected, adjusted, and rebuilt into a new output file.
 
-![Win DLL Packer screenshot](docs/app-main.png)
+![DLL Icon Forge screenshot](docs/app-main.png)
 
 ## What It Does
 
@@ -40,7 +40,7 @@ It helps you collect `.ico` and `.png` files, preview them, organize the icon li
 4. Remove icons or add new `.ico` / `.png` files.
 5. Generate a new DLL and choose the output path.
 
-The original DLL is not modified in place. Win DLL Packer always writes the result to the output path you choose.
+The original DLL is not modified in place. DLL Icon Forge always writes the result to the output path you choose.
 
 ## Supported Files
 
@@ -56,7 +56,7 @@ Output:
 
 ## Privacy
 
-Win DLL Packer runs locally on your machine. Files you import are processed offline and are not uploaded anywhere. The app does not include telemetry or cloud services.
+DLL Icon Forge runs locally on your machine. Files you import are processed offline and are not uploaded anywhere. The app does not include telemetry or cloud services.
 
 ## Current Limitations
 

@@ -12,7 +12,7 @@ const emit = defineEmits<{
 
 <template>
     <nav class="page_header">
-        <button type="button" class="page_header_brand" aria-label="Win DLL Packer" @click.prevent="emit('home')">
+        <button type="button" class="page_header_brand" aria-label="DLL Icon Forge" @click.prevent="emit('home')">
             <img class="ui_icon page_header_logo" :src="logoUrl" alt="">
         </button>
 

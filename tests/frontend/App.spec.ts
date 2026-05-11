@@ -24,7 +24,7 @@ describe('App', () => {
     wrapper = mountComponent(App);
     const project = useProjectStore();
 
-    expect(wrapper.text()).toContain('Win DLL Packer');
+    expect(wrapper.text()).toContain('DLL Icon Forge');
     expect(wrapper.findComponent({ name: 'ItemView' }).exists()).toBe(false);
 
     await wrapper.findAll('button').find((button) => button.text().includes('Crea'))?.trigger('click');
