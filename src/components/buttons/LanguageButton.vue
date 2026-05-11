@@ -17,18 +17,16 @@ const FLAG_LOADERS: Record<AppLocale, () => Promise<{ default: string }>> = {
 };
 
 const clickOpen = ref(false);
-const hoverOpen = ref(false);
 const hasOpened = ref(false);
 const root = ref<HTMLElement | null>(null);
 const currentFlag = ref('');
 let flagRequest = 0;
 
-const isOpen = computed(() => clickOpen.value || hoverOpen.value);
+const isOpen = computed(() => clickOpen.value);
 
 function selectLocale(locale: AppLocale): void {
     settings.setLanguage(locale);
     clickOpen.value = false;
-    hoverOpen.value = false;
 }
 
 function toggleClickOpen(): void {
@@ -51,17 +49,13 @@ watch(
 );
 
 function handleOutsideClick(event: MouseEvent): void {
-    if (root.value && !root.value.contains(event.target as Node)) {
+    if (root.value && !root.value.contains(event.target as Node)) 
         clickOpen.value = false;
-        hoverOpen.value = false;
-    }
 }
 
 function handleKeyDown(event: KeyboardEvent): void {
-    if (event.key === 'Escape') {
+    if (event.key === 'Escape') 
         clickOpen.value = false;
-        hoverOpen.value = false;
-    }
 }
 
 onMounted(() => {

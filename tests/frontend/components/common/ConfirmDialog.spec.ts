@@ -26,18 +26,34 @@ describe('ConfirmDialog', () => {
     expect(wrapper.find('.confirm_dialog_message').text()).toBe('Sei sicuro?');
   });
 
-  it('shows default i18n labels when no custom labels are passed', () => {
+  it('uses default i18n labels as accessible icon button labels', () => {
     const wrapper = mountDialog();
     const buttons = wrapper.findAll('button');
-    expect(buttons[0].text()).toBe('Annulla');
-    expect(buttons[1].text()).toBe('Conferma');
+
+    expect(buttons[0].text()).toBe('');
+    expect(buttons[0].attributes('title')).toBe('Annulla');
+    expect(buttons[0].attributes('aria-label')).toBe('Annulla');
+    expect(buttons[1].text()).toBe('');
+    expect(buttons[1].attributes('title')).toBe('Conferma');
+    expect(buttons[1].attributes('aria-label')).toBe('Conferma');
   });
 
-  it('uses custom confirmLabel and cancelLabel when provided', () => {
-    const wrapper = mountDialog({ confirmLabel: 'Sì', cancelLabel: 'No' });
+  it('uses custom confirmLabel and cancelLabel as icon button labels', () => {
+    const wrapper = mountDialog({ confirmLabel: 'Si', cancelLabel: 'No' });
     const buttons = wrapper.findAll('button');
-    expect(buttons[0].text()).toBe('No');
-    expect(buttons[1].text()).toBe('Sì');
+
+    expect(buttons[0].attributes('title')).toBe('No');
+    expect(buttons[0].attributes('aria-label')).toBe('No');
+    expect(buttons[1].attributes('title')).toBe('Si');
+    expect(buttons[1].attributes('aria-label')).toBe('Si');
+  });
+
+  it('renders close and save icons inside the action buttons', () => {
+    const wrapper = mountDialog();
+    const buttons = wrapper.findAll('button');
+
+    expect(buttons[0].find('img').exists()).toBe(true);
+    expect(buttons[1].find('img').exists()).toBe(true);
   });
 
   it('emits confirm when the confirm button is clicked', async () => {

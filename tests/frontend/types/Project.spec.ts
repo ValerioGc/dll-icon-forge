@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_BUILD_OPTIONS, DEFAULT_TARGET_SIZES } from '@/types/Project';
+import { DEFAULT_BUILD_OPTIONS } from '@/types/build';
+import { DEFAULT_TARGET_SIZES } from '@/types/icons';
 
 describe('Project types runtime defaults', () => {
   it('exposes the expected target icon sizes', () => {

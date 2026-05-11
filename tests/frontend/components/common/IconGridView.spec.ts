@@ -1,6 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import IconGridView from '@/components/explorer/IconGridView.vue';
-import type { ProjectIcon } from '@/types/Project';
+import type { ProjectIcon } from '@/types/icons';
 import { mountComponent, resetFrontendTestState } from '../../helpers/mount';
 
 function makeIcon(id: string): ProjectIcon {

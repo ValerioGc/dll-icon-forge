@@ -31,7 +31,7 @@ describe('ItemView', () => {
       },
     });
     const project = useProjectStore();
-    const buildButton = () => wrapper.findAll('button').find((button) => button.text().includes('Build DLL'));
+    const buildButton = () => wrapper.findAll('button').find((button) => button.text().includes('Genera DLL'));
 
     expect(buildButton()?.attributes('disabled')).toBeDefined();
 
@@ -49,7 +49,7 @@ describe('ItemView', () => {
     });
     const project = useProjectStore();
 
-    expect(wrapper.text()).toContain('File esistente');
+    expect(wrapper.text()).toContain('DLL da modificare');
     expect(wrapper.findAllComponents({ name: 'FileDropZone' })).toHaveLength(1);
     expect(wrapper.findComponent({ name: 'MenuTab' }).exists()).toBe(false);
     expect(wrapper.findComponent({ name: 'IconCollectionView' }).exists()).toBe(false);
@@ -102,7 +102,7 @@ describe('ItemView', () => {
   it('disables submit button while build is in progress', async () => {
     const wrapper = mountComponent(ItemView, { props: { mode: 'create' } });
     const project = useProjectStore();
-    const buildBtn = () => wrapper.findAll('button').find((b) => b.text().includes('Build'));
+    const buildBtn = () => wrapper.findAll('button').find((b) => b.text().includes('Genera'));
 
     project.addFiles([new File(['png'], 'icon.png', { type: 'image/png' })]);
     await wrapper.vm.$nextTick();
@@ -125,7 +125,7 @@ describe('ItemView', () => {
     project.addFiles([new File(['png'], 'icon.png', { type: 'image/png' })]);
     await wrapper.vm.$nextTick();
 
-    await wrapper.findAll('button').find((button) => button.text().includes('Build'))?.trigger('click');
+    await wrapper.findAll('button').find((button) => button.text().includes('Genera'))?.trigger('click');
 
     expect(submitSpy).toHaveBeenCalledOnce();
     expect(wrapper.emitted('home')).toHaveLength(1);

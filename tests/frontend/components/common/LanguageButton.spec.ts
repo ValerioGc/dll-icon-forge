@@ -35,7 +35,7 @@ describe('LanguageButton', () => {
     expect(wrapper.findAll('.language_selector__option')).toHaveLength(5);
   });
 
-  it('opens the dropdown on hover', async () => {
+  it('does not open the dropdown on hover', async () => {
     const wrapper = mountComponent(LanguageButton);
     useSettingsStore().load();
     await vi.dynamicImportSettled();
@@ -43,7 +43,8 @@ describe('LanguageButton', () => {
     await wrapper.get('.language_selector').trigger('mouseenter');
     await vi.dynamicImportSettled();
 
-    expect(wrapper.find('.language_selector__dropdown').exists()).toBe(true);
+    expect(wrapper.find('.language_selector__dropdown').exists()).toBe(false);
+    expect(wrapper.get('.language_selector__trigger').attributes('aria-expanded')).toBe('false');
   });
 
   it('selects a language and closes the dropdown', async () => {
