@@ -17,6 +17,7 @@ import { useSettingsStore } from '@/stores/settings';
 import type {
   BuildState,
   IconSize,
+  ProjectNotice,
   ProjectIcon,
   ProjectMode,
   SourceKind,
@@ -110,6 +111,7 @@ export const useProjectStore = defineStore('project', () => {
   const dirty = ref(false);
   const buildState = ref<BuildState>('idle');
   const lastError = ref<string | null>(null);
+  const lastNotice = ref<ProjectNotice | null>(null);
 
   const page = ref(0);
 
@@ -178,6 +180,7 @@ export const useProjectStore = defineStore('project', () => {
     sourcePath.value = null;
     buildState.value = 'idle';
     lastError.value = null;
+    lastNotice.value = null;
     page.value = 0;
     dirty.value = false;
   }
@@ -198,11 +201,13 @@ export const useProjectStore = defineStore('project', () => {
     if (!file.name.toLowerCase().endsWith('.dll')) {
       const msg = t('notifications.invalidEditSource');
       lastError.value = msg;
+      lastNotice.value = null;
       void notify(t('notifications.errorTitle'), msg);
       return;
     }
     sourceLabel.value = file.name;
     lastError.value = null;
+    lastNotice.value = null;
     dirty.value = true;
   }
 
@@ -224,6 +229,7 @@ export const useProjectStore = defineStore('project', () => {
       icons.value = loaded.icons.map(fromBackendIcon);
       selectedIconIds.value = icons.value[0] ? [icons.value[0].id] : [];
       lastError.value = loaded.warnings.length > 0 ? t('notifications.dllLoadWarnings') : null;
+      lastNotice.value = null;
       dirty.value = false;
       buildState.value = 'idle';
       resetPage();
@@ -234,6 +240,7 @@ export const useProjectStore = defineStore('project', () => {
     } catch (error) {
       const msg = ipcErrorMessage(error);
       lastError.value = msg;
+      lastNotice.value = null;
       buildState.value = 'error';
       await notify(t('notifications.errorTitle'), msg);
     }
@@ -250,6 +257,7 @@ export const useProjectStore = defineStore('project', () => {
     if (unsupportedCount > 0) {
       const msg = t('notifications.unsupportedFiles');
       lastError.value = msg;
+      lastNotice.value = null;
       void notify(t('notifications.errorTitle'), msg);
     }
 
@@ -279,6 +287,7 @@ export const useProjectStore = defineStore('project', () => {
         imported.push(fromBackendIcon(icon));
       } catch (error) {
         lastError.value = ipcErrorMessage(error);
+        lastNotice.value = null;
         await notify(t('notifications.errorTitle'), lastError.value);
       }
     }
@@ -290,6 +299,7 @@ export const useProjectStore = defineStore('project', () => {
       }
       dirty.value = true;
       lastError.value = null;
+      lastNotice.value = null;
     }
 
     buildState.value = imported.length > 0 ? 'idle' : 'error';
@@ -377,19 +387,25 @@ export const useProjectStore = defineStore('project', () => {
     lastError.value = message;
   }
 
-  async function submitProject(): Promise<void> {
+  function setLastNotice(notice: ProjectNotice | null): void {
+    lastNotice.value = notice;
+  }
+
+  async function submitProject(): Promise<boolean> {
     if (!canEditProject.value) {
       lastError.value = t('notifications.noEditSource');
+      lastNotice.value = null;
       buildState.value = 'error';
       await notify(t('notifications.errorTitle'), lastError.value);
-      return;
+      return false;
     }
 
     if (icons.value.length === 0) {
       lastError.value = t('notifications.noIcons');
+      lastNotice.value = null;
       buildState.value = 'error';
       await notify(t('notifications.errorTitle'), lastError.value);
-      return;
+      return false;
     }
 
     buildState.value = 'validating';
@@ -398,9 +414,10 @@ export const useProjectStore = defineStore('project', () => {
 
     if (invalidIcons.length > 0) {
       lastError.value = t('notifications.invalidIcons', { count: invalidIcons.length });
+      lastNotice.value = null;
       buildState.value = 'error';
       await notify(t('notifications.errorTitle'), lastError.value);
-      return;
+      return false;
     }
 
     buildState.value = 'building';
@@ -411,7 +428,7 @@ export const useProjectStore = defineStore('project', () => {
 
     if (!selectedOutputPath) {
       buildState.value = 'idle';
-      return;
+      return false;
     }
 
     try {
@@ -424,19 +441,25 @@ export const useProjectStore = defineStore('project', () => {
       buildState.value = 'success';
       lastError.value = null;
       dirty.value = false;
-      await notify(
-        mode.value === 'edit'
+      const notice = {
+        type: 'success' as const,
+        title: mode.value === 'edit'
           ? t('notifications.editSavedTitle')
           : t('notifications.createSavedTitle'),
-        mode.value === 'edit'
+        body: mode.value === 'edit'
           ? t('notifications.editSavedBody')
           : t('notifications.createSavedBody'),
-      );
+      };
+      lastNotice.value = notice;
+      await notify(notice.title, notice.body);
+      return true;
     } catch (error) {
       const msg = ipcErrorMessage(error);
       lastError.value = msg;
+      lastNotice.value = null;
       buildState.value = 'error';
       await notify(t('notifications.errorTitle'), msg);
+      return false;
     }
   }
 
@@ -451,6 +474,7 @@ export const useProjectStore = defineStore('project', () => {
     dirty,
     buildState,
     lastError,
+    lastNotice,
     page,
     totalPages,
     paginatedIcons,
@@ -477,6 +501,7 @@ export const useProjectStore = defineStore('project', () => {
     setDraggingFiles,
     setBuildState,
     setLastError,
+    setLastNotice,
     cleanupPreviews,
     submitProject,
     resetPage,

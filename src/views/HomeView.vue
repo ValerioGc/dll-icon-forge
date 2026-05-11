@@ -1,8 +1,10 @@
 <script lang="ts" setup>
 import { useI18n } from 'vue-i18n';
+import { useProjectStore } from '@/stores/project';
 import type { ProjectMode } from '@/types/Project';
 
 const { t } = useI18n();
+const project = useProjectStore();
 
 const emit = defineEmits<{
     (e: 'selectMode', newMode: ProjectMode): void;
@@ -16,6 +18,21 @@ const emit = defineEmits<{
         <div class="home_view_intro">
             <h1>{{ t('homeView') }}</h1>
             <p>{{ t('homeViewDesc') }}</p>
+        </div>
+
+        <div
+            v-if="project.lastNotice"
+            class="home_view_notice"
+            :class="`home_view_notice--${project.lastNotice.type}`"
+            role="status"
+        >
+            <div>
+                <strong>{{ project.lastNotice.title }}</strong>
+                <span>{{ project.lastNotice.body }}</span>
+            </div>
+            <button type="button" :aria-label="t('common.dismiss')" @click="project.setLastNotice(null)">
+                x
+            </button>
         </div>
 
         <div class="home_view_mode" aria-label="Project mode">
@@ -75,6 +92,44 @@ const emit = defineEmits<{
             margin: 0;
             color: var(--color-text);
             font-weight: 700;
+        }
+    }
+}
+
+.home_view_notice {
+    @extend %fx_between_center;
+    gap: 1rem;
+    padding: .85rem 1rem;
+    border: 1px solid var(--color-accent);
+    border-radius: .5rem;
+    background: var(--color-accent-soft);
+    color: var(--color-text);
+
+    div {
+        @extend %grid_stack;
+        gap: .2rem;
+    }
+
+    strong {
+        color: var(--color-heading);
+    }
+
+    span {
+        color: var(--color-muted);
+        line-height: 1.45;
+    }
+
+    button {
+        border: 0;
+        background: transparent;
+        color: var(--color-muted);
+        cursor: pointer;
+        font-weight: 800;
+
+        &:hover,
+        &:focus-visible {
+            color: var(--color-text);
+            outline: none;
         }
     }
 }

@@ -6,6 +6,14 @@ export type IconStatus = 'ready' | 'error';
 
 export type BuildState = 'idle' | 'validating' | 'building' | 'success' | 'error';
 
+export type ProjectNoticeType = 'success' | 'warning';
+
+export interface ProjectNotice {
+  type: ProjectNoticeType;
+  title: string;
+  body: string;
+}
+
 export interface IconSize {
   width: number;
   height: number;
