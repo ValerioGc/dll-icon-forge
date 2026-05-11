@@ -171,7 +171,7 @@ function handleConfirmDelete(): void {
                 :aria-disabled="isSubmitDisabled"
                 @click.prevent="project.submitProject"
             >
-                <img class="ui_icon themed_icon" src="@/assets/icons/actions/save.svg" alt="" />
+                <img class="ui_icon item_button_icon" src="@/assets/icons/actions/save.svg" alt="" />
                 {{ t('common.submit') }}
             </button>
         </footer>
@@ -313,6 +313,56 @@ function handleConfirmDelete(): void {
             color: var(--color-muted);
             font-weight: 700;
         }
+    }
+}
+
+.item_button {
+    @extend %fx_inline_center;
+    gap: .5rem;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: .45rem;
+    background: var(--color-control-background);
+    color: var(--color-text);
+    font-weight: 800;
+    cursor: pointer;
+    transition:
+        border-color .16s ease,
+        background .16s ease,
+        color .16s ease,
+        opacity .16s ease,
+        transform .16s ease;
+
+    &:hover:not(:disabled),
+    &:focus-visible:not(:disabled) {
+        border-color: var(--color-accent);
+        outline: none;
+    }
+
+    &:active:not(:disabled) {
+        transform: translateY(1px);
+    }
+
+    &:disabled {
+        color: var(--color-muted);
+        cursor: not-allowed;
+        opacity: .55;
+    }
+
+    &--primary {
+        border-color: var(--color-accent);
+        background: var(--color-accent);
+        color: var(--color-on-accent);
+
+        &:hover:not(:disabled),
+        &:focus-visible:not(:disabled) {
+            background: var(--color-accent-hover);
+        }
+    }
+
+    &_icon {
+        filter: var(--icon-on-accent-filter);
     }
 }
 

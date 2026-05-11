@@ -62,6 +62,7 @@ function handlePageSize(next: PageSize): void {
                     :aria-pressed="activeView === 'list'"
                     :aria-label="t('viewMode.list')"
                     :title="t('viewMode.list')"
+                    :disabled="isEmpty"
                     @click.prevent="handleViewMode('list')"
                 >
                     <img class="ui_icon themed_icon" src="@/assets/icons/view/list.svg" alt="" aria-hidden="true">
@@ -73,6 +74,7 @@ function handlePageSize(next: PageSize): void {
                     :aria-pressed="activeView === 'grid'"
                     :aria-label="t('viewMode.grid')"
                     :title="t('viewMode.grid')"
+                    :disabled="isEmpty"
                     @click.prevent="handleViewMode('grid')"
                 >
                     <img class="ui_icon themed_icon" src="@/assets/icons/view/grid.svg" alt="" aria-hidden="true">
