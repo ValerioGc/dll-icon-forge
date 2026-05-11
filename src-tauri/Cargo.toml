@@ -5,6 +5,7 @@ description = "Dll icon packer for windows"
 authors = ["ValerioGc"]
 edition = "2024"
 license = "Unlicense"
+default-run = "win-dll-packer"
 
 [lib]
 name = "win_dll_packer_lib"
