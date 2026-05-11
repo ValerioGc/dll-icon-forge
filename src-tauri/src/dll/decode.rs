@@ -36,6 +36,57 @@ fn decode_dib_icon(
     expected_width: u16,
     expected_height: u16,
 ) -> Result<NormalisedIcon, IconError> {
+    let header = parse_dib_header(bytes)?;
+    validate_dib_header(&header)?;
+    let geometry = validate_dib_geometry(&header, expected_width, expected_height)?;
+    let layout = dib_layout(&header, &geometry, bytes.len())?;
+    let decoded = decode_dib_pixels(bytes, &header, &geometry, &layout);
+
+    let mut rgba = decoded.rgba;
+    apply_dib_transparency(
+        bytes,
+        &header,
+        &geometry,
+        &layout,
+        decoded.any_alpha,
+        &mut rgba,
+    );
+
+    normalised_icon(geometry.width, geometry.height, rgba)
+}
+
+#[derive(Debug, Clone, Copy)]
+struct DibHeader {
+    header_size: usize,
+    dib_width: i32,
+    dib_height: i32,
+    planes: u16,
+    bit_count: u16,
+    compression: u32,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct DibGeometry {
+    width: u32,
+    height: u32,
+    has_and_mask: bool,
+    bottom_up: bool,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct DibLayout {
+    row_stride: usize,
+    pixel_offset: usize,
+    mask_stride: usize,
+    mask_offset: usize,
+}
+
+struct DecodedDibPixels {
+    rgba: Vec<u8>,
+    any_alpha: bool,
+}
+
+fn parse_dib_header(bytes: &[u8]) -> Result<DibHeader, IconError> {
     if bytes.len() < BITMAPINFOHEADER_SIZE {
         return Err(parse_error(format!(
             "DIB RT_ICON too small: {} bytes",
@@ -50,33 +101,51 @@ fn decode_dib_icon(
         )));
     }
 
-    let dib_width = read_i32(bytes, 4);
-    let dib_height = read_i32(bytes, 8);
-    let planes = read_u16(bytes, 12);
-    let bit_count = read_u16(bytes, 14);
-    let compression = read_u32(bytes, 16);
+    Ok(DibHeader {
+        header_size,
+        dib_width: read_i32(bytes, 4),
+        dib_height: read_i32(bytes, 8),
+        planes: read_u16(bytes, 12),
+        bit_count: read_u16(bytes, 14),
+        compression: read_u32(bytes, 16),
+    })
+}
 
-    if dib_width <= 0 || dib_height == 0 {
+fn validate_dib_header(header: &DibHeader) -> Result<(), IconError> {
+    if header.dib_width <= 0 || header.dib_height == 0 {
         return Err(parse_error(format!(
-            "invalid DIB dimensions: {dib_width}x{dib_height}"
+            "invalid DIB dimensions: {}x{}",
+            header.dib_width, header.dib_height
         )));
     }
-    if planes != 1 {
-        return Err(parse_error(format!("DIB planes must be 1, got {planes}")));
-    }
-    if compression != BI_RGB {
+    if header.planes != 1 {
         return Err(parse_error(format!(
-            "unsupported DIB compression: {compression}"
+            "DIB planes must be 1, got {}",
+            header.planes
         )));
     }
-    if bit_count != 32 && bit_count != 24 {
+    if header.compression != BI_RGB {
         return Err(parse_error(format!(
-            "unsupported DIB bit depth: {bit_count}"
+            "unsupported DIB compression: {}",
+            header.compression
+        )));
+    }
+    if header.bit_count != 32 && header.bit_count != 24 {
+        return Err(parse_error(format!(
+            "unsupported DIB bit depth: {}",
+            header.bit_count
         )));
     }
 
-    let width = dib_width as u32;
-    let dib_height_abs = dib_height.unsigned_abs();
+    Ok(())
+}
+
+fn validate_dib_geometry(
+    header: &DibHeader,
+    expected_width: u16,
+    expected_height: u16,
+) -> Result<DibGeometry, IconError> {
+    let width = header.dib_width as u32;
     let expected_width = u32::from(expected_width);
     let expected_height = u32::from(expected_height);
     if width != expected_width {
@@ -85,6 +154,7 @@ fn decode_dib_icon(
         )));
     }
 
+    let dib_height_abs = header.dib_height.unsigned_abs();
     let (height, has_and_mask) = if dib_height_abs == expected_height * 2 {
         (expected_height, true)
     } else if dib_height_abs == expected_height {
@@ -95,65 +165,121 @@ fn decode_dib_icon(
         )));
     };
 
-    let row_stride = dib_row_stride(width, bit_count)?;
-    let pixel_offset = header_size;
+    Ok(DibGeometry {
+        width,
+        height,
+        has_and_mask,
+        bottom_up: header.dib_height > 0,
+    })
+}
+
+fn dib_layout(
+    header: &DibHeader,
+    geometry: &DibGeometry,
+    bytes_len: usize,
+) -> Result<DibLayout, IconError> {
+    let row_stride = dib_row_stride(geometry.width, header.bit_count)?;
+    let pixel_offset = header.header_size;
     let pixel_bytes = row_stride
-        .checked_mul(height as usize)
+        .checked_mul(geometry.height as usize)
         .ok_or_else(|| parse_error("DIB pixel data size overflow"))?;
-    let mask_stride = mask_row_stride(width)?;
+    let mask_stride = mask_row_stride(geometry.width)?;
     let mask_offset = pixel_offset + pixel_bytes;
-    let mask_bytes = if has_and_mask {
+    let mask_bytes = if geometry.has_and_mask {
         mask_stride
-            .checked_mul(height as usize)
+            .checked_mul(geometry.height as usize)
             .ok_or_else(|| parse_error("DIB mask data size overflow"))?
     } else {
         0
     };
     let required_len = mask_offset + mask_bytes;
-    if bytes.len() < required_len {
+    if bytes_len < required_len {
         return Err(parse_error(format!(
             "DIB RT_ICON truncated: need {required_len} bytes, got {}",
-            bytes.len()
+            bytes_len
         )));
     }
 
-    let mut rgba = vec![0; (width * height * 4) as usize];
-    let bottom_up = dib_height > 0;
+    Ok(DibLayout {
+        row_stride,
+        pixel_offset,
+        mask_stride,
+        mask_offset,
+    })
+}
+
+fn decode_dib_pixels(
+    bytes: &[u8],
+    header: &DibHeader,
+    geometry: &DibGeometry,
+    layout: &DibLayout,
+) -> DecodedDibPixels {
+    let mut rgba = vec![0; (geometry.width * geometry.height * 4) as usize];
     let mut any_alpha = false;
 
-    for y in 0..height {
-        let source_y = if bottom_up { height - 1 - y } else { y };
-        let source_row = pixel_offset + source_y as usize * row_stride;
-        for x in 0..width {
-            let source = source_row + x as usize * usize::from(bit_count / 8);
-            let target = ((y * width + x) * 4) as usize;
-            rgba[target] = bytes[source + 2];
-            rgba[target + 1] = bytes[source + 1];
-            rgba[target + 2] = bytes[source];
-            rgba[target + 3] = if bit_count == 32 {
-                let alpha = bytes[source + 3];
-                any_alpha |= alpha != 0;
-                alpha
-            } else {
-                255
-            };
+    for y in 0..geometry.height {
+        let source_y = source_dib_y(y, geometry);
+        let source_row = layout.pixel_offset + source_y as usize * layout.row_stride;
+        for x in 0..geometry.width {
+            let source = source_row + x as usize * usize::from(header.bit_count / 8);
+            let target = ((y * geometry.width + x) * 4) as usize;
+            write_dib_pixel(
+                bytes,
+                source,
+                header.bit_count,
+                &mut rgba[target..target + 4],
+            );
+            any_alpha |= header.bit_count == 32 && rgba[target + 3] != 0;
         }
     }
 
-    if has_and_mask && (bit_count == 24 || !any_alpha) {
-        if bit_count == 32 && !any_alpha {
-            for pixel in rgba.chunks_exact_mut(4) {
-                pixel[3] = 255;
-            }
-        }
-        apply_and_mask(bytes, mask_offset, mask_stride, width, height, &mut rgba);
-    } else if bit_count == 32 && !any_alpha {
+    DecodedDibPixels { rgba, any_alpha }
+}
+
+fn source_dib_y(y: u32, geometry: &DibGeometry) -> u32 {
+    if geometry.bottom_up {
+        geometry.height - 1 - y
+    } else {
+        y
+    }
+}
+
+fn write_dib_pixel(bytes: &[u8], source: usize, bit_count: u16, target: &mut [u8]) {
+    target[0] = bytes[source + 2];
+    target[1] = bytes[source + 1];
+    target[2] = bytes[source];
+    target[3] = if bit_count == 32 {
+        bytes[source + 3]
+    } else {
+        255
+    };
+}
+
+fn apply_dib_transparency(
+    bytes: &[u8],
+    header: &DibHeader,
+    geometry: &DibGeometry,
+    layout: &DibLayout,
+    any_alpha: bool,
+    rgba: &mut [u8],
+) {
+    let needs_opaque_alpha = header.bit_count == 32 && !any_alpha;
+    if needs_opaque_alpha {
         for pixel in rgba.chunks_exact_mut(4) {
             pixel[3] = 255;
         }
     }
 
-    normalised_icon(width, height, rgba)
+    if geometry.has_and_mask && (header.bit_count == 24 || !any_alpha) {
+        apply_and_mask(
+            bytes,
+            layout.mask_offset,
+            layout.mask_stride,
+            geometry.width,
+            geometry.height,
+            rgba,
+        );
+    }
 }
 
 fn validate_dimensions(

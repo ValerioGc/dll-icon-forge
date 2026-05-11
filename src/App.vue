@@ -26,14 +26,14 @@ function handleGoHome(): void {
     if (project.dirty) {
         showConfirmHome.value = true;
     } else {
-        void project.cleanupPreviews();
+        project.cleanupPreviews();
         project.goHome();
     }
 }
 
 function confirmGoHome(): void {
     showConfirmHome.value = false;
-    void project.cleanupPreviews();
+    project.cleanupPreviews();
     project.goHome();
 }
 
@@ -50,16 +50,15 @@ async function confirmClose(): Promise<void> {
 }
 
 function handleBeforeUnload(event: BeforeUnloadEvent): void {
-    if (project.dirty) {
+    if (project.dirty) 
         event.preventDefault();
-    }
 }
 
 async function registerCloseRequested(): Promise<void> {
     try {
         unlistenCloseRequested = await getCurrentWindow().onCloseRequested((event) => {
             if (isClosingWindow.value) {
-                void project.cleanupPreviews();
+                project.cleanupPreviews();
                 return;
             }
 
@@ -69,7 +68,7 @@ async function registerCloseRequested(): Promise<void> {
                 return;
             }
 
-            void project.cleanupPreviews();
+            project.cleanupPreviews();
         });
     } catch {
         unlistenCloseRequested = null;
@@ -78,7 +77,7 @@ async function registerCloseRequested(): Promise<void> {
 
 onMounted(() => {
     window.addEventListener('beforeunload', handleBeforeUnload);
-    void registerCloseRequested();
+    registerCloseRequested();
 });
 onUnmounted(() => {
     window.removeEventListener('beforeunload', handleBeforeUnload);
