@@ -130,10 +130,9 @@ fn replace_file(from: &Path, to: &Path) -> Result<(), IconError> {
 
     if ok == 0 {
         let code = unsafe { GetLastError() };
-        return Err(IconError::Io(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            format!("MoveFileExW: Win32 error {code}"),
-        )));
+        return Err(IconError::Io(std::io::Error::other(format!(
+            "MoveFileExW: Win32 error {code}"
+        ))));
     }
 
     Ok(())

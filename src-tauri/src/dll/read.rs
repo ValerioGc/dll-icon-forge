@@ -465,28 +465,28 @@ fn project_icon_from_group(
     ))
 }
 
-fn read_group_resource<'a>(
-    module: &'a OwnedModule,
+fn read_group_resource(
+    module: &OwnedModule,
     group_id: u16,
     language_id: u16,
-) -> Result<&'a [u8], IconError> {
+) -> Result<&[u8], IconError> {
     read_resource(module, RT_GROUP_ICON_ID, group_id, language_id)
 }
 
-fn read_icon_resource<'a>(
-    module: &'a OwnedModule,
+fn read_icon_resource(
+    module: &OwnedModule,
     icon_id: u16,
     language_id: u16,
-) -> Result<&'a [u8], IconError> {
+) -> Result<&[u8], IconError> {
     read_resource(module, RT_ICON_ID, icon_id, language_id)
 }
 
-fn read_resource<'a>(
-    module: &'a OwnedModule,
+fn read_resource(
+    module: &OwnedModule,
     resource_type: u16,
     resource_id: u16,
     language_id: u16,
-) -> Result<&'a [u8], IconError> {
+) -> Result<&[u8], IconError> {
     let resource = unsafe {
         FindResourceExW(
             module.handle,
@@ -557,6 +557,8 @@ mod tests {
     use windows_sys::Win32::System::LibraryLoader::{
         BeginUpdateResourceW, EndUpdateResourceW, UpdateResourceW,
     };
+
+    type RawGroupResource<'a> = (u16, u16, &'a [u8], Vec<(u16, &'a [u8])>);
 
     fn system_path(file_name: &str) -> PathBuf {
         Path::new(r"C:\Windows\System32").join(file_name)
@@ -717,9 +719,7 @@ mod tests {
         (dir, path)
     }
 
-    fn create_test_dll_with_raw_groups(
-        groups: &[(u16, u16, &[u8], Vec<(u16, &[u8])>)],
-    ) -> (TempDir, PathBuf) {
+    fn create_test_dll_with_raw_groups(groups: &[RawGroupResource<'_>]) -> (TempDir, PathBuf) {
         let dir = tempfile::tempdir().expect("create temp dir");
         let path = dir.path().join("raw-resource-test.dll");
         fs::copy(std::env::current_exe().expect("current exe"), &path)
