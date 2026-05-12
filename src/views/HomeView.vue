@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 
+import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useProjectStore } from '@/stores/project';
 import type { ProjectMode } from '@/types/modes';
@@ -21,8 +22,7 @@ interface AppMode {
 import plus from '@/assets/icons/actions/plus.svg';
 import edit from '@/assets/icons/actions/edit.svg';
 
-const modes: AppMode[] =
-[
+const modes = computed<AppMode[]>(() => [
     {
         id: 'create',
         title: t('common.createMode'),
@@ -35,7 +35,7 @@ const modes: AppMode[] =
         hint: t('homeViewEditHint'),
         icon: edit,
     },
-];
+]);
 
 </script>
 

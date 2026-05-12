@@ -1,5 +1,6 @@
 import { describe, expect, it, beforeEach } from 'vitest';
 import HomeView from '@/views/HomeView.vue';
+import { setLocale } from '@/i18n';
 import { useProjectStore } from '@/stores/project';
 import { mountComponent, resetFrontendTestState } from '../helpers/mount';
 
@@ -16,6 +17,20 @@ describe('HomeView', () => {
     await buttons[1].trigger('click');
 
     expect(wrapper.emitted('selectMode')).toEqual([['create'], ['edit']]);
+  });
+
+  it('updates mode button labels when locale changes', async () => {
+    const wrapper = mountComponent(HomeView);
+
+    expect(wrapper.text()).toContain('Crea');
+    expect(wrapper.text()).toContain('Modifica');
+
+    setLocale('en');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.text()).toContain('Create');
+    expect(wrapper.text()).toContain('Edit');
+    expect(wrapper.text()).not.toContain('Modifica');
   });
 
   it('shows and dismisses the latest project notice', async () => {

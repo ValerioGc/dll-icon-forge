@@ -43,6 +43,7 @@ const emit = defineEmits<{
             border: 0;
             border-radius: .6rem;
             cursor: pointer;
+            background-color: unset!important;
         }
 
         &_logo {
