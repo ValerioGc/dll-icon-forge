@@ -2,32 +2,32 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 
-const win = getCurrentWindow();
+let win: ReturnType<typeof getCurrentWindow> | null = null;
+try { win = getCurrentWindow(); } catch { /* browser fallback */ }
+
 const isMaximized = ref(false);
 let unlistenResized: (() => void) | null = null;
 
 async function syncMaximized(): Promise<void> {
-    try {
-        isMaximized.value = await win.isMaximized();
-    } catch { /* browser fallback */ }
+    try { isMaximized.value = (await win?.isMaximized()) ?? false; } catch { /* browser fallback */ }
 }
 
 async function minimize(): Promise<void> {
-    try { await win.minimize(); } catch { /* browser fallback */ }
+    try { await win?.minimize(); } catch { /* browser fallback */ }
 }
 
 async function toggleMaximize(): Promise<void> {
-    try { await win.toggleMaximize(); } catch { /* browser fallback */ }
+    try { await win?.toggleMaximize(); } catch { /* browser fallback */ }
 }
 
 async function close(): Promise<void> {
-    try { await win.close(); } catch { /* browser fallback */ }
+    try { await win?.close(); } catch { /* browser fallback */ }
 }
 
 onMounted(async () => {
     await syncMaximized();
     try {
-        unlistenResized = await win.onResized(syncMaximized);
+        if (win) unlistenResized = await win.onResized(syncMaximized);
     } catch { /* browser fallback */ }
 });
 

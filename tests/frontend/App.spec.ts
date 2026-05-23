@@ -41,7 +41,7 @@ describe('App', () => {
     project.setMode('create');
     await wrapper.vm.$nextTick();
 
-    await wrapper.get('.page_header_brand').trigger('click');
+    await wrapper.get('.page_header__brand').trigger('click');
     await vi.dynamicImportSettled();
 
     expect(project.mode).toBeNull();
@@ -56,7 +56,7 @@ describe('App', () => {
     project.dirty = true;
     await wrapper.vm.$nextTick();
 
-    await wrapper.get('.page_header_brand').trigger('click');
+    await wrapper.get('.page_header__brand').trigger('click');
     await vi.dynamicImportSettled();
 
     expect(project.mode).toBe('create');
@@ -71,7 +71,7 @@ describe('App', () => {
     project.dirty = true;
     await wrapper.vm.$nextTick();
 
-    await wrapper.get('.page_header_brand').trigger('click');
+    await wrapper.get('.page_header__brand').trigger('click');
     await vi.dynamicImportSettled();
 
     wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm');
@@ -89,7 +89,7 @@ describe('App', () => {
     project.dirty = true;
     await wrapper.vm.$nextTick();
 
-    await wrapper.get('.page_header_brand').trigger('click');
+    await wrapper.get('.page_header__brand').trigger('click');
     await vi.dynamicImportSettled();
 
     wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('cancel');
