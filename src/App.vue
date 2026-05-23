@@ -13,7 +13,7 @@ const ConfirmDialog = defineAsyncComponent(() => import('@/components/dialogs/Co
 
 const { t } = useI18n();
 const project = useProjectStore();
-const settings = useSettingsStore();
+const settings = useSettingsStore(); 
 
 settings.load();
 
