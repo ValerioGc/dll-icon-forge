@@ -22,7 +22,7 @@ defineOptions({
 
 const { t } = useI18n();
 const project = useProjectStore();
-const { sourceLabel, selectedCount, icons, buildState, lastError } = storeToRefs(project);
+const { sourceLabel, sourcePath, selectedCount, icons, buildState, lastError } = storeToRefs(project);
 
 const props = defineProps<{
     mode: ProjectMode;
@@ -33,6 +33,7 @@ const emit = defineEmits<{
 }>();
 
 const showConfirmDelete = ref(false);
+const showConfirmReset = ref(false);
 
 const title = computed(() => {
     return props.mode === 'create' ? t('common.createMode') : t('common.editMode');
@@ -108,6 +109,11 @@ function handleConfirmDelete(): void {
     project.removeSelectedIcons();
 }
 
+async function handleConfirmReset(): Promise<void> {
+    showConfirmReset.value = false;
+    await project.resetToSource();
+}
+
 async function handleSubmit(): Promise<void> {
     const submitted = await project.submitProject();
     if (submitted && props.mode === 'create')
@@ -119,11 +125,18 @@ async function handleSubmit(): Promise<void> {
 <template>
     <div class="item_view">
 
-        <ConfirmDialog v-if="showConfirmDelete" 
-                    :title="t('confirm.deleteTitle')" 
+        <ConfirmDialog v-if="showConfirmDelete"
+                    :title="t('confirm.deleteTitle')"
                     :message="deleteConfirmMessage"
-                    @confirm="handleConfirmDelete" 
-                    @cancel="showConfirmDelete = false" 
+                    @confirm="handleConfirmDelete"
+                    @cancel="showConfirmDelete = false"
+        />
+
+        <ConfirmDialog v-if="showConfirmReset"
+                    :title="t('confirm.resetTitle')"
+                    :message="t('confirm.resetMessage')"
+                    @confirm="handleConfirmReset"
+                    @cancel="showConfirmReset = false"
         />
         
         <!-- Back button -->
@@ -199,15 +212,27 @@ async function handleSubmit(): Promise<void> {
         <footer v-if="!isEditLocked" class="item_view_footer">
             <p>{{ itemCountLabel }}</p>
 
-            <button type="button"
-                class="item_button item_button--primary"
-                :disabled="isSubmitDisabled"
-                :aria-disabled="isSubmitDisabled"
-                @click.prevent="handleSubmit"
-            >
-                <img class="ui_icon item_button_icon" src="@/assets/icons/actions/save.svg" alt="" />
-                {{ t('common.submit') }}
-            </button>
+            <div class="item_view_footer_actions">
+                <button v-if="props.mode === 'edit' && sourcePath !== null"
+                    type="button"
+                    class="item_button item_button--danger"
+                    :disabled="!project.dirty || isBuilding"
+                    :aria-disabled="!project.dirty || isBuilding"
+                    @click.prevent="showConfirmReset = true"
+                >
+                    {{ t('common.reset') }}
+                </button>
+
+                <button type="button"
+                    class="item_button item_button--primary"
+                    :disabled="isSubmitDisabled"
+                    :aria-disabled="isSubmitDisabled"
+                    @click.prevent="handleSubmit"
+                >
+                    <img class="ui_icon item_button_icon" src="@/assets/icons/actions/save.svg" alt="" />
+                    {{ t('common.submit') }}
+                </button>
+            </div>
         </footer>
     </div>
 </template>
@@ -392,6 +417,12 @@ async function handleSubmit(): Promise<void> {
             color: var(--color-muted);
             font-weight: 700;
         }
+
+        &_actions {
+            @extend %fx_inline_center;
+            gap: .5rem;
+            flex-wrap: wrap;
+        }
     }
 }
 
@@ -438,6 +469,17 @@ async function handleSubmit(): Promise<void> {
         &:focus-visible:not(:disabled) {
             border-color: var(--color-accent-hover);
             background: var(--color-accent-hover);
+        }
+    }
+
+    &--danger {
+        border-color: var(--color-danger);
+        color: var(--color-danger);
+
+        &:hover:not(:disabled),
+        &:focus-visible:not(:disabled) {
+            background: var(--color-danger);
+            color: #ffffff;
         }
     }
 

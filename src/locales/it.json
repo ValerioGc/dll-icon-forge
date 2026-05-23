@@ -24,7 +24,8 @@
     "backHome": "Torna alla home",
     "toggleLocale": "Cambia lingua",
     "toggleTheme": "Cambia tema",
-    "dismiss": "Chiudi"
+    "dismiss": "Chiudi",
+    "reset": "Ripristina"
   },
   "menu": {
     "delete": "Elimina",
@@ -63,6 +64,8 @@
     "deleteSingle": "Vuoi eliminare l'icona selezionata?",
     "deleteMultiple": "Vuoi eliminare {count} icone selezionate?",
     "confirmLabel": "Conferma",
-    "cancelLabel": "Annulla"
+    "cancelLabel": "Annulla",
+    "resetTitle": "Ripristina progetto",
+    "resetMessage": "Tutte le modifiche verranno scartate e le icone verranno rilette dal file originale."
   }
 }

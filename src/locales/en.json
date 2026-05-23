@@ -24,7 +24,8 @@
     "backHome": "Back to Home",
     "toggleLocale": "Toggle language",
     "toggleTheme": "Toggle theme",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "reset": "Reset"
   },
   "menu": {
     "delete": "Delete",
@@ -63,6 +64,8 @@
     "deleteSingle": "Delete the selected icon?",
     "deleteMultiple": "Delete {count} selected icons?",
     "confirmLabel": "Confirm",
-    "cancelLabel": "Cancel"
+    "cancelLabel": "Cancel",
+    "resetTitle": "Reset project",
+    "resetMessage": "All changes will be discarded and the icons will be re-read from the original file."
   }
 }

@@ -223,6 +223,92 @@ describe('ItemView', () => {
     expect(wrapper.find('.item_view_error').exists()).toBe(true);
   });
 
+  it('does not show reset button in create mode', () => {
+    const wrapper = mountComponent(ItemView, { props: { mode: 'create' } });
+    const project = useProjectStore();
+
+    project.addFiles([new File(['png'], 'icon.png', { type: 'image/png' })]);
+
+    const resetBtn = wrapper.findAll('button').find((b) => b.text().includes('Ripristina'));
+    expect(resetBtn).toBeUndefined();
+  });
+
+  it('does not show reset button in edit mode when sourcePath is null', async () => {
+    const wrapper = mountComponent(ItemView, { props: { mode: 'edit' } });
+    const project = useProjectStore();
+
+    project.setEditSourceFile(new File(['dll'], 'existing.dll'));
+    project.$patch({ dirty: true });
+    await wrapper.vm.$nextTick();
+
+    const resetBtn = wrapper.findAll('button').find((b) => b.text().includes('Ripristina'));
+    expect(resetBtn).toBeUndefined();
+  });
+
+  it('shows reset button disabled when source is loaded but project is not dirty', async () => {
+    const wrapper = mountComponent(ItemView, { props: { mode: 'edit' } });
+    const project = useProjectStore();
+
+    project.$patch({ sourcePath: 'C:\\icons.dll', sourceLabel: 'icons.dll', dirty: false });
+    await wrapper.vm.$nextTick();
+
+    const resetBtn = wrapper.findAll('button').find((b) => b.text().includes('Ripristina'));
+    expect(resetBtn).toBeDefined();
+    expect(resetBtn?.attributes('disabled')).toBeDefined();
+  });
+
+  it('shows reset confirm dialog when reset button is clicked', async () => {
+    const wrapper = mountComponent(ItemView, { props: { mode: 'edit' } });
+    const project = useProjectStore();
+
+    project.$patch({ sourcePath: 'C:\\icons.dll', sourceLabel: 'icons.dll', dirty: true });
+    await wrapper.vm.$nextTick();
+
+    const resetBtn = wrapper.findAll('button').find((b) => b.text().includes('Ripristina'));
+    await resetBtn?.trigger('click');
+    await vi.dynamicImportSettled();
+
+    const dialog = wrapper.findComponent({ name: 'ConfirmDialog' });
+    expect(dialog.exists()).toBe(true);
+    expect(dialog.props('title')).toBe('Ripristina progetto');
+  });
+
+  it('calls resetToSource and hides dialog when reset is confirmed', async () => {
+    const wrapper = mountComponent(ItemView, { props: { mode: 'edit' } });
+    const project = useProjectStore();
+    const resetSpy = vi.spyOn(project, 'resetToSource').mockResolvedValueOnce(undefined);
+
+    project.$patch({ sourcePath: 'C:\\icons.dll', sourceLabel: 'icons.dll', dirty: true });
+    await wrapper.vm.$nextTick();
+
+    await wrapper.findAll('button').find((b) => b.text().includes('Ripristina'))?.trigger('click');
+    await vi.dynamicImportSettled();
+
+    wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm');
+    await wrapper.vm.$nextTick();
+
+    expect(resetSpy).toHaveBeenCalledOnce();
+    expect(wrapper.findComponent({ name: 'ConfirmDialog' }).exists()).toBe(false);
+  });
+
+  it('hides reset dialog without calling resetToSource when cancelled', async () => {
+    const wrapper = mountComponent(ItemView, { props: { mode: 'edit' } });
+    const project = useProjectStore();
+    const resetSpy = vi.spyOn(project, 'resetToSource').mockResolvedValueOnce(undefined);
+
+    project.$patch({ sourcePath: 'C:\\icons.dll', sourceLabel: 'icons.dll', dirty: true });
+    await wrapper.vm.$nextTick();
+
+    await wrapper.findAll('button').find((b) => b.text().includes('Ripristina'))?.trigger('click');
+    await vi.dynamicImportSettled();
+
+    wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('cancel');
+    await wrapper.vm.$nextTick();
+
+    expect(resetSpy).not.toHaveBeenCalled();
+    expect(wrapper.findComponent({ name: 'ConfirmDialog' }).exists()).toBe(false);
+  });
+
   it('shows the selected count alongside the total when icons are selected', async () => {
     const wrapper = mountComponent(ItemView, {
       props: {

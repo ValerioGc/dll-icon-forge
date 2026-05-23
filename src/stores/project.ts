@@ -284,6 +284,11 @@ export const useProjectStore = defineStore('project', () => {
     lastNotice.value = notice;
   }
 
+  async function resetToSource(): Promise<void> {
+    if (!sourcePath.value) return;
+    await loadExistingDllPath(sourcePath.value);
+  }
+
   async function submitProject(): Promise<boolean> {
     return submitProjectBuild({
       mode,
@@ -338,6 +343,7 @@ export const useProjectStore = defineStore('project', () => {
     setLastError,
     setLastNotice,
     cleanupPreviews,
+    resetToSource,
     submitProject,
     resetPage,
     goToPage,

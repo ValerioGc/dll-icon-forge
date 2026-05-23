@@ -423,6 +423,41 @@ describe('project store', () => {
     expect(project.dirty).toBe(true);
   });
 
+  it('resetToSource does nothing when sourcePath is null', async () => {
+    const project = setupProjectStore();
+
+    project.setMode('edit');
+    project.setEditSourceFile(new File(['dll'], 'lib.dll'));
+
+    await project.resetToSource();
+
+    expect(project.sourcePath).toBeNull();
+    expect(project.sourceLabel).toBe('lib.dll');
+  });
+
+  it('resetToSource reloads icons from sourcePath and clears dirty', async () => {
+    const { loadExistingDll } = await import('@/services/tauriProject');
+    const backendIcon = { id: 'orig-1', name: 'original.ico', previewPath: null, status: 'ready', sourceKind: 'extracted', availableSizes: [], error: null };
+    vi.mocked(loadExistingDll).mockResolvedValue({ icons: [backendIcon], warnings: [] });
+
+    const project = setupProjectStore();
+    project.setMode('edit');
+    await project.loadExistingDllPath('C:\\icons.dll');
+
+    project.addFiles([makePng('extra.png')]);
+    expect(project.icons).toHaveLength(2);
+    expect(project.dirty).toBe(true);
+
+    await project.resetToSource();
+
+    expect(project.icons).toHaveLength(1);
+    expect(project.icons[0].id).toBe('orig-1');
+    expect(project.dirty).toBe(false);
+    expect(project.sourcePath).toBe('C:\\icons.dll');
+    expect(vi.mocked(loadExistingDll)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(loadExistingDll)).toHaveBeenLastCalledWith('C:\\icons.dll');
+  });
+
   it('reports edit mode source errors and success', async () => {
     const { notify } = await import('@/services/notifications');
     const project = setupProjectStore();
