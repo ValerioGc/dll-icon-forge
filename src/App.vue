@@ -50,7 +50,7 @@ async function confirmClose(): Promise<void> {
 }
 
 function handleBeforeUnload(event: BeforeUnloadEvent): void {
-    if (project.dirty) 
+    if (project.dirty && !isClosingWindow.value)
         event.preventDefault();
 }
 
@@ -58,7 +58,6 @@ async function registerCloseRequested(): Promise<void> {
     try {
         unlistenCloseRequested = await getCurrentWindow().onCloseRequested((event) => {
             if (isClosingWindow.value) {
-                project.cleanupPreviews();
                 return;
             }
 

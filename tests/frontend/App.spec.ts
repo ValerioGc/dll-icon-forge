@@ -114,6 +114,26 @@ describe('App', () => {
     expect(preventDefaultSpy).toHaveBeenCalled();
   });
 
+  it('does not prevent page unload when isClosingWindow is true even if the project is dirty', async () => {
+    wrapper = mountComponent(App);
+    const project = useProjectStore();
+
+    project.setMode('create');
+    project.dirty = true;
+    await wrapper.vm.$nextTick();
+
+    // Simulate the controlled-close flow: isClosingWindow is set before close() is called.
+    // Without this fix the beforeunload handler would fire event.preventDefault() even here,
+    // causing the OS "leave page?" dialog to appear and leaving a blank Tauri window.
+    (wrapper.vm as Record<string, unknown>)['isClosingWindow'] = true;
+
+    const event = new Event('beforeunload', { cancelable: true });
+    const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+    window.dispatchEvent(event);
+
+    expect(preventDefaultSpy).not.toHaveBeenCalled();
+  });
+
   it('does not prevent page unload when the project is clean', async () => {
     wrapper = mountComponent(App);
     const project = useProjectStore();
