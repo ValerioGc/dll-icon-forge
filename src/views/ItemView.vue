@@ -139,12 +139,6 @@ async function handleSubmit(): Promise<void> {
                     @cancel="showConfirmReset = false"
         />
         
-        <!-- Back button -->
-        <button type="button" class="back_button" @click.prevent="emit('home')">
-            <img class="ui_icon back_button_icon" src="@/assets/icons/navigation/back.svg" alt="" />
-            {{ t('common.backHome') }}
-        </button>
-
         <header class="item_view_header">
             <h1>{{ title }}</h1>
             <p>{{ description }}</p>
@@ -238,45 +232,6 @@ async function handleSubmit(): Promise<void> {
 </template>
 
 <style lang="scss" scoped>
-
-.back_button {
-    @extend %fx_inline_center;
-    border: 1px solid var(--color-heading);
-    margin-left: auto;
-    width: max-content;
-    min-height: 2.5rem;
-    gap: .5rem;
-    border-radius: 6px;
-    padding: .5rem;
-    font-weight: 700;
-    cursor: pointer;
-    border-color: var(--color-accent);
-    background: var(--color-accent);
-    color: var(--color-on-accent);
-    transition:
-        border-color .16s ease,
-        background .16s ease,
-        color .16s ease,
-        transform .16s ease;
-
-    &:hover,
-    &:focus-visible {
-        border-color: var(--color-accent-hover);
-        background: var(--color-accent-hover);
-        color: var(--color-on-accent);
-        outline: none;
-    }
-
-    &:active {
-        transform: translateY(1px);
-    }
-
-    &_icon {
-        width: 1.25rem;
-        height: 1.25rem;
-        filter: var(--icon-on-accent-filter);
-    }
-}
 
 .item_view {
     width: min(1080px, 100%);

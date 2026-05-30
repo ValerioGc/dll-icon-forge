@@ -91,14 +91,6 @@ describe('ItemView', () => {
     expect(wrapper.findComponent({ name: 'MenuTab' }).exists()).toBe(true);
   });
 
-  it('back button emits home instead of calling goHome directly', async () => {
-    const wrapper = mountComponent(ItemView, { props: { mode: 'create' } });
-
-    await wrapper.find('.back_button').trigger('click');
-
-    expect(wrapper.emitted('home')).toHaveLength(1);
-  });
-
   it('disables submit button while build is in progress', async () => {
     const wrapper = mountComponent(ItemView, { props: { mode: 'create' } });
     const project = useProjectStore();

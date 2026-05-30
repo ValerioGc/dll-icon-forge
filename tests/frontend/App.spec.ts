@@ -34,6 +34,23 @@ describe('App', () => {
     expect(wrapper.findComponent({ name: 'ItemView' }).exists()).toBe(true);
   });
 
+  it('shows back button only in mode and navigates home when clicked', async () => {
+    wrapper = mountComponent(App);
+    const project = useProjectStore();
+
+    expect(wrapper.find('.back_button').exists()).toBe(false);
+
+    project.setMode('create');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('.back_button').exists()).toBe(true);
+
+    await wrapper.get('.back_button').trigger('click');
+    await vi.dynamicImportSettled();
+
+    expect(project.mode).toBeNull();
+  });
+
   it('goes home immediately when the project is clean', async () => {
     wrapper = mountComponent(App);
     const project = useProjectStore();
