@@ -5,8 +5,9 @@ html,
 body,
 #app {
   min-width: 320px;
-  min-height: 100vh;
+  height: 100vh;
   margin: 0;
+  overflow: hidden;
 }
 
 body {
@@ -32,17 +33,20 @@ button:disabled {
 }
 
 .app {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .app__content {
   @extend %fx_center;
   width: 100%;
   flex: 1;
+  min-height: 0;
   align-items: flex-start;
   padding: clamp(1.25rem, 4vw, 3rem);
+  overflow-y: auto;
 }
 
 .surface {
@@ -75,4 +79,22 @@ button:disabled {
 
 .themed_icon {
   filter: var(--icon-filter);
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
 }

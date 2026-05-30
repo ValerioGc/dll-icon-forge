@@ -470,6 +470,10 @@ async function handleSubmit(): Promise<void> {
             border-color: var(--color-accent-hover);
             background: var(--color-accent-hover);
         }
+
+        &:disabled .item_button_icon {
+            filter: var(--icon-filter);
+        }
     }
 
     &--danger {

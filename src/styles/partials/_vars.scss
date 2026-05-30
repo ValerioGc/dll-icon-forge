@@ -45,12 +45,12 @@
     --color-app-background: linear-gradient(180deg, #101621 0%, #121b29 55%, #0d131f 100%);
     --color-header-background: rgba(16, 22, 33, .9);
     --color-control-background: #111a28;
-    --color-on-accent: #08111f;
+    --color-on-accent: #ffffff;
     --color-accent-hover: #9bbcff;
     --shadow-soft: 0 10px 26px rgba(0, 0, 0, .24);
     --shadow-medium: 0 16px 34px rgba(0, 0, 0, .32);
 
     --icon-filter: invert(1);
-    --icon-on-accent-filter: brightness(0);
+    --icon-on-accent-filter: brightness(0) invert(1);
     --color-overlay: rgba(23, 32, 48, 0.85);
 }

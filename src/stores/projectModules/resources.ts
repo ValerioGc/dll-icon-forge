@@ -13,6 +13,15 @@ export function cleanupPreview(icon: ProjectIcon): void {
     void removePreview(icon.previewPath).catch(() => undefined);
 }
 
+// Used when the backend is about to replace_all the cache atomically (e.g. loadExistingDll).
+// Skips dropBuildIcon so the fire-and-forget calls don't race with replace_all.
+export function clearIconsForReload(icons: ProjectIcon[]): void {
+  icons.forEach(revokePreviewUrl);
+  icons
+    .filter((icon): icon is ProjectIcon & { previewPath: string } => icon.previewPath !== null)
+    .forEach((icon) => void removePreview(icon.previewPath).catch(() => undefined));
+}
+
 export async function cleanupProjectPreviews(icons: ProjectIcon[]): Promise<void> {
   icons.forEach(revokePreviewUrl);
   await Promise.all([

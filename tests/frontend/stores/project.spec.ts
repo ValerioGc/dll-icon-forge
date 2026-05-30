@@ -437,7 +437,7 @@ describe('project store', () => {
 
   it('resetToSource reloads icons from sourcePath and clears dirty', async () => {
     const { loadExistingDll } = await import('@/services/tauriProject');
-    const backendIcon = { id: 'orig-1', name: 'original.ico', previewPath: null, status: 'ready', sourceKind: 'extracted', availableSizes: [], error: null };
+    const backendIcon = { id: 'orig-1', name: 'original.ico', previewPath: null, status: 'ready' as const, sourceKind: 'extracted' as const, availableSizes: [], error: null };
     vi.mocked(loadExistingDll).mockResolvedValue({ icons: [backendIcon], warnings: [] });
 
     const project = setupProjectStore();

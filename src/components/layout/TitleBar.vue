@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import minimizeIcon from '@/assets/icons/minus.svg';
+import maximizeIcon from '@/assets/icons/square.svg';
+import closeIcon from '@/assets/icons/actions/close.svg';
 
 let win: ReturnType<typeof getCurrentWindow> | null = null;
 try { win = getCurrentWindow(); } catch { /* browser fallback */ }
@@ -45,9 +48,7 @@ onUnmounted(() => {
                 aria-label="Minimize"
                 @click="minimize"
             >
-                <svg width="10" height="1" viewBox="0 0 10 1" aria-hidden="true" fill="currentColor">
-                    <rect width="10" height="1" />
-                </svg>
+                <img class="titlebar__icon" :src="minimizeIcon" alt="" aria-hidden="true" />
             </button>
 
             <button
@@ -57,13 +58,7 @@ onUnmounted(() => {
                 @click="toggleMaximize"
                 @dblclick.stop
             >
-                <svg v-if="!isMaximized" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2">
-                    <rect x=".6" y=".6" width="8.8" height="8.8" />
-                </svg>
-                <svg v-else width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.2">
-                    <polyline points="3,0 10,0 10,7" />
-                    <rect x="0" y="3" width="7" height="7" />
-                </svg>
+                <img class="titlebar__icon" :src="maximizeIcon" alt="" aria-hidden="true" />
             </button>
 
             <button
@@ -72,10 +67,7 @@ onUnmounted(() => {
                 aria-label="Close"
                 @click="close"
             >
-                <svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" stroke="currentColor" stroke-width="1.4" stroke-linecap="round">
-                    <line x1="0" y1="0" x2="10" y2="10" />
-                    <line x1="10" y1="0" x2="0" y2="10" />
-                </svg>
+                <img class="titlebar__icon" :src="closeIcon" alt="" aria-hidden="true" />
             </button>
         </div>
     </div>
@@ -107,7 +99,6 @@ onUnmounted(() => {
             height: 100%;
             border: none;
             background: transparent;
-            color: var(--color-text);
             cursor: pointer;
             padding: 0;
             transition: background-color 0.1s;
@@ -118,8 +109,18 @@ onUnmounted(() => {
 
             &--close:hover {
                 background-color: var(--color-danger);
-                color: #ffffff;
+
+                .titlebar__icon {
+                    filter: brightness(0) invert(1);
+                }
             }
+        }
+
+        &__icon {
+            width: 10px;
+            height: 10px;
+            filter: var(--icon-filter);
+            pointer-events: none;
         }
     }
 

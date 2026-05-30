@@ -20,7 +20,7 @@ import {
   isSupportedFile,
 } from './projectModules/files';
 import { useProjectPagination } from './projectModules/pagination';
-import { cleanupPreview, cleanupProjectPreviews } from './projectModules/resources';
+import { cleanupPreview, cleanupProjectPreviews, clearIconsForReload } from './projectModules/resources';
 import { submitProjectBuild } from './projectModules/submit';
 
 export const useProjectStore = defineStore('project', () => {
@@ -128,9 +128,15 @@ export const useProjectStore = defineStore('project', () => {
 
     buildState.value = 'validating';
 
+    // Clear UI and revoke previews before the IPC call so that the fire-and-forget
+    // dropBuildIcon calls from cleanupPreview can't race with replace_all in loadExistingDll.
+    const previousIcons = [...icons.value];
+    icons.value = [];
+    selectedIconIds.value = [];
+    clearIconsForReload(previousIcons);
+
     try {
       const loaded = await loadExistingDll(path);
-      clearIcons();
       sourcePath.value = path;
       sourceLabel.value = basename(path);
       icons.value = loaded.icons.map(fromBackendIcon);
