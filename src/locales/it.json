@@ -55,7 +55,14 @@
     "editSavedTitle": "Modifica salvata",
     "editSavedBody": "Le modifiche sono state confermate e salvate nella DLL.",
     "unsupportedFiles": "Alcuni file non sono supportati. Sono accettati solo ICO e PNG.",
-    "invalidEditSource": "Il file selezionato non e una DLL valida. Carica un file .dll."
+    "invalidEditSource": "Il file selezionato non e una DLL valida. Carica un file .dll.",
+    "notSquare": "L'icona non e quadrata. Correggila o rimuovila prima di generare la DLL."
+  },
+  "warnings": {
+    "title": "Avvisi di caricamento",
+    "noIcons": "Nessun gruppo di icone trovato nella DLL.",
+    "groupUnreadable": "Gruppo {id} non leggibile: {reason}",
+    "iconUnreadable": "Icona {id} non leggibile: {reason}"
   },
   "confirm": {
     "unsavedTitle": "Modifiche non salvate",

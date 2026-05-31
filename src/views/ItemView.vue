@@ -22,7 +22,7 @@ defineOptions({
 
 const { t } = useI18n();
 const project = useProjectStore();
-const { sourceLabel, sourcePath, selectedCount, icons, buildState, lastError } = storeToRefs(project);
+const { sourceLabel, sourcePath, selectedCount, icons, buildState, lastError, lastWarnings } = storeToRefs(project);
 
 const props = defineProps<{
     mode: ProjectMode;
@@ -186,6 +186,18 @@ async function handleSubmit(): Promise<void> {
             </div>
         </div>
 
+        <div v-if="lastWarnings.length > 0" class="item_view_warning">
+            <div class="item_view_warning_body">
+                <strong>{{ t('warnings.title') }}</strong>
+                <ul>
+                    <li v-for="(w, i) in lastWarnings" :key="i">{{ w }}</li>
+                </ul>
+            </div>
+            <button type="button" class="item_view_warning_close" :aria-label="t('common.dismiss')" @click="project.setLastWarnings([])">
+                <img class="ui_icon themed_icon" src="@/assets/icons/actions/close.svg" alt="" aria-hidden="true" />
+            </button>
+        </div>
+
         <div v-if="lastError" class="item_view_error">
             <span>{{ lastError }}</span>
             <button type="button" class="item_view_error_close" :aria-label="t('common.dismiss')" @click="project.setLastError(null)">
@@ -314,6 +326,48 @@ async function handleSubmit(): Promise<void> {
             font-size: 1.1rem;
             line-height: 1;
             flex-shrink: 0;
+
+            &:hover {
+                opacity: .7;
+            }
+        }
+    }
+
+    &_warning {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: .75rem;
+        padding: .7rem 1rem;
+        border: 1px solid var(--color-warning);
+        border-radius: .5rem;
+        background: var(--color-warning-soft);
+        color: var(--color-warning);
+        font-size: .9rem;
+        line-height: 1.45;
+
+        &_body {
+            @extend %grid_stack;
+            gap: .3rem;
+
+            strong {
+                font-weight: 700;
+            }
+
+            ul {
+                margin: 0;
+                padding-left: 1.25rem;
+            }
+        }
+
+        &_close {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            padding: 0;
+            flex-shrink: 0;
+            line-height: 1;
 
             &:hover {
                 opacity: .7;

@@ -55,7 +55,14 @@
     "editSavedTitle": "Changes saved",
     "editSavedBody": "Your changes have been confirmed and saved to the DLL.",
     "unsupportedFiles": "Some files are not supported. Only ICO and PNG are accepted.",
-    "invalidEditSource": "The selected file is not a valid DLL. Please load a .dll file."
+    "invalidEditSource": "The selected file is not a valid DLL. Please load a .dll file.",
+    "notSquare": "Icon is not square. Fix or remove it before building the DLL."
+  },
+  "warnings": {
+    "title": "Load warnings",
+    "noIcons": "No icon groups found in the DLL.",
+    "groupUnreadable": "Group {id} unreadable: {reason}",
+    "iconUnreadable": "Icon {id} unreadable: {reason}"
   },
   "confirm": {
     "unsavedTitle": "Unsaved changes",

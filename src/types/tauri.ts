@@ -12,9 +12,14 @@ export interface BackendProjectIcon {
   previewPath: string | null;
 }
 
+export type DllWarning =
+  | { kind: 'noIcons' }
+  | { kind: 'groupUnreadable'; groupId: number; reason: string }
+  | { kind: 'iconUnreadable'; iconId: number; reason: string };
+
 export interface BackendLoadedDll {
   icons: BackendProjectIcon[];
-  warnings: unknown[];
+  warnings: DllWarning[];
 }
 
 export interface IpcErrorPayload {

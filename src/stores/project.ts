@@ -13,6 +13,7 @@ import type { BuildState } from '@/types/build';
 import type { ProjectIcon } from '@/types/icons';
 import type { ProjectMode } from '@/types/modes';
 import type { ProjectNotice } from '@/types/notifications';
+import type { DllWarning } from '@/types/tauri';
 import {
   basename,
   createProjectIcon,
@@ -22,6 +23,17 @@ import {
 import { useProjectPagination } from './projectModules/pagination';
 import { cleanupPreview, cleanupProjectPreviews, clearIconsForReload } from './projectModules/resources';
 import { submitProjectBuild } from './projectModules/submit';
+
+function formatDllWarning(w: DllWarning): string {
+  switch (w.kind) {
+    case 'noIcons':
+      return t('warnings.noIcons');
+    case 'groupUnreadable':
+      return t('warnings.groupUnreadable', { id: w.groupId, reason: w.reason });
+    case 'iconUnreadable':
+      return t('warnings.iconUnreadable', { id: w.iconId, reason: w.reason });
+  }
+}
 
 export const useProjectStore = defineStore('project', () => {
   const settings = useSettingsStore();
@@ -38,6 +50,7 @@ export const useProjectStore = defineStore('project', () => {
   const buildState = ref<BuildState>('idle');
   const lastError = ref<string | null>(null);
   const lastNotice = ref<ProjectNotice | null>(null);
+  const lastWarnings = ref<string[]>([]);
 
   const {
     page,
@@ -73,6 +86,7 @@ export const useProjectStore = defineStore('project', () => {
     sourcePath.value = null;
     buildState.value = 'idle';
     lastError.value = null;
+    lastWarnings.value = [];
     page.value = 0;
     dirty.value = false;
 
@@ -141,14 +155,15 @@ export const useProjectStore = defineStore('project', () => {
       sourceLabel.value = basename(path);
       icons.value = loaded.icons.map(fromBackendIcon);
       selectedIconIds.value = icons.value[0] ? [icons.value[0].id] : [];
-      lastError.value = loaded.warnings.length > 0 ? t('notifications.dllLoadWarnings') : null;
+      lastError.value = null;
+      lastWarnings.value = loaded.warnings.map(formatDllWarning);
       lastNotice.value = null;
       dirty.value = false;
       buildState.value = 'idle';
       resetPage();
 
-      if (loaded.warnings.length > 0)
-        await notify(t('notifications.warningTitle'), lastError.value ?? '');
+      if (lastWarnings.value.length > 0)
+        await notify(t('notifications.warningTitle'), t('notifications.dllLoadWarnings'));
     } catch (error) {
       const msg = ipcErrorMessage(error);
       lastError.value = msg;
@@ -179,8 +194,13 @@ export const useProjectStore = defineStore('project', () => {
     void Promise.all(
       newIcons.map(async (icon, index) => {
         const sizes = await detectInitialSizes(fileArray[index]);
-        if (sizes.length > 0)
+        if (sizes.length > 0) {
           icon.availableSizes = sizes;
+          if (sizes[0].width !== sizes[0].height) {
+            icon.status = 'error';
+            icon.error = t('notifications.notSquare');
+          }
+        }
       }),
     );
   }
@@ -290,6 +310,10 @@ export const useProjectStore = defineStore('project', () => {
     lastNotice.value = notice;
   }
 
+  function setLastWarnings(warnings: string[]): void {
+    lastWarnings.value = warnings;
+  }
+
   async function resetToSource(): Promise<void> {
     if (!sourcePath.value) return;
     await loadExistingDllPath(sourcePath.value);
@@ -321,6 +345,7 @@ export const useProjectStore = defineStore('project', () => {
     buildState,
     lastError,
     lastNotice,
+    lastWarnings,
     page,
     totalPages,
     paginatedIcons,
@@ -348,6 +373,7 @@ export const useProjectStore = defineStore('project', () => {
     setBuildState,
     setLastError,
     setLastNotice,
+    setLastWarnings,
     cleanupPreviews,
     resetToSource,
     submitProject,
