@@ -479,4 +479,140 @@ describe('project store', () => {
     });
     expect(notify).toHaveBeenLastCalledWith('Modifica salvata', expect.stringContaining('confermate'));
   });
+
+  it('removeIcon: does nothing when the id is not found', () => {
+    const project = setupProjectStore();
+
+    project.addFiles([makePng('a.png')]);
+    expect(project.icons).toHaveLength(1);
+
+    project.removeIcon('non-existent-id');
+
+    expect(project.icons).toHaveLength(1);
+  });
+
+  it('removeSelectedIcons: does nothing when no icons are selected', () => {
+    const project = setupProjectStore();
+
+    project.addFiles([makePng('a.png')]);
+    project.clearSelection();
+
+    project.removeSelectedIcons();
+
+    expect(project.icons).toHaveLength(1);
+  });
+
+  it('setDraggingFiles: updates isDraggingFiles', () => {
+    const project = setupProjectStore();
+
+    expect(project.isDraggingFiles).toBe(false);
+    project.setDraggingFiles(true);
+    expect(project.isDraggingFiles).toBe(true);
+    project.setDraggingFiles(false);
+    expect(project.isDraggingFiles).toBe(false);
+  });
+
+  it('setBuildState: updates buildState', () => {
+    const project = setupProjectStore();
+
+    expect(project.buildState).toBe('idle');
+    project.setBuildState('building');
+    expect(project.buildState).toBe('building');
+    project.setBuildState('idle');
+    expect(project.buildState).toBe('idle');
+  });
+
+  it('setLastError: updates lastError', () => {
+    const project = setupProjectStore();
+
+    expect(project.lastError).toBeNull();
+    project.setLastError('Something went wrong');
+    expect(project.lastError).toBe('Something went wrong');
+    project.setLastError(null);
+    expect(project.lastError).toBeNull();
+  });
+
+  it('setLastNotice: updates lastNotice', () => {
+    const project = setupProjectStore();
+
+    expect(project.lastNotice).toBeNull();
+    project.setLastNotice({ type: 'success', title: 'Done', body: 'File saved.' });
+    expect(project.lastNotice).toMatchObject({ type: 'success', title: 'Done' });
+    project.setLastNotice(null);
+    expect(project.lastNotice).toBeNull();
+  });
+
+  it('removeIcon: calls removePreview when the removed icon has a previewPath', () => {
+    const project = setupProjectStore();
+
+    project.$patch({
+      icons: [
+        {
+          id: 'ico-1',
+          name: 'test.ico',
+          preview: 'blob:fake',
+          previewPath: '/tmp/cache/ico-1.ico',
+          status: 'ready' as const,
+          sourceKind: 'extracted' as const,
+          availableSizes: [],
+          error: null,
+        },
+      ],
+    });
+
+    project.removeIcon('ico-1');
+
+    expect(tauriProjectMocks.removePreview).toHaveBeenCalledWith('/tmp/cache/ico-1.ico');
+  });
+
+  it('cleanupPreviews: calls removePreview for icons with a previewPath', async () => {
+    const project = setupProjectStore();
+
+    project.$patch({
+      icons: [
+        {
+          id: 'ico-1',
+          name: 'test.ico',
+          preview: 'blob:fake',
+          previewPath: '/tmp/cache/ico-1.ico',
+          status: 'ready' as const,
+          sourceKind: 'extracted' as const,
+          availableSizes: [],
+          error: null,
+        },
+      ],
+    });
+
+    await project.cleanupPreviews();
+
+    expect(tauriProjectMocks.removePreview).toHaveBeenCalledWith('/tmp/cache/ico-1.ico');
+    expect(tauriProjectMocks.clearBuildCache).toHaveBeenCalledOnce();
+  });
+
+  it('loadExistingDllPath: uses clearIconsForReload (not cleanupPreview) for pre-existing icons', async () => {
+    const { loadExistingDll } = await import('@/services/tauriProject');
+    vi.mocked(loadExistingDll).mockResolvedValue({ icons: [], warnings: [] });
+
+    const project = setupProjectStore();
+
+    project.$patch({
+      icons: [
+        {
+          id: 'ico-1',
+          name: 'test.ico',
+          preview: 'blob:fake',
+          previewPath: '/tmp/cache/ico-1.ico',
+          status: 'ready' as const,
+          sourceKind: 'extracted' as const,
+          availableSizes: [],
+          error: null,
+        },
+      ],
+    });
+
+    await project.loadExistingDllPath('C:\\icons.dll');
+
+    expect(tauriProjectMocks.removePreview).toHaveBeenCalledWith('/tmp/cache/ico-1.ico');
+    expect(tauriProjectMocks.dropBuildIcon).not.toHaveBeenCalled();
+  });
 });

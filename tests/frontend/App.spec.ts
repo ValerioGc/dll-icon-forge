@@ -1,7 +1,27 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { flushPromises } from '@vue/test-utils';
 import App from '@/App.vue';
 import { useProjectStore } from '@/stores/project';
 import { mountComponent, resetFrontendTestState } from './helpers/mount';
+
+const tauriWindowMocks = vi.hoisted(() => {
+  const closeHandlerRef: {
+    current: ((e: { preventDefault: () => void }) => void) | null;
+  } = { current: null };
+
+  const win = {
+    close: vi.fn(),
+    onCloseRequested: vi.fn(),
+    onResized: vi.fn(),
+    isMaximized: vi.fn(),
+  };
+
+  return { win, getCurrentWindow: vi.fn(() => win), closeHandlerRef };
+});
+
+vi.mock('@tauri-apps/api/window', () => ({
+  getCurrentWindow: tauriWindowMocks.getCurrentWindow,
+}));
 
 describe('App', () => {
   let wrapper: ReturnType<typeof mountComponent> | null = null;
@@ -163,5 +183,90 @@ describe('App', () => {
     window.dispatchEvent(event);
 
     expect(preventDefaultSpy).not.toHaveBeenCalled();
+  });
+
+  describe('window close handling', () => {
+    beforeEach(() => {
+      tauriWindowMocks.closeHandlerRef.current = null;
+      tauriWindowMocks.win.close.mockResolvedValue(undefined);
+      tauriWindowMocks.win.isMaximized.mockResolvedValue(false);
+      tauriWindowMocks.win.onResized.mockResolvedValue(() => {});
+      tauriWindowMocks.win.close.mockClear();
+      tauriWindowMocks.win.onCloseRequested.mockImplementation(
+        async (handler: (e: { preventDefault: () => void }) => void) => {
+          tauriWindowMocks.closeHandlerRef.current = handler;
+          return () => {};
+        },
+      );
+    });
+
+    it('shows the close confirm dialog when close is requested with a dirty project', async () => {
+      wrapper = mountComponent(App);
+      const project = useProjectStore();
+
+      project.setMode('create');
+      project.dirty = true;
+      await flushPromises();
+
+      const event = { preventDefault: vi.fn() };
+      tauriWindowMocks.closeHandlerRef.current!({ preventDefault: event.preventDefault });
+      await wrapper.vm.$nextTick();
+      await vi.dynamicImportSettled();
+
+      expect(event.preventDefault).toHaveBeenCalled();
+      expect(wrapper.findComponent({ name: 'ConfirmDialog' }).exists()).toBe(true);
+    });
+
+    it('closes the window when the close confirm dialog is confirmed', async () => {
+      wrapper = mountComponent(App);
+      const project = useProjectStore();
+
+      project.setMode('create');
+      project.dirty = true;
+      await flushPromises();
+
+      tauriWindowMocks.closeHandlerRef.current!({ preventDefault: vi.fn() });
+      await wrapper.vm.$nextTick();
+      await vi.dynamicImportSettled();
+
+      wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('confirm');
+      await flushPromises();
+
+      expect(tauriWindowMocks.win.close).toHaveBeenCalledOnce();
+      expect(wrapper.findComponent({ name: 'ConfirmDialog' }).exists()).toBe(false);
+    });
+
+    it('hides the close confirm dialog without closing when cancelled', async () => {
+      wrapper = mountComponent(App);
+      const project = useProjectStore();
+
+      project.setMode('create');
+      project.dirty = true;
+      await flushPromises();
+
+      tauriWindowMocks.closeHandlerRef.current!({ preventDefault: vi.fn() });
+      await wrapper.vm.$nextTick();
+      await vi.dynamicImportSettled();
+
+      wrapper.findComponent({ name: 'ConfirmDialog' }).vm.$emit('cancel');
+      await wrapper.vm.$nextTick();
+
+      expect(tauriWindowMocks.win.close).not.toHaveBeenCalled();
+      expect(wrapper.findComponent({ name: 'ConfirmDialog' }).exists()).toBe(false);
+    });
+
+    it('calls cleanupPreviews and skips the dialog when the project is clean', async () => {
+      wrapper = mountComponent(App);
+      const project = useProjectStore();
+      const cleanupSpy = vi.spyOn(project, 'cleanupPreviews').mockResolvedValue(undefined);
+
+      await flushPromises();
+
+      tauriWindowMocks.closeHandlerRef.current!({ preventDefault: vi.fn() });
+      await wrapper.vm.$nextTick();
+
+      expect(cleanupSpy).toHaveBeenCalledOnce();
+      expect(wrapper.findComponent({ name: 'ConfirmDialog' }).exists()).toBe(false);
+    });
   });
 });
