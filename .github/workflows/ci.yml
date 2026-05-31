@@ -281,7 +281,17 @@ jobs:
           set -euo pipefail
           if [[ ! -f CHANGELOG.txt ]]; then echo "CHANGELOG.txt not found."; exit 1; fi
           if [[ ! -s CHANGELOG.txt ]]; then echo "CHANGELOG.txt is empty.";  exit 1; fi
-          { echo "# DLL Icon Forge ${GITHUB_REF_NAME}"; echo; cat CHANGELOG.txt; } > release-notes.md
+          {
+            echo "# DLL Icon Forge ${GITHUB_REF_NAME}"
+            echo
+            cat CHANGELOG.txt
+            echo
+            echo "## Checksums (SHA-256)"
+            echo
+            echo '```'
+            cat release-assets/SHA256SUMS.txt
+            echo '```'
+          } > release-notes.md
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2.6.2
