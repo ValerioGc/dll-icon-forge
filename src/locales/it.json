@@ -64,6 +64,11 @@
     "groupUnreadable": "Gruppo {id} non leggibile: {reason}",
     "iconUnreadable": "Icona {id} non leggibile: {reason}"
   },
+  "search": {
+    "placeholder": "Cerca per nome...",
+    "label": "Cerca icone",
+    "noResults": "Nessuna icona corrisponde alla ricerca."
+  },
   "confirm": {
     "unsavedTitle": "Modifiche non salvate",
     "unsavedMessage": "Hai modifiche non salvate. Se esci ora andranno perse.",

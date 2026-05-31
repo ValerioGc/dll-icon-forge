@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 
-import { computed, defineAsyncComponent } from 'vue';
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 import { useProjectStore } from '@/stores/project';
@@ -15,25 +15,75 @@ const { t } = useI18n();
 const project = useProjectStore();
 const settings = useSettingsStore();
 
-const {
-    icons,
-    paginatedIcons,
-    selectedIconIds,
-    page,
-    totalPages,
-    canGoPrevious,
-    canGoNext,
-    currentPageGlobalStart,
-} = storeToRefs(project);
+const { icons, selectedIconIds } = storeToRefs(project);
+
+// ── Search ────────────────────────────────────────────────────────────────────
+
+const searchQuery = ref('');
+
+const filteredIcons = computed(() => {
+    const q = searchQuery.value.trim().toLowerCase();
+    if (!q) return icons.value;
+    return icons.value.filter((i) => i.name?.toLowerCase().includes(q));
+});
+
+// ── Local pagination (operates on filteredIcons) ──────────────────────────────
+
+const localPage = ref(0);
+
+const localTotalPages = computed(() =>
+    Math.max(1, Math.ceil(filteredIcons.value.length / settings.pageSize)),
+);
+
+const localPaginatedIcons = computed(() => {
+    const start = localPage.value * settings.pageSize;
+    return filteredIcons.value.slice(start, start + settings.pageSize);
+});
+
+const localCanGoPrevious = computed(() => localPage.value > 0);
+const localCanGoNext = computed(() => localPage.value < localTotalPages.value - 1);
+const localStartIndex = computed(() => localPage.value * settings.pageSize);
+
+watch(searchQuery, () => { localPage.value = 0; });
+
+watch(localTotalPages, (newTotal) => {
+    if (localPage.value >= newTotal)
+        localPage.value = Math.max(0, newTotal - 1);
+});
+
+function goToNextPage(): void {
+    if (localCanGoNext.value) localPage.value += 1;
+}
+
+function goToPreviousPage(): void {
+    if (localCanGoPrevious.value) localPage.value -= 1;
+}
+
+// ── View state ────────────────────────────────────────────────────────────────
 
 const isEmpty = computed(() => icons.value.length === 0);
+const isFilterEmpty = computed(() => filteredIcons.value.length === 0 && !isEmpty.value);
 const activeView = computed<ViewMode>(() => settings.viewMode);
+const isSortable = computed(() => searchQuery.value.trim().length === 0);
 
-function handleSelect(id: string, additive: boolean): void {
-    if (additive) {
+// ── Selection ─────────────────────────────────────────────────────────────────
+
+const anchorId = ref<string | null>(null);
+
+function handleSelect(id: string, additive: boolean, range: boolean): void {
+    if (range && anchorId.value) {
+        const fromIdx = filteredIcons.value.findIndex((i) => i.id === anchorId.value);
+        const toIdx = filteredIcons.value.findIndex((i) => i.id === id);
+        if (fromIdx !== -1 && toIdx !== -1) {
+            const [start, end] = fromIdx <= toIdx ? [fromIdx, toIdx] : [toIdx, fromIdx];
+            project.setSelectedIconIds(filteredIcons.value.slice(start, end + 1).map((i) => i.id));
+        }
+    } else if (additive) {
         project.toggleIconSelection(id);
+        anchorId.value = id;
     } else {
         project.selectIcon(id);
+        anchorId.value = id;
     }
 }
 
@@ -41,13 +91,32 @@ function handleDelete(id: string): void {
     project.removeIcon(id);
 }
 
+function handleReorder(fromId: string, toId: string): void {
+    project.reorderIcon(fromId, toId);
+}
+
+// ── Keyboard ──────────────────────────────────────────────────────────────────
+
+function handleKeydown(e: KeyboardEvent): void {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && !isEmpty.value) {
+        e.preventDefault();
+        project.setSelectedIconIds(filteredIcons.value.map((i) => i.id));
+        if (filteredIcons.value[0]) anchorId.value = filteredIcons.value[0].id;
+    }
+}
+
+onMounted(() => globalThis.addEventListener('keydown', handleKeydown));
+onUnmounted(() => globalThis.removeEventListener('keydown', handleKeydown));
+
+// ── Toolbar handlers ──────────────────────────────────────────────────────────
+
 function handleViewMode(next: ViewMode): void {
     settings.setViewMode(next);
 }
 
 function handlePageSize(next: PageSize): void {
     settings.setPageSize(next);
-    project.resetPage();
+    localPage.value = 0;
 }
 
 </script>
@@ -55,7 +124,7 @@ function handlePageSize(next: PageSize): void {
 <template>
     <section class="icon_collection_view surface">
         <header class="icon_collection_view_toolbar">
-            
+
             <fieldset class="icon_collection_view_view_mode">
                 <legend class="icon_collection_view_view_legend">{{ t('viewMode.label') }}</legend>
                 <button type="button"
@@ -82,6 +151,19 @@ function handlePageSize(next: PageSize): void {
                 </button>
             </fieldset>
 
+            <div class="icon_collection_view_search">
+                <img class="icon_collection_view_search_icon themed_icon" src="@/assets/icons/actions/search.svg" alt="" aria-hidden="true" />
+                <input
+                    v-model="searchQuery"
+                    type="search"
+                    class="icon_collection_view_search_input"
+                    :placeholder="t('search.placeholder')"
+                    :aria-label="t('search.label')"
+                    :disabled="isEmpty"
+                    autocomplete="off"
+                />
+            </div>
+
             <PageSizeSelector
                 :value="settings.pageSize"
                 :disabled="isEmpty"
@@ -89,32 +171,37 @@ function handlePageSize(next: PageSize): void {
             />
         </header>
 
-        <p class="icon_collection_empty" v-if="isEmpty">{{ t('previewEmpty') }}</p>
+        <p v-if="isEmpty" class="icon_collection_empty">{{ t('previewEmpty') }}</p>
+        <p v-else-if="isFilterEmpty" class="icon_collection_empty">{{ t('search.noResults') }}</p>
 
         <IconListView v-else-if="activeView === 'list'"
-            :items="paginatedIcons"
+            :items="localPaginatedIcons"
             :selected-ids="selectedIconIds"
-            :start-index="currentPageGlobalStart"
+            :start-index="localStartIndex"
+            :sortable="isSortable"
             @select="handleSelect"
             @delete="handleDelete"
+            @reorder="handleReorder"
         />
 
         <IconGridView v-else
-            :items="paginatedIcons"
+            :items="localPaginatedIcons"
             :selected-ids="selectedIconIds"
-            :start-index="currentPageGlobalStart"
+            :start-index="localStartIndex"
+            :sortable="isSortable"
             @select="handleSelect"
             @delete="handleDelete"
+            @reorder="handleReorder"
         />
 
         <footer v-if="!isEmpty" class="icon_collection_view_footer">
             <PaginationControls
-                :page="page"
-                :total-pages="totalPages"
-                :can-go-previous="canGoPrevious"
-                :can-go-next="canGoNext"
-                @previous="project.goToPreviousPage"
-                @next="project.goToNextPage"
+                :page="localPage"
+                :total-pages="localTotalPages"
+                :can-go-previous="localCanGoPrevious"
+                :can-go-next="localCanGoNext"
+                @previous="goToPreviousPage"
+                @next="goToNextPage"
             />
         </footer>
     </section>
@@ -180,6 +267,54 @@ function handlePageSize(next: PageSize): void {
             border-color: var(--color-accent);
             background: var(--color-accent-soft);
             color: var(--color-text);
+        }
+    }
+
+    &_search {
+        position: relative;
+        flex: 1;
+        min-width: 140px;
+
+        &_icon {
+            position: absolute;
+            left: .55rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1rem;
+            height: 1rem;
+            pointer-events: none;
+            opacity: .5;
+        }
+
+        &_input {
+            width: 100%;
+            height: 2.25rem;
+            padding: 0 .6rem 0 2rem;
+            border: 1px solid var(--color-border);
+            border-radius: .4rem;
+            background: var(--color-surface);
+            color: var(--color-text);
+            font-size: .875rem;
+            font-family: inherit;
+            box-sizing: border-box;
+
+            &::placeholder {
+                color: var(--color-muted);
+            }
+
+            &:focus {
+                outline: none;
+                border-color: var(--color-accent);
+            }
+
+            &:disabled {
+                opacity: .45;
+                cursor: not-allowed;
+            }
+
+            &::-webkit-search-cancel-button {
+                cursor: pointer;
+            }
         }
     }
 

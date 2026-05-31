@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 
+import { ref } from 'vue';
 import closeIcon from '@/assets/icons/actions/close.svg';
 import type { ProjectIcon } from '@/types/icons';
 
@@ -12,27 +13,66 @@ const props = withDefaults(defineProps<{
     selectedIds?: string[];
     startIndex?: number;
     disabled?: boolean;
+    sortable?: boolean;
 }>(), {
     items: () => [],
     selectedIds: () => [],
     startIndex: 0,
     disabled: false,
+    sortable: true,
 });
 
 const emit = defineEmits<{
-    (e: 'select', id: string, additive: boolean): void;
+    (e: 'select', id: string, additive: boolean, range: boolean): void;
     (e: 'delete', id: string): void;
+    (e: 'reorder', fromId: string, toId: string): void;
 }>();
+
+const draggedId = ref<string | null>(null);
+const dragOverId = ref<string | null>(null);
 
 function isSelected(id: string): boolean {
     return props.selectedIds.includes(id);
 }
 
 function handleSelect(id: string, event: MouseEvent): void {
-    if (props.disabled)
+    if (props.disabled) return;
+    emit('select', id, event.ctrlKey || event.metaKey, event.shiftKey);
+}
+
+function handleDragStart(id: string, event: DragEvent): void {
+    if (!props.sortable || props.disabled) {
+        event.preventDefault();
         return;
-    
-    emit('select', id, event.ctrlKey || event.metaKey);
+    }
+    draggedId.value = id;
+    if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', id);
+    }
+}
+
+function handleDragEnter(id: string): void {
+    if (draggedId.value && draggedId.value !== id)
+        dragOverId.value = id;
+}
+
+function handleDragOver(event: DragEvent): void {
+    if (draggedId.value)
+        event.preventDefault();
+}
+
+function handleDrop(id: string, event: DragEvent): void {
+    event.preventDefault();
+    if (draggedId.value && draggedId.value !== id)
+        emit('reorder', draggedId.value, id);
+    draggedId.value = null;
+    dragOverId.value = null;
+}
+
+function handleDragEnd(): void {
+    draggedId.value = null;
+    dragOverId.value = null;
 }
 
 </script>
@@ -45,7 +85,15 @@ function handleSelect(id: string, event: MouseEvent): void {
             :class="{
                 'is-selected': isSelected(item.id),
                 'is-error': item.status === 'error',
+                'is-drag-over': dragOverId === item.id,
+                'is-dragging': draggedId === item.id,
             }"
+            :draggable="!disabled && sortable"
+            @dragstart="handleDragStart(item.id, $event)"
+            @dragenter="handleDragEnter(item.id)"
+            @dragover="handleDragOver($event)"
+            @drop="handleDrop(item.id, $event)"
+            @dragend="handleDragEnd"
         >
             <button type="button" class="icon_list_view_select"
                 :disabled="disabled"
@@ -90,6 +138,7 @@ function handleSelect(id: string, event: MouseEvent): void {
         border: 1px solid var(--color-border);
         border-radius: .5rem;
         background: var(--color-control-background);
+        transition: opacity .15s ease;
 
         &.is-selected {
             border-color: var(--color-accent);
@@ -98,6 +147,16 @@ function handleSelect(id: string, event: MouseEvent): void {
 
         &.is-error {
             border-color: var(--color-danger);
+        }
+
+        &.is-dragging {
+            opacity: .35;
+        }
+
+        &.is-drag-over:not(.is-dragging) {
+            border-color: var(--color-accent);
+            border-style: dashed;
+            background: var(--color-accent-soft);
         }
     }
 

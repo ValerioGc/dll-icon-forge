@@ -64,6 +64,11 @@
     "groupUnreadable": "Group {id} unreadable: {reason}",
     "iconUnreadable": "Icon {id} unreadable: {reason}"
   },
+  "search": {
+    "placeholder": "Search by name...",
+    "label": "Search icons",
+    "noResults": "No icons match the search."
+  },
   "confirm": {
     "unsavedTitle": "Unsaved changes",
     "unsavedMessage": "You have unsaved changes. If you leave now they will be lost.",

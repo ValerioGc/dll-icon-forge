@@ -314,6 +314,24 @@ export const useProjectStore = defineStore('project', () => {
     lastWarnings.value = warnings;
   }
 
+  function reorderIcon(fromId: string, toId: string): void {
+    const fromIdx = icons.value.findIndex((i) => i.id === fromId);
+    const toIdx = icons.value.findIndex((i) => i.id === toId);
+    if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
+    const [moved] = icons.value.splice(fromIdx, 1);
+    const insertAt = fromIdx < toIdx ? toIdx - 1 : toIdx;
+    icons.value.splice(insertAt, 0, moved);
+    dirty.value = true;
+  }
+
+  function selectAllIcons(): void {
+    selectedIconIds.value = icons.value.map((i) => i.id);
+  }
+
+  function setSelectedIconIds(ids: string[]): void {
+    selectedIconIds.value = [...ids];
+  }
+
   async function resetToSource(): Promise<void> {
     if (!sourcePath.value) return;
     await loadExistingDllPath(sourcePath.value);
@@ -374,6 +392,9 @@ export const useProjectStore = defineStore('project', () => {
     setLastError,
     setLastNotice,
     setLastWarnings,
+    reorderIcon,
+    selectAllIcons,
+    setSelectedIconIds,
     cleanupPreviews,
     resetToSource,
     submitProject,
