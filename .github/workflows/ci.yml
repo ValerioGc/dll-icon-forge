@@ -2,9 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
     tags: ['v*.*.*']
-  pull_request:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,7 +13,7 @@ env:
 
 jobs:
 
-  # ── Runs on every push / PR ──────────────────────────────────────────────────
+  # ── Gate: tests must pass before any release job runs ────────────────────────
   test:
     name: Test
     runs-on: windows-latest
@@ -59,10 +57,9 @@ jobs:
       - name: Run frontend build
         run: npm run build
 
-  # ── Only on version tags, after tests pass ───────────────────────────────────
+  # ── After tests pass ─────────────────────────────────────────────────────────
   verify-release:
     name: Verify release
-    if: startsWith(github.ref, 'refs/tags/')
     needs: test
     runs-on: ubuntu-latest
     permissions:
@@ -138,7 +135,6 @@ jobs:
 
   build-windows:
     name: Build Windows installers
-    if: startsWith(github.ref, 'refs/tags/')
     needs: verify-release
     runs-on: windows-latest
     permissions:
@@ -190,7 +186,6 @@ jobs:
 
   build-linux:
     name: Build Linux installers
-    if: startsWith(github.ref, 'refs/tags/')
     needs: verify-release
     runs-on: ubuntu-latest
     permissions:
@@ -253,7 +248,6 @@ jobs:
 
   create-release:
     name: Create draft release
-    if: startsWith(github.ref, 'refs/tags/')
     needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
     permissions:
@@ -296,7 +290,7 @@ jobs:
           name: DLL Icon Forge ${{ github.ref_name }}
           body_path: release-notes.md
           files: release-assets/*
-          draft: true
+          draft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
           fail_on_unmatched_files: true
         env:
