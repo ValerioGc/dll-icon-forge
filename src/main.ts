@@ -4,6 +4,9 @@ import App from './App.vue';
 import { i18n } from './i18n';
 import './styles/main.scss';
 
+if (import.meta.env.PROD)
+  document.addEventListener('contextmenu', (e) => e.preventDefault());
+
 const app = createApp(App);
 const pinia = createPinia();
 

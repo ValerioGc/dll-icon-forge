@@ -41,7 +41,7 @@ onUnmounted(() => {
 
 <template>
     <div class="titlebar" data-tauri-drag-region>
-        <div class="titlebar__controls">
+        <div class="titlebar__controls" data-tauri-no-drag>
             <button
                 class="titlebar__btn titlebar__btn--minimize"
                 type="button"
