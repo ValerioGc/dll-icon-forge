@@ -7,6 +7,7 @@ export interface BuildIconInput {
 export interface BuildOptions {
   outputPath: string;
   icons: BuildIconInput[];
+  sourcePath?: string | null;
 }
 
 export interface BuildResult {

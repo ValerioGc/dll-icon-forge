@@ -56,7 +56,7 @@ pub(crate) fn validate(source: &IconSourceData) -> Result<ValidationResult, Icon
     }
 
     // Alpha check on the largest frame as representative of the source.
-    // ICO frames from read_ico are always ImageRgba8, so this only fires for PNG.
+    // ICO frames are always RGBA; JPEG frames are always RGB, so this fires for JPEG.
     if !has_alpha(&source.largest_frame().image) {
         warnings.push(ValidationWarning::NoAlpha);
     }
@@ -724,6 +724,56 @@ mod tests {
             4,
             "all four sizes should be produced by resize"
         );
+    }
+
+    fn make_jpeg(path: &Path, width: u32, height: u32) {
+        RgbImage::from_pixel(width, height, Rgb([100, 150, 200]))
+            .save_with_format(path, image::ImageFormat::Jpeg)
+            .unwrap();
+    }
+
+    fn make_webp(path: &Path, width: u32, height: u32) {
+        RgbaImage::from_pixel(width, height, Rgba([100, 150, 200, 180]))
+            .save_with_format(path, image::ImageFormat::WebP)
+            .unwrap();
+    }
+
+    #[test]
+    fn pipeline_jpeg_produces_four_icons_and_no_alpha_warning() {
+        let src_dir = tempfile::tempdir().unwrap();
+        let prev_dir = tempfile::tempdir().unwrap();
+        let src_path = src_dir.path().join("icon.jpg");
+        make_jpeg(&src_path, 64, 64);
+
+        let result = import_icon_source(&src_path, prev_dir.path()).unwrap();
+
+        assert_eq!(result.source_kind, SourceKind::Jpeg);
+        assert_eq!(result.icons.len(), 4);
+        assert!(
+            result.warnings.iter().any(|w| matches!(w, ValidationWarning::NoAlpha)),
+            "JPEG has no alpha — expected NoAlpha warning, got: {:?}",
+            result.warnings
+        );
+        assert!(result.preview_path.exists());
+    }
+
+    #[test]
+    fn pipeline_webp_with_alpha_produces_four_icons_no_warnings() {
+        let src_dir = tempfile::tempdir().unwrap();
+        let prev_dir = tempfile::tempdir().unwrap();
+        let src_path = src_dir.path().join("icon.webp");
+        make_webp(&src_path, 64, 64);
+
+        let result = import_icon_source(&src_path, prev_dir.path()).unwrap();
+
+        assert_eq!(result.source_kind, SourceKind::Webp);
+        assert_eq!(result.icons.len(), 4);
+        assert!(
+            result.warnings.is_empty(),
+            "WebP with alpha should have no warnings, got: {:?}",
+            result.warnings
+        );
+        assert!(result.preview_path.exists());
     }
 
     #[test]

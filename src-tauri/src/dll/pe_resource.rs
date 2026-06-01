@@ -12,9 +12,40 @@ use crate::{
 
 use crate::icons::IconError;
 
-#[cfg(test)]
 const RT_ICON_ID: u16 = 3;
 const RT_GROUP_ICON_ID: u16 = 14;
+
+#[derive(Debug)]
+pub(super) struct ExistingIconIds {
+    pub(super) icon_entries: Vec<(u16, u16)>,
+    pub(super) group_entries: Vec<(u16, u16)>,
+}
+
+pub(super) fn list_existing_icon_ids(dll_path: &Path) -> Result<ExistingIconIds, IconError> {
+    let bytes = std::fs::read(dll_path)?;
+    let resources = read_pe_resources(&bytes)?;
+
+    let mut icon_entries: Vec<(u16, u16)> = resources
+        .iter()
+        .filter(|r| r.type_id == RT_ICON_ID)
+        .map(|r| (r.name_id, r.language_id))
+        .collect();
+    icon_entries.sort_unstable();
+    icon_entries.dedup();
+
+    let mut group_entries: Vec<(u16, u16)> = resources
+        .iter()
+        .filter(|r| r.type_id == RT_GROUP_ICON_ID)
+        .map(|r| (r.name_id, r.language_id))
+        .collect();
+    group_entries.sort_unstable();
+    group_entries.dedup();
+
+    Ok(ExistingIconIds {
+        icon_entries,
+        group_entries,
+    })
+}
 const RESOURCE_DIRECTORY_INDEX: usize = 2;
 const IMAGE_RESOURCE_DATA_IS_DIRECTORY: u32 = 0x8000_0000;
 
@@ -282,4 +313,30 @@ fn read_u32(bytes: &[u8], offset: usize) -> Result<u32, IconError> {
 
 fn parse_error(message: impl Into<String>) -> IconError {
     IconError::DllParseFailed(message.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn list_existing_icon_ids_on_empty_dll_returns_empty() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("empty.dll");
+        crate::dll::copy_template_dll(&path).unwrap();
+
+        let ids = list_existing_icon_ids(&path).unwrap();
+        assert!(ids.icon_entries.is_empty());
+        assert!(ids.group_entries.is_empty());
+    }
+
+    #[test]
+    fn list_existing_icon_ids_on_non_pe_file_returns_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("not-a-pe.bin");
+        std::fs::write(&path, b"this is not a PE file at all").unwrap();
+
+        let err = list_existing_icon_ids(&path).unwrap_err();
+        assert!(matches!(err, IconError::DllParseFailed(_)));
+    }
 }

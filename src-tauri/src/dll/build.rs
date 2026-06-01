@@ -1,4 +1,4 @@
-use std::{
+﻿use std::{
     path::{Path, PathBuf},
     thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -45,13 +45,14 @@ fn build_dll_windows(options: &BuildOptions, cache: &BuildCache) -> Result<Build
 
     let _guard = crate::dll::lock_resource_io()?;
     let output_path = Path::new(&options.output_path);
+    let source_path = options.source_path.as_deref().map(Path::new);
     let cached_icons = cache.get_ordered(&options.icons)?;
     let plan = plan_icon_resources(&cached_icons)?;
 
     let mut last_error = None;
     for attempt in 0..BUILD_WRITE_ATTEMPTS {
         let temp_path = temp_output_path(output_path)?;
-        let result = build_dll_to_temp(&temp_path, output_path, &plan);
+        let result = build_dll_to_temp(&temp_path, output_path, &plan, source_path);
         if result.is_err() {
             let _ = std::fs::remove_file(&temp_path);
         }
@@ -79,11 +80,17 @@ fn build_dll_to_temp(
     temp_path: &Path,
     output_path: &Path,
     plan: &crate::dll::ResourcePlan,
+    source_path: Option<&Path>,
 ) -> Result<BuildResult, IconError> {
-    use crate::dll::{copy_template_dll, update::apply_resource_plan_unlocked};
-
-    copy_template_dll(temp_path)?;
-    apply_resource_plan_unlocked(temp_path, plan)?;
+    if let Some(src) = source_path {
+        use crate::dll::update::apply_resource_plan_preserve_unlocked;
+        std::fs::copy(src, temp_path)?;
+        apply_resource_plan_preserve_unlocked(temp_path, plan)?;
+    } else {
+        use crate::dll::{copy_template_dll, update::apply_resource_plan_unlocked};
+        copy_template_dll(temp_path)?;
+        apply_resource_plan_unlocked(temp_path, plan)?;
+    }
     replace_file(temp_path, output_path)?;
     Ok(BuildResult {
         output_path: output_path.to_string_lossy().into_owned(),
@@ -216,6 +223,7 @@ mod tests {
                 icons: vec![BuildIconInput {
                     id: "icon-a".to_owned(),
                 }],
+                source_path: None,
             };
 
             let result = build_dll(&options, &cache).unwrap();
@@ -257,6 +265,7 @@ mod tests {
                     BuildIconInput { id: "a".to_owned() },
                     BuildIconInput { id: "b".to_owned() },
                 ],
+                source_path: None,
             };
 
             build_dll(&options, &cache).unwrap();
@@ -282,6 +291,7 @@ mod tests {
                 icons: vec![BuildIconInput {
                     id: "icon-a".to_owned(),
                 }],
+                source_path: None,
             };
 
             build_dll(&options, &cache).unwrap();
@@ -300,6 +310,7 @@ mod tests {
                 icons: vec![BuildIconInput {
                     id: "missing".to_owned(),
                 }],
+                source_path: None,
             };
 
             let err = build_dll(&options, &cache).unwrap_err();
@@ -317,6 +328,7 @@ mod tests {
             let options = BuildOptions {
                 output_path: output.to_string_lossy().into_owned(),
                 icons: Vec::new(),
+                source_path: None,
             };
 
             let err = build_dll(&options, &cache).unwrap_err();
@@ -340,6 +352,7 @@ mod tests {
                 icons: vec![BuildIconInput {
                     id: "icon-a".to_owned(),
                 }],
+                source_path: None,
             };
 
             let err = build_dll(&options, &cache).unwrap_err();
@@ -400,6 +413,7 @@ mod tests {
                         id: "partial".to_owned(),
                     },
                 ],
+                source_path: None,
             };
 
             build_dll(&first_options, &first_cache).unwrap();
@@ -416,6 +430,7 @@ mod tests {
                         id: icon.id.clone(),
                     })
                     .collect(),
+                source_path: None,
             };
 
             build_dll(&second_options, &second_cache).unwrap();
@@ -475,6 +490,7 @@ mod tests {
                         id: "blue".to_owned(),
                     },
                 ],
+                source_path: None,
             };
 
             build_dll(&options, &cache).unwrap();
@@ -490,6 +506,63 @@ mod tests {
                 == vec![IconSize::S16, IconSize::S32, IconSize::S48, IconSize::S256]));
 
             println!("manual check DLL: {}", output.display());
+        }
+
+        #[test]
+        fn build_dll_edit_mode_replaces_icons_and_preserves_non_icon_resources() {
+            let _guard = crate::dll::lock_resource_test();
+            let dir = tempfile::tempdir().unwrap();
+            let source = dir.path().join("source.dll");
+            let output = dir.path().join("edited.dll");
+            let preview_dir = dir.path().join("previews");
+            std::fs::create_dir(&preview_dir).unwrap();
+
+            // Create the source DLL with two icon groups.
+            let source_cache = cache_with_icons(vec![
+                CachedBuildIcon {
+                    id: "orig-a".to_owned(),
+                    icons: vec![normalised(IconSize::S16, [255, 0, 0, 255])],
+                },
+                CachedBuildIcon {
+                    id: "orig-b".to_owned(),
+                    icons: vec![normalised(IconSize::S32, [0, 255, 0, 255])],
+                },
+            ]);
+            build_dll(
+                &BuildOptions {
+                    output_path: source.to_string_lossy().into_owned(),
+                    icons: vec![
+                        BuildIconInput { id: "orig-a".to_owned() },
+                        BuildIconInput { id: "orig-b".to_owned() },
+                    ],
+                    source_path: None,
+                },
+                &source_cache,
+            )
+            .unwrap();
+
+            // Edit the source DLL: replace with one new icon group.
+            let edit_cache = cache_with_icons(vec![CachedBuildIcon {
+                id: "new-x".to_owned(),
+                icons: vec![
+                    normalised(IconSize::S16, [0, 0, 255, 255]),
+                    normalised(IconSize::S48, [0, 0, 255, 255]),
+                ],
+            }]);
+            build_dll(
+                &BuildOptions {
+                    output_path: output.to_string_lossy().into_owned(),
+                    icons: vec![BuildIconInput { id: "new-x".to_owned() }],
+                    source_path: Some(source.to_string_lossy().into_owned()),
+                },
+                &edit_cache,
+            )
+            .unwrap();
+
+            let loaded = load_generated_dll_icons(&output, &preview_dir);
+            assert!(loaded.warnings.is_empty(), "warnings: {:?}", loaded.warnings);
+            assert_eq!(loaded.icons.len(), 1);
+            assert_eq!(loaded.icons[0].available_sizes, vec![IconSize::S16, IconSize::S48]);
         }
 
         fn icon_sizes(loaded: &crate::dll::LoadedDll) -> Vec<Vec<IconSize>> {
@@ -527,3 +600,4 @@ mod tests {
         }
     }
 }
+

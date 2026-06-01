@@ -12,6 +12,7 @@ export interface ProjectSubmitState {
   mode: Ref<ProjectMode | null>;
   icons: Ref<ProjectIcon[]>;
   sourceLabel: Ref<string | null>;
+  sourcePath: Ref<string | null>;
   outputPath: Ref<string | null>;
   dirty: Ref<boolean>;
   buildState: Ref<BuildState>;
@@ -60,6 +61,7 @@ export async function submitProjectBuild(state: ProjectSubmitState): Promise<boo
     const result = await buildDll({
       outputPath: selectedOutputPath,
       icons: state.icons.value.map((icon) => ({ id: icon.id })),
+      sourcePath: state.mode.value === 'edit' ? state.sourcePath.value : null,
     });
 
     state.outputPath.value = result.outputPath;

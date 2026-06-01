@@ -38,18 +38,23 @@ impl IconSourceData {
 
 const PNG_MAGIC: &[u8] = b"\x89PNG\r\n\x1a\n";
 const ICO_MAGIC: &[u8] = b"\x00\x00\x01\x00";
+const JPEG_MAGIC: &[u8] = b"\xff\xd8\xff";
+const WEBP_RIFF_MAGIC: &[u8] = b"RIFF";
+const WEBP_FORM_MAGIC: &[u8] = b"WEBP";
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /// Detects the source format and reads the file into `IconSourceData`.
 ///
 /// Format is detected from magic bytes first, with file extension as fallback.
-/// Supports `.png` and `.ico` only.
+/// Supports PNG, ICO, JPEG (`.jpg`/`.jpeg`) and WebP.
 pub(crate) fn read_icon_source(path: &Path) -> Result<IconSourceData, IconError> {
     let kind = detect_format(path)?;
     let frames = match kind {
-        SourceKind::Png => read_png(path)?,
+        SourceKind::Png => read_raster(path, image::ImageFormat::Png)?,
         SourceKind::Ico => read_ico(path)?,
+        SourceKind::Jpeg => read_raster(path, image::ImageFormat::Jpeg)?,
+        SourceKind::Webp => read_raster(path, image::ImageFormat::WebP)?,
         SourceKind::Extracted => {
             return Err(IconError::UnsupportedFormat {
                 ext: "extracted".to_owned(),
@@ -62,7 +67,7 @@ pub(crate) fn read_icon_source(path: &Path) -> Result<IconSourceData, IconError>
 // ── Format detection ──────────────────────────────────────────────────────────
 
 fn detect_format(path: &Path) -> Result<SourceKind, IconError> {
-    let mut header = [0u8; 8];
+    let mut header = [0u8; 12];
     let n = {
         let mut f = File::open(path)?;
         f.read(&mut header)?
@@ -73,6 +78,12 @@ fn detect_format(path: &Path) -> Result<SourceKind, IconError> {
     }
     if n >= 4 && header.starts_with(ICO_MAGIC) {
         return Ok(SourceKind::Ico);
+    }
+    if n >= 3 && header.starts_with(JPEG_MAGIC) {
+        return Ok(SourceKind::Jpeg);
+    }
+    if n >= 12 && header.starts_with(WEBP_RIFF_MAGIC) && &header[8..12] == WEBP_FORM_MAGIC {
+        return Ok(SourceKind::Webp);
     }
 
     // Magic bytes inconclusive — fall back to extension.
@@ -85,6 +96,8 @@ fn detect_format(path: &Path) -> Result<SourceKind, IconError> {
     match ext.as_str() {
         "png" => Ok(SourceKind::Png),
         "ico" => Ok(SourceKind::Ico),
+        "jpg" | "jpeg" => Ok(SourceKind::Jpeg),
+        "webp" => Ok(SourceKind::Webp),
         other => Err(IconError::UnsupportedFormat {
             ext: other.to_owned(),
         }),
@@ -93,12 +106,11 @@ fn detect_format(path: &Path) -> Result<SourceKind, IconError> {
 
 // ── Format-specific readers ───────────────────────────────────────────────────
 
-fn read_png(path: &Path) -> Result<Vec<IconFrame>, IconError> {
-    // Read bytes first, then decode with an explicit format so that the file
-    // extension is never consulted. detect_format() already confirmed PNG via
-    // magic bytes, so passing ImageFormat::Png here is always correct.
+fn read_raster(path: &Path, format: image::ImageFormat) -> Result<Vec<IconFrame>, IconError> {
+    // Read bytes then decode with an explicit format so the file extension is
+    // never consulted — detect_format() has already confirmed the format.
     let bytes = std::fs::read(path)?;
-    let img = image::load_from_memory_with_format(&bytes, image::ImageFormat::Png)
+    let img = image::load_from_memory_with_format(&bytes, format)
         .map_err(|e| IconError::Corrupted(e.to_string()))?;
     Ok(vec![IconFrame {
         width: img.width(),
@@ -145,7 +157,7 @@ fn read_ico(path: &Path) -> Result<Vec<IconFrame>, IconError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use image::{ImageBuffer, Rgba};
+    use image::{ImageBuffer, Rgb, Rgba};
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -153,6 +165,19 @@ mod tests {
         let img: ImageBuffer<Rgba<u8>, Vec<u8>> =
             ImageBuffer::from_pixel(width, height, Rgba([128, 64, 32, 255]));
         img.save(path).unwrap();
+    }
+
+    fn make_jpeg(path: &Path, width: u32, height: u32) {
+        ImageBuffer::from_pixel(width, height, Rgb([128u8, 64, 32]))
+            .save_with_format(path, image::ImageFormat::Jpeg)
+            .unwrap();
+    }
+
+    fn make_webp(path: &Path, width: u32, height: u32) {
+        let img: ImageBuffer<Rgba<u8>, Vec<u8>> =
+            ImageBuffer::from_pixel(width, height, Rgba([128, 64, 32, 200]));
+        img.save_with_format(path, image::ImageFormat::WebP)
+            .unwrap();
     }
 
     fn make_ico(path: &Path, sizes: &[u32]) {
@@ -296,5 +321,70 @@ mod tests {
 
         let err = read_icon_source(&path).unwrap_err();
         assert!(matches!(err, IconError::Corrupted(_)));
+    }
+
+    // ── JPEG ──────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn reads_valid_jpeg_jpg_extension() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("icon.jpg");
+        make_jpeg(&path, 32, 32);
+
+        let data = read_icon_source(&path).unwrap();
+        assert_eq!(data.frames.len(), 1);
+        assert_eq!(data.frames[0].width, 32);
+        assert!(matches!(data.kind, SourceKind::Jpeg));
+    }
+
+    #[test]
+    fn reads_valid_jpeg_jpeg_extension() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("icon.jpeg");
+        make_jpeg(&path, 48, 48);
+
+        let data = read_icon_source(&path).unwrap();
+        assert!(matches!(data.kind, SourceKind::Jpeg));
+        assert_eq!(data.frames[0].width, 48);
+    }
+
+    #[test]
+    fn reads_jpeg_via_magic_bytes_ignoring_extension() {
+        let dir = tempfile::tempdir().unwrap();
+        let jpeg_path = dir.path().join("icon.jpg");
+        make_jpeg(&jpeg_path, 16, 16);
+        let disguised = dir.path().join("icon.xyz");
+        std::fs::copy(&jpeg_path, &disguised).unwrap();
+
+        let data = read_icon_source(&disguised).unwrap();
+        assert!(matches!(data.kind, SourceKind::Jpeg));
+        assert_eq!(data.frames[0].width, 16);
+    }
+
+    // ── WebP ──────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn reads_valid_webp() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("icon.webp");
+        make_webp(&path, 32, 32);
+
+        let data = read_icon_source(&path).unwrap();
+        assert_eq!(data.frames.len(), 1);
+        assert_eq!(data.frames[0].width, 32);
+        assert!(matches!(data.kind, SourceKind::Webp));
+    }
+
+    #[test]
+    fn reads_webp_via_magic_bytes_ignoring_extension() {
+        let dir = tempfile::tempdir().unwrap();
+        let webp_path = dir.path().join("icon.webp");
+        make_webp(&webp_path, 16, 16);
+        let disguised = dir.path().join("icon.xyz2");
+        std::fs::copy(&webp_path, &disguised).unwrap();
+
+        let data = read_icon_source(&disguised).unwrap();
+        assert!(matches!(data.kind, SourceKind::Webp));
+        assert_eq!(data.frames[0].width, 16);
     }
 }

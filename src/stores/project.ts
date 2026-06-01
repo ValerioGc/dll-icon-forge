@@ -364,6 +364,7 @@ export const useProjectStore = defineStore('project', () => {
       mode,
       icons,
       sourceLabel,
+      sourcePath,
       outputPath,
       dirty,
       buildState,

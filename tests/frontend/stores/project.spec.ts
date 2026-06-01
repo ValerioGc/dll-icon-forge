@@ -251,6 +251,7 @@ describe('project store', () => {
     expect(tauriProjectMocks.buildDll).toHaveBeenLastCalledWith({
       outputPath: 'C:\\out\\icons.dll',
       icons: [{ id: project.icons[0].id }],
+      sourcePath: null,
     });
     expect(project.lastError).toBeNull();
     expect(project.lastNotice).toMatchObject({

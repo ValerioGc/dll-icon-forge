@@ -11,6 +11,7 @@ use build_cache::{BuildCache, CachedBuildIcon};
 use dll::LoadedDll;
 use icons::{
     BuildOptions, BuildResult, IconError, IconStatus, ImportedIcon, IpcError, ProjectIcon,
+    SourceKind,
 };
 use tauri::State;
 
@@ -134,7 +135,7 @@ fn import_icon_data(
             nanos
         ))
     };
-    fs::write(&tmp_path, &data)?;
+    fs::write(&tmp_path, &data).map_err(IconError::Io)?;
 
     let result = icons::import_icon_source(&tmp_path, &preview_dir);
     let _ = fs::remove_file(&tmp_path);

@@ -57,6 +57,8 @@ impl<'de> Deserialize<'de> for IconSize {
 pub enum SourceKind {
     Png,
     Ico,
+    Jpeg,
+    Webp,
     Extracted,
 }
 
@@ -100,6 +102,10 @@ pub struct BuildIconInput {
 pub struct BuildOptions {
     pub output_path: String,
     pub icons: Vec<BuildIconInput>,
+    /// Original DLL path used in edit mode. When set, its resources are preserved
+    /// and only icon groups/entries are replaced.
+    #[serde(default)]
+    pub source_path: Option<String>,
 }
 
 /// Result returned after generating a DLL.
@@ -153,6 +159,8 @@ mod tests {
     fn source_kind_serialises_lowercase() {
         assert_eq!(serde_json::to_string(&SourceKind::Png).unwrap(), "\"png\"");
         assert_eq!(serde_json::to_string(&SourceKind::Ico).unwrap(), "\"ico\"");
+        assert_eq!(serde_json::to_string(&SourceKind::Jpeg).unwrap(), "\"jpeg\"");
+        assert_eq!(serde_json::to_string(&SourceKind::Webp).unwrap(), "\"webp\"");
         assert_eq!(
             serde_json::to_string(&SourceKind::Extracted).unwrap(),
             "\"extracted\""
@@ -255,6 +263,7 @@ mod tests {
             icons: vec![BuildIconInput {
                 id: "icon-1".to_string(),
             }],
+            source_path: None,
         };
         let json = serde_json::to_string(&opts).unwrap();
         assert!(json.contains("\"outputPath\""));
@@ -263,6 +272,17 @@ mod tests {
         let recovered: BuildOptions = serde_json::from_str(&json).unwrap();
         assert_eq!(recovered.output_path, opts.output_path);
         assert_eq!(recovered.icons[0].id, opts.icons[0].id);
+        assert!(recovered.source_path.is_none());
+
+        let with_source: BuildOptions = serde_json::from_str(
+            r#"{"outputPath":"out.dll","icons":[],"sourcePath":"C:\\src.dll"}"#
+        ).unwrap();
+        assert_eq!(with_source.source_path.as_deref(), Some("C:\\src.dll"));
+
+        let without_source: BuildOptions = serde_json::from_str(
+            r#"{"outputPath":"out.dll","icons":[]}"#
+        ).unwrap();
+        assert!(without_source.source_path.is_none());
     }
 
     #[test]
