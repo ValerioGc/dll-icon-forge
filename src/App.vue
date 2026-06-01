@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+
 import { defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue';
 import HomeView from '@/views/HomeView.vue';
 import PageFooter from '@/components/layout/PageFooter.vue';
@@ -79,6 +80,7 @@ onMounted(() => {
     window.addEventListener('beforeunload', handleBeforeUnload);
     registerCloseRequested();
 });
+
 onUnmounted(() => {
     window.removeEventListener('beforeunload', handleBeforeUnload);
     unlistenCloseRequested?.();
@@ -89,13 +91,13 @@ onUnmounted(() => {
 <template>
     <div class="app">
         <PageHeader @home="handleGoHome" />
-        <nav v-if="project.mode !== null" class="app__topbar">
+        <nav v-if="project.mode !== null" class="app_topbar">
             <button type="button" class="back_button" @click="handleGoHome">
                 <img class="back_button_icon" :src="backIcon" alt="" aria-hidden="true" />
                 {{ t('common.backHome') }}
             </button>
         </nav>
-        <main class="app__content">
+        <main class="app_content">
             <HomeView v-if="project.mode === null" @select-mode="project.setMode" />
             <ItemView v-else :mode="project.mode" @home="handleGoHome" />
         </main>
@@ -121,7 +123,7 @@ onUnmounted(() => {
 
 <style lang="scss" scoped>
 
-.app__topbar {
+.app_topbar {
     display: flex;
     justify-content: flex-end;
     align-items: center;
@@ -143,10 +145,7 @@ onUnmounted(() => {
     border: 1px solid var(--color-accent);
     background: var(--color-accent);
     color: var(--color-on-accent);
-    transition:
-        border-color .16s ease,
-        background .16s ease,
-        transform .16s ease;
+    transition: border-color .16s ease, background .16s ease, transform .16s ease;
 
     &:hover,
     &:focus-visible {

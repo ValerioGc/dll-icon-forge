@@ -38,7 +38,9 @@ function isSelected(id: string): boolean {
 }
 
 function handleSelect(id: string, event: MouseEvent): void {
-    if (props.disabled) return;
+    if (props.disabled) 
+        return;
+    
     emit('select', id, event.ctrlKey || event.metaKey, event.shiftKey);
 }
 
@@ -68,6 +70,7 @@ function handleDrop(id: string, event: DragEvent): void {
     event.preventDefault();
     if (draggedId.value && draggedId.value !== id)
         emit('reorder', draggedId.value, id);
+    
     draggedId.value = null;
     dragOverId.value = null;
 }
@@ -81,8 +84,7 @@ function handleDragEnd(): void {
 
 <template>
     <ul class="icon_list_view" :class="{ 'is-disabled': disabled }">
-        <li v-for="(item, index) in items"
-            :key="item.id"
+        <li v-for="(item, index) in items" :key="item.id"
             class="icon_list_view_item"
             :class="{
                 'is-selected': isSelected(item.id),

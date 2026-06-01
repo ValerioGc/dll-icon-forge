@@ -47,9 +47,8 @@ const imgRef = ref<HTMLImageElement | null>(null);
 let cropper: Cropper | null = null;
 
 onMounted(() => {
-    if (imgRef.value) {
+    if (imgRef.value) 
         cropper = new Cropper(imgRef.value, { template: CROP_TEMPLATE });
-    }
 });
 
 onUnmounted(() => {
@@ -58,14 +57,20 @@ onUnmounted(() => {
 });
 
 async function handleApply(): Promise<void> {
-    if (!cropper) return;
+    if (!cropper) 
+        return;
+    
     const selection = cropper.getCropperSelection();
-    if (!selection) return;
+    if (!selection) 
+        return;
+    
     const canvas = await selection.$toCanvas();
     const blob = await new Promise<Blob | null>((resolve) => {
         canvas.toBlob(resolve, 'image/png');
     });
-    if (!blob) return;
+    if (!blob) 
+        return;
+    
     const buffer = await blob.arrayBuffer();
     emit('confirm', props.iconId, new Uint8Array(buffer), props.iconName);
 }
@@ -151,7 +156,6 @@ async function handleApply(): Promise<void> {
         margin-bottom: 1.25rem;
         overflow: hidden;
 
-        // The <img> is hidden by Cropper after init; the cropper-canvas fills the slot.
         :deep(cropper-canvas) {
             display: block;
             width: 100%;

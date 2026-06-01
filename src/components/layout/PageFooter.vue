@@ -8,7 +8,6 @@ const githubUrl = import.meta.env.VITE_GITHUB_URL ?? 'https://github.com/Valerio
 
 </script>
 
-
 <template>
     <footer class="page_footer">
         <div class="page_footer_inner">
@@ -22,6 +21,7 @@ const githubUrl = import.meta.env.VITE_GITHUB_URL ?? 'https://github.com/Valerio
 </template>
 
 <style lang="scss" scoped>
+
 .page_footer {
     padding: 0 clamp(1rem, 3vw, 2rem) 1rem;
     color: var(--color-muted);

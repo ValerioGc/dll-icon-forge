@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-import { computed, defineAsyncComponent, ref } from 'vue';
+import { computed, defineAsyncComponent } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
 
@@ -8,23 +8,24 @@ import IconCollectionView from '@/components/explorer/IconCollectionView.vue';
 import MenuTab from '@/components/explorer/MenuTab.vue';
 import FileDropZone from '@/components/upload/FileDropZone.vue';
 
-import { chooseExistingDll, chooseIconSources, ipcErrorMessage } from '@/services/tauriProject';
 import { useProjectStore } from '@/stores/project';
 import type { ProjectMode } from '@/types/modes';
-import type { ProjectIcon } from '@/types/icons';
+
+import { useCrop } from '@/composables/useCrop';
+import { useConfirmDialogs } from '@/composables/useConfirmDialogs';
+import { useFileUpload } from '@/composables/useFileUpload';
+import { useItemMeta } from '@/composables/useItemMeta';
 
 const ConfirmDialog = defineAsyncComponent(() => import('@/components/dialogs/ConfirmDialog.vue'));
 const ImageCropDialog = defineAsyncComponent(() => import('@/components/dialogs/ImageCropDialog.vue'));
 
-
-// CHECK
 defineOptions({
     name: 'ItemView',
 });
 
 const { t } = useI18n();
 const project = useProjectStore();
-const { sourceLabel, sourcePath, selectedCount, icons, buildState, lastError, lastWarnings } = storeToRefs(project);
+const { sourcePath, selectedCount, buildState, lastError, lastWarnings } = storeToRefs(project);
 
 const props = defineProps<{
     mode: ProjectMode;
@@ -34,108 +35,18 @@ const emit = defineEmits<{
     (e: 'home'): void;
 }>();
 
-const showConfirmDelete = ref(false);
-const showConfirmReset = ref(false);
-const showCropDialog = ref(false);
-const cropTargetIcon = ref<ProjectIcon | null>(null);
+const { title, description, isEditLocked, itemCountLabel } = useItemMeta(() => props.mode);
+const { showCropDialog, cropTargetIcon, handleEdit, handleCropConfirm, handleCropCancel } = useCrop();
+const { showConfirmDelete, showConfirmReset, deleteConfirmMessage, handleDeleteClick, handleConfirmDelete, handleConfirmReset } = useConfirmDialogs();
+const { handleEditSourceFiles, handleIconFiles, handleChooseEditSource, handleChooseIconSources } = useFileUpload();
 
-const title = computed(() => {
-    return props.mode === 'create' ? t('common.createMode') : t('common.editMode');
-});
+const isBuilding = computed(() =>
+    buildState.value === 'validating' || buildState.value === 'building',
+);
 
-const description = computed(() => {
-    return props.mode === 'create' ? t('itemViewCreateDesc') : t('itemViewEditDesc');
-});
-
-const isEditLocked = computed(() => {
-    return props.mode === 'edit' && sourceLabel.value === null;
-});
-
-const isBuilding = computed(() => {
-    return buildState.value === 'validating' || buildState.value === 'building';
-});
-
-const isSubmitDisabled = computed(() => {
-    return !project.canBuild || isBuilding.value;
-});
-
-const itemCountLabel = computed(() => {
-    if (selectedCount.value > 0) {
-        return t('itemCountWithSelection', {
-            count: icons.value.length,
-            selected: selectedCount.value,
-        });
-    }
-    return t('itemCount', { count: icons.value.length });
-});
-
-const deleteConfirmMessage = computed(() => {
-    return selectedCount.value === 1
-        ? t('confirm.deleteSingle')
-        : t('confirm.deleteMultiple', { count: selectedCount.value });
-});
-
-function handleEditSourceFiles(files: File[]): void {
-    const [file] = files;
-    if (file) 
-        project.setEditSourceFile(file);
-}
-
-function handleIconFiles(files: File[]): void {
-    project.addFiles(files);
-}
-
-async function handleChooseEditSource(): Promise<void> {
-    try {
-        const path = await chooseExistingDll();
-        if (path) 
-            await project.loadExistingDllPath(path);
-    } catch (error) {
-        project.setLastError(ipcErrorMessage(error));
-    }
-}
-
-async function handleChooseIconSources(): Promise<void> {
-    try {
-        const paths = await chooseIconSources();
-        await project.addIconSources(paths);
-    } catch (error) {
-        project.setLastError(ipcErrorMessage(error));
-    }
-}
-
-function handleDeleteClick(): void {
-    showConfirmDelete.value = true;
-}
-
-function handleConfirmDelete(): void {
-    showConfirmDelete.value = false;
-    project.removeSelectedIcons();
-}
-
-async function handleConfirmReset(): Promise<void> {
-    showConfirmReset.value = false;
-    await project.resetToSource();
-}
-
-function handleEdit(id: string): void {
-    const icon = icons.value.find((i) => i.id === id);
-    if (icon) {
-        cropTargetIcon.value = icon;
-        showCropDialog.value = true;
-    }
-}
-
-async function handleCropConfirm(iconId: string, data: Uint8Array, name: string): Promise<void> {
-    showCropDialog.value = false;
-    cropTargetIcon.value = null;
-    await project.cropIcon(iconId, data, name);
-}
-
-function handleCropCancel(): void {
-    showCropDialog.value = false;
-    cropTargetIcon.value = null;
-}
+const isSubmitDisabled = computed(() =>
+    !project.canBuild || isBuilding.value,
+);
 
 async function handleSubmit(): Promise<void> {
     const submitted = await project.submitProject();

@@ -52,11 +52,13 @@ watch(localTotalPages, (newTotal) => {
 });
 
 function goToNextPage(): void {
-    if (localCanGoNext.value) localPage.value += 1;
+    if (localCanGoNext.value) 
+        localPage.value += 1;
 }
 
 function goToPreviousPage(): void {
-    if (localCanGoPrevious.value) localPage.value -= 1;
+    if (localCanGoPrevious.value) 
+    localPage.value -= 1;
 }
 
 // ── View state ────────────────────────────────────────────────────────────────
@@ -101,7 +103,8 @@ function handleKeydown(e: KeyboardEvent): void {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a' && !isEmpty.value) {
         e.preventDefault();
         project.setSelectedIconIds(filteredIcons.value.map((i) => i.id));
-        if (filteredIcons.value[0]) anchorId.value = filteredIcons.value[0].id;
+        if (filteredIcons.value[0]) 
+            anchorId.value = filteredIcons.value[0].id;
     }
 }
 

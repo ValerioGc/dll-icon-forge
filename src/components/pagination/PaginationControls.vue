@@ -46,8 +46,7 @@ function handleNext(): void {
             {{ t('pagination.status', { page: page + 1, total: totalPages }) }}
         </span>
 
-        <button
-            type="button"
+        <button type="button"
             class="pagination_controls_button action_button"
             :disabled="!canGoNext"
             :aria-label="t('pagination.next')"

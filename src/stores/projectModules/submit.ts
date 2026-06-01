@@ -30,21 +30,21 @@ async function failSubmit(state: ProjectSubmitState, message: string): Promise<f
 }
 
 export async function submitProjectBuild(state: ProjectSubmitState): Promise<boolean> {
-  if (!state.canEditProject.value) {
+  if (!state.canEditProject.value) 
     return failSubmit(state, t('notifications.noEditSource'));
-  }
+  
 
-  if (state.icons.value.length === 0) {
+  if (state.icons.value.length === 0) 
     return failSubmit(state, t('notifications.noIcons'));
-  }
+  
 
   state.buildState.value = 'validating';
 
   const invalidIcons = state.icons.value.filter((icon) => icon.status === 'error');
 
-  if (invalidIcons.length > 0) {
+  if (invalidIcons.length > 0) 
     return failSubmit(state, t('notifications.invalidIcons', { count: invalidIcons.length }));
-  }
+  
 
   state.buildState.value = 'building';
 

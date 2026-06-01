@@ -145,7 +145,6 @@ export const useProjectStore = defineStore('project', () => {
     buildState.value = 'validating';
 
     // Clear UI and revoke previews before the IPC call so that the fire-and-forget
-    // dropBuildIcon calls from cleanupPreview can't race with replace_all in loadExistingDll.
     const previousIcons = [...icons.value];
     icons.value = [];
     selectedIconIds.value = [];

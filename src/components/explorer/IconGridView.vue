@@ -38,7 +38,9 @@ function isSelected(id: string): boolean {
 }
 
 function handleSelect(id: string, event: MouseEvent): void {
-    if (props.disabled) return;
+    if (props.disabled) 
+        return;
+        
     emit('select', id, event.ctrlKey || event.metaKey, event.shiftKey);
 }
 
@@ -68,6 +70,7 @@ function handleDrop(id: string, event: DragEvent): void {
     event.preventDefault();
     if (draggedId.value && draggedId.value !== id)
         emit('reorder', draggedId.value, id);
+
     draggedId.value = null;
     dragOverId.value = null;
 }

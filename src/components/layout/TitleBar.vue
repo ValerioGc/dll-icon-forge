@@ -1,4 +1,5 @@
 <script setup lang="ts">
+
 import { ref, onMounted, onUnmounted } from 'vue';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import minimizeIcon from '@/assets/icons/minus.svg';
@@ -6,7 +7,11 @@ import maximizeIcon from '@/assets/icons/square.svg';
 import closeIcon from '@/assets/icons/actions/close.svg';
 
 let win: ReturnType<typeof getCurrentWindow> | null = null;
-try { win = getCurrentWindow(); } catch { /* browser fallback */ }
+try { 
+    win = getCurrentWindow(); 
+} catch { 
+    /* browser fallback */ 
+}
 
 const isMaximized = ref(false);
 let unlistenResized: (() => void) | null = null;
@@ -31,12 +36,15 @@ onMounted(async () => {
     await syncMaximized();
     try {
         if (win) unlistenResized = await win.onResized(syncMaximized);
-    } catch { /* browser fallback */ }
+    } catch { 
+        /* browser fallback */ 
+    }
 });
 
 onUnmounted(() => {
     unlistenResized?.();
 });
+
 </script>
 
 <template>
