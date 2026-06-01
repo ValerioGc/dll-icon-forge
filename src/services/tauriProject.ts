@@ -101,3 +101,7 @@ export async function dropBuildIcon(id: string): Promise<void> {
 export async function clearBuildCache(): Promise<void> {
   await invoke('clear_build_cache');
 }
+
+export async function importIconData(id: string, data: number[], name: string): Promise<BackendProjectIcon> {
+  return invoke<BackendProjectIcon>('import_icon_data', { id, data, name });
+}

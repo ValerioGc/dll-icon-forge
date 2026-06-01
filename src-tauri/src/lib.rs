@@ -113,6 +113,56 @@ fn clear_build_cache(cache: State<'_, BuildCache>) -> Result<(), IpcError> {
     cache.clear().map_err(Into::into)
 }
 
+#[tauri::command]
+fn import_icon_data(
+    id: String,
+    data: Vec<u8>,
+    name: String,
+    cache: State<'_, BuildCache>,
+) -> Result<ProjectIcon, IpcError> {
+    let preview_dir = ensure_preview_dir()?;
+
+    let tmp_path = {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap_or_default()
+            .subsec_nanos();
+        preview_dir.join(format!(
+            "wdp_src_{:08x}{:08x}.png",
+            std::process::id(),
+            nanos
+        ))
+    };
+    fs::write(&tmp_path, &data)?;
+
+    let result = icons::import_icon_source(&tmp_path, &preview_dir);
+    let _ = fs::remove_file(&tmp_path);
+    let imported = result?;
+
+    let ImportedIcon {
+        icons: normalised,
+        preview_path,
+        ..
+    } = imported;
+    let available_sizes = normalised.iter().map(|icon| icon.size).collect();
+
+    cache.insert(CachedBuildIcon {
+        id: id.clone(),
+        icons: normalised,
+    })?;
+
+    Ok(ProjectIcon {
+        id,
+        name,
+        source_kind: SourceKind::Png,
+        available_sizes,
+        status: IconStatus::Ready,
+        error: None,
+        preview_path: Some(preview_path.to_string_lossy().into_owned()),
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -125,7 +175,8 @@ pub fn run() {
             build_dll,
             remove_preview,
             drop_build_icon,
-            clear_build_cache
+            clear_build_cache,
+            import_icon_data
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

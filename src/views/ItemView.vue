@@ -11,8 +11,10 @@ import FileDropZone from '@/components/upload/FileDropZone.vue';
 import { chooseExistingDll, chooseIconSources, ipcErrorMessage } from '@/services/tauriProject';
 import { useProjectStore } from '@/stores/project';
 import type { ProjectMode } from '@/types/modes';
+import type { ProjectIcon } from '@/types/icons';
 
 const ConfirmDialog = defineAsyncComponent(() => import('@/components/dialogs/ConfirmDialog.vue'));
+const ImageCropDialog = defineAsyncComponent(() => import('@/components/dialogs/ImageCropDialog.vue'));
 
 
 // CHECK
@@ -34,6 +36,8 @@ const emit = defineEmits<{
 
 const showConfirmDelete = ref(false);
 const showConfirmReset = ref(false);
+const showCropDialog = ref(false);
+const cropTargetIcon = ref<ProjectIcon | null>(null);
 
 const title = computed(() => {
     return props.mode === 'create' ? t('common.createMode') : t('common.editMode');
@@ -114,6 +118,25 @@ async function handleConfirmReset(): Promise<void> {
     await project.resetToSource();
 }
 
+function handleEdit(id: string): void {
+    const icon = icons.value.find((i) => i.id === id);
+    if (icon) {
+        cropTargetIcon.value = icon;
+        showCropDialog.value = true;
+    }
+}
+
+async function handleCropConfirm(iconId: string, data: Uint8Array, name: string): Promise<void> {
+    showCropDialog.value = false;
+    cropTargetIcon.value = null;
+    await project.cropIcon(iconId, data, name);
+}
+
+function handleCropCancel(): void {
+    showCropDialog.value = false;
+    cropTargetIcon.value = null;
+}
+
 async function handleSubmit(): Promise<void> {
     const submitted = await project.submitProject();
     if (submitted && props.mode === 'create')
@@ -124,6 +147,14 @@ async function handleSubmit(): Promise<void> {
 
 <template>
     <div class="item_view">
+
+        <ImageCropDialog v-if="showCropDialog && cropTargetIcon"
+                    :icon-id="cropTargetIcon.id"
+                    :preview-src="cropTargetIcon.preview"
+                    :icon-name="cropTargetIcon.name ?? ''"
+                    @confirm="handleCropConfirm"
+                    @cancel="handleCropCancel"
+        />
 
         <ConfirmDialog v-if="showConfirmDelete"
                     :title="t('confirm.deleteTitle')"
@@ -179,7 +210,7 @@ async function handleSubmit(): Promise<void> {
 
             <div class="item_view_collection">
 
-                <IconCollectionView />
+                <IconCollectionView @edit="handleEdit" />
                 <div v-if="isBuilding" class="item_view_collection_overlay">
                     <span class="item_view_collection_spinner" aria-hidden="true"></span>
                 </div>

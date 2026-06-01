@@ -5,8 +5,10 @@ import { notify } from '@/services/notifications';
 import {
   addIconSource,
   fromBackendIcon,
+  importIconData,
   ipcErrorMessage,
   loadExistingDll,
+  removePreview,
 } from '@/services/tauriProject';
 import { useSettingsStore } from '@/stores/settings';
 import type { BuildState } from '@/types/build';
@@ -21,7 +23,7 @@ import {
   isSupportedFile,
 } from './projectModules/files';
 import { useProjectPagination } from './projectModules/pagination';
-import { cleanupPreview, cleanupProjectPreviews, clearIconsForReload } from './projectModules/resources';
+import { cleanupPreview, cleanupProjectPreviews, clearIconsForReload, revokePreviewUrl } from './projectModules/resources';
 import { submitProjectBuild } from './projectModules/submit';
 
 function formatDllWarning(w: DllWarning): string {
@@ -332,6 +334,26 @@ export const useProjectStore = defineStore('project', () => {
     selectedIconIds.value = [...ids];
   }
 
+  async function cropIcon(iconId: string, data: Uint8Array, name: string): Promise<void> {
+    buildState.value = 'validating';
+    try {
+      const updated = await importIconData(iconId, Array.from(data), name);
+      const idx = icons.value.findIndex((i) => i.id === iconId);
+      if (idx !== -1) {
+        const old = icons.value[idx];
+        revokePreviewUrl(old);
+        if (old.previewPath)
+          void removePreview(old.previewPath).catch(() => undefined);
+        icons.value[idx] = fromBackendIcon(updated);
+      }
+      buildState.value = 'idle';
+      dirty.value = true;
+    } catch (error) {
+      lastError.value = ipcErrorMessage(error);
+      buildState.value = 'error';
+    }
+  }
+
   async function resetToSource(): Promise<void> {
     if (!sourcePath.value) return;
     await loadExistingDllPath(sourcePath.value);
@@ -396,6 +418,7 @@ export const useProjectStore = defineStore('project', () => {
     selectAllIcons,
     setSelectedIconIds,
     cleanupPreviews,
+    cropIcon,
     resetToSource,
     submitProject,
     resetPage,

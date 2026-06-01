@@ -2,6 +2,7 @@
 
 import { ref } from 'vue';
 import closeIcon from '@/assets/icons/actions/close.svg';
+import editIcon from '@/assets/icons/actions/edit.svg';
 import type { ProjectIcon } from '@/types/icons';
 
 defineOptions({
@@ -25,6 +26,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
     (e: 'select', id: string, additive: boolean, range: boolean): void;
     (e: 'delete', id: string): void;
+    (e: 'edit', id: string): void;
     (e: 'reorder', fromId: string, toId: string): void;
 }>();
 
@@ -112,6 +114,16 @@ function handleDragEnd(): void {
                 @click.stop="emit('delete', item.id)"
             >
                 <img class="ui_icon icon_grid_view_delete_icon themed_icon" :src="closeIcon" alt="" aria-hidden="true" />
+            </button>
+
+            <button v-if="item.status === 'error'"
+                type="button"
+                class="icon_grid_view_edit action_button"
+                :disabled="disabled"
+                :aria-label="$t('menu.edit')"
+                @click.stop="emit('edit', item.id)"
+            >
+                <img class="ui_icon icon_grid_view_edit_icon themed_icon" :src="editIcon" alt="" aria-hidden="true" />
             </button>
         </li>
     </ul>
@@ -202,6 +214,26 @@ function handleDragEnd(): void {
         &:hover:not(:disabled),
         &:focus-visible:not(:disabled) {
             border-color: var(--color-danger);
+        }
+
+        &_icon {
+            width: .85rem;
+            height: .85rem;
+        }
+    }
+
+    &_edit {
+        position: absolute;
+        bottom: .25rem;
+        right: .25rem;
+        width: 1.75rem;
+        height: 1.75rem;
+        padding: 0;
+        color: var(--color-warning);
+
+        &:hover:not(:disabled),
+        &:focus-visible:not(:disabled) {
+            border-color: var(--color-warning);
         }
 
         &_icon {

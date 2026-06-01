@@ -29,7 +29,8 @@
   },
   "menu": {
     "delete": "Delete",
-    "deleteWithCount": "Delete ({count})"
+    "deleteWithCount": "Delete ({count})",
+    "edit": "Edit"
   },
   "viewMode": {
     "label": "View mode",
@@ -68,6 +69,11 @@
     "placeholder": "Search by name...",
     "label": "Search icons",
     "noResults": "No icons match the search."
+  },
+  "crop": {
+    "title": "Crop icon",
+    "hint": "Select the square area to keep. The aspect ratio is locked to 1:1.",
+    "apply": "Apply"
   },
   "confirm": {
     "unsavedTitle": "Unsaved changes",

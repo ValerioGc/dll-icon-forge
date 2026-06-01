@@ -2,6 +2,7 @@
 
 import { ref } from 'vue';
 import closeIcon from '@/assets/icons/actions/close.svg';
+import editIcon from '@/assets/icons/actions/edit.svg';
 import type { ProjectIcon } from '@/types/icons';
 
 defineOptions({
@@ -25,6 +26,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
     (e: 'select', id: string, additive: boolean, range: boolean): void;
     (e: 'delete', id: string): void;
+    (e: 'edit', id: string): void;
     (e: 'reorder', fromId: string, toId: string): void;
 }>();
 
@@ -105,13 +107,24 @@ function handleDragEnd(): void {
                 </span>
             </button>
 
-            <button type="button" class="icon_list_view_delete action_button"
-                :disabled="disabled"
-                :aria-label="$t('menu.delete')"
-                @click.stop="emit('delete', item.id)"
-            >
-                <img class="ui_icon icon_list_view_delete_icon" :src="closeIcon" alt="" aria-hidden="true" />
-            </button>
+            <div class="icon_list_view_actions">
+                <button v-if="item.status === 'error'"
+                    type="button"
+                    class="icon_list_view_edit action_button"
+                    :disabled="disabled"
+                    :aria-label="$t('menu.edit')"
+                    @click.stop="emit('edit', item.id)"
+                >
+                    <img class="ui_icon icon_list_view_edit_icon themed_icon" :src="editIcon" alt="" aria-hidden="true" />
+                </button>
+                <button type="button" class="icon_list_view_delete action_button"
+                    :disabled="disabled"
+                    :aria-label="$t('menu.delete')"
+                    @click.stop="emit('delete', item.id)"
+                >
+                    <img class="ui_icon icon_list_view_delete_icon" :src="closeIcon" alt="" aria-hidden="true" />
+                </button>
+            </div>
         </li>
     </ul>
 </template>
@@ -194,10 +207,32 @@ function handleDragEnd(): void {
         }
     }
 
+    &_actions {
+        @extend %fx_inline_center;
+        gap: .4rem;
+        margin-right: .55rem;
+    }
+
+    &_edit {
+        width: 2.25rem;
+        height: 2.25rem;
+        padding: 0;
+        color: var(--color-warning);
+
+        &:hover:not(:disabled),
+        &:focus-visible:not(:disabled) {
+            border-color: var(--color-warning);
+        }
+
+        &_icon {
+            width: 1rem;
+            height: 1rem;
+        }
+    }
+
     &_delete {
         width: 2.25rem;
         height: 2.25rem;
-        margin-right: .55rem;
         padding: 0;
         color: var(--color-danger);
         font-weight: 800;

@@ -108,6 +108,16 @@ function handleKeydown(e: KeyboardEvent): void {
 onMounted(() => globalThis.addEventListener('keydown', handleKeydown));
 onUnmounted(() => globalThis.removeEventListener('keydown', handleKeydown));
 
+// ── Edit (crop) ───────────────────────────────────────────────────────────────
+
+const emit = defineEmits<{
+    (e: 'edit', id: string): void;
+}>();
+
+function handleEdit(id: string): void {
+    emit('edit', id);
+}
+
 // ── Toolbar handlers ──────────────────────────────────────────────────────────
 
 function handleViewMode(next: ViewMode): void {
@@ -182,6 +192,7 @@ function handlePageSize(next: PageSize): void {
             :sortable="isSortable"
             @select="handleSelect"
             @delete="handleDelete"
+            @edit="handleEdit"
             @reorder="handleReorder"
         />
 
@@ -192,6 +203,7 @@ function handlePageSize(next: PageSize): void {
             :sortable="isSortable"
             @select="handleSelect"
             @delete="handleDelete"
+            @edit="handleEdit"
             @reorder="handleReorder"
         />
 

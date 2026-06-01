@@ -29,7 +29,8 @@
   },
   "menu": {
     "delete": "Elimina",
-    "deleteWithCount": "Elimina ({count})"
+    "deleteWithCount": "Elimina ({count})",
+    "edit": "Modifica"
   },
   "viewMode": {
     "label": "Modalita di visualizzazione",
@@ -68,6 +69,11 @@
     "placeholder": "Cerca per nome...",
     "label": "Cerca icone",
     "noResults": "Nessuna icona corrisponde alla ricerca."
+  },
+  "crop": {
+    "title": "Ritaglia icona",
+    "hint": "Seleziona l'area quadrata da mantenere. L'aspect ratio e bloccato a 1:1.",
+    "apply": "Applica"
   },
   "confirm": {
     "unsavedTitle": "Modifiche non salvate",
