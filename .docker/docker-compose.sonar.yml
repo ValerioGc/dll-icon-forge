@@ -11,6 +11,14 @@ services:
       - sonarqube_extensions:/opt/sonarqube/extensions
       - sonarqube_logs:/opt/sonarqube/logs
 
+  scanner:
+    image: sonarsource/sonar-scanner-cli
+    profiles: ["scan"]
+    volumes:
+      - ../:/usr/src
+    environment:
+      SONAR_HOST_URL: http://sonarqube:9000
+
 volumes:
   sonarqube_data:
   sonarqube_extensions:

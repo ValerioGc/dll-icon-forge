@@ -16,7 +16,7 @@
     "test:rust": "cd src-tauri && cargo test",
     "test:rust:coverage": "node -e \"require('fs').mkdirSync('src-tauri/target/llvm-cov', { recursive: true })\" && cd src-tauri && cargo llvm-cov --lcov --output-path target/llvm-cov/lcov.info -- --include-ignored",
     "coverage": "npm run test:coverage && npm run test:rust:coverage",
-    "sonar": "sonar",
+    "sonar": "docker compose -f .docker/docker-compose.sonar.yml --profile scan run --rm scanner",
     "sonar:coverage": "npm run coverage && npm run sonar",
     "docker:sonar:up": "docker compose -f .docker/docker-compose.sonar.yml up -d",
     "docker:sonar:down": "docker compose -f .docker/docker-compose.sonar.yml down",
@@ -32,7 +32,6 @@
   },
   "devDependencies": {
     "@fullhuman/postcss-purgecss": "^6.0.0",
-    "@sonar/scan": "^4.3.6",
     "@tauri-apps/cli": "^2.1.0",
     "@types/node": "^25.6.0",
     "@vitejs/plugin-vue": "^5.2.1",
