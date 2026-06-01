@@ -6,13 +6,13 @@
 
 DLL Icon Forge is a Windows desktop app for creating and editing icon library DLLs.
 
-It helps you collect `.ico` and `.png` files, preview them, organize the icon list, and generate a resource-only `.dll` that can be used as a Windows icon library. Existing DLLs can also be opened, inspected, adjusted, and rebuilt into a new output file.
+It helps you collect icon images (`.ico`, `.png`, `.jpg`, `.webp`, `.svg`), preview them, organize the icon list, and generate a resource-only `.dll` that can be used as a Windows icon library. Existing DLLs can also be opened, inspected, adjusted, and rebuilt into a new output file.
 
 ![DLL Icon Forge screenshot](docs/app-main.png)
 
 ## What It Does
 
-- Creates new icon DLL libraries from `.ico` and `.png` files.
+- Creates new icon DLL libraries from `.ico`, `.png`, `.jpg`/`.jpeg`, `.webp` and `.svg` files.
 - Opens existing icon DLLs and extracts readable icon groups.
 - Lets you review icons in list or grid view.
 - Supports selecting and removing icons before saving.
@@ -27,7 +27,7 @@ It helps you collect `.ico` and `.png` files, preview them, organize the icon li
 ### Create A New DLL
 
 1. Choose **Create** from the home screen.
-2. Add one or more `.ico` or `.png` files.
+2. Add one or more icon files (`.ico`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.svg`).
 3. Review the previews and remove anything you do not want to include.
 4. Generate the DLL.
 5. Choose where to save the output `.dll`.
@@ -37,7 +37,7 @@ It helps you collect `.ico` and `.png` files, preview them, organize the icon li
 1. Choose **Edit** from the home screen.
 2. Select an existing `.dll`.
 3. Review the icons extracted from the file.
-4. Remove icons or add new `.ico` / `.png` files.
+4. Remove icons or add new icon files (`.ico`, `.png`, `.jpg`, `.jpeg`, `.webp`, `.svg`).
 5. Generate a new DLL and choose the output path.
 
 The original DLL is not modified in place. DLL Icon Forge always writes the result to the output path you choose.
@@ -48,28 +48,24 @@ Input files:
 
 - `.ico`
 - `.png`
+- `.jpg` / `.jpeg`
+- `.webp`
+- `.svg`
 - existing `.dll` files containing icon resources
 
 Output:
 
 - resource-only `.dll` icon libraries
 
+## Windows SmartScreen Warning
+
+When you run the installer for the first time, Windows SmartScreen may show a warning saying the publisher is unknown. This happens because the executable is not code-signed with a commercial certificate.
+
+The application is safe to use. If you prefer not to dismiss the SmartScreen prompt, you can build the application yourself directly from source — all the instructions are in [DEVELOPMENT.md](DEVELOPMENT.md).
+
 ## Privacy
 
 DLL Icon Forge runs locally on your machine. Files you import are processed offline and are not uploaded anywhere. The app does not include telemetry or cloud services.
-
-## Current Limitations
-
-- Input image formats for now are limited to `.ico` and `.png`.
-- Generated DLLs are icon libraries only.
-- Non-icon resources from existing DLLs are not preserved.
-
-## Planned Improvements
-
-- Better handling of large icon collections.
-- More detailed warnings when an icon group cannot be read from an existing DLL.
-- More advanced icon inspection and editing tools.
-- Portable version
 
 ## License
 

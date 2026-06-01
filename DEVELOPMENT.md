@@ -13,7 +13,7 @@ Technical notes for working on **DLL Icon Forge**. Product-facing information li
 | Styling | SCSS, shared partials, CSS variables |
 | i18n | vue-i18n (`it`, `en`, `fr`, `es`, `de`) |
 | Native backend | Rust |
-| Packaging | Tauri bundle targets: `nsis`, `msi` (Windows only) |
+| Packaging | Tauri bundle targets: `nsis`, `msi` (Windows) |
 
 ## Prerequisites
 
@@ -124,8 +124,8 @@ npm run coverage
 Current known automatic checks:
 
 - `npm run build`: green.
-- `npm run test`: 117 frontend tests green.
-- `cargo test`: 108 Rust tests green, 1 manual DLL inspection test ignored.
+- `npm run test`: 151 frontend tests green.
+- `cargo test`: 128 Rust tests green, 1 manual DLL inspection test ignored.
 
 The ignored manual Rust test can generate a repeatable DLL for inspection:
 
@@ -173,7 +173,7 @@ Key modules:
 
 | Module | Responsibility |
 | --- | --- |
-| `icons/` | Read `.ico`/`.png`, validate, normalize target sizes, write preview PNGs, IPC types/errors. |
+| `icons/` | Read `.ico`/`.png`/`.jpg`/`.webp`/`.svg`, validate, normalize target sizes, write preview PNGs, IPC types/errors. |
 | `dll/read.rs` | Windows-only DLL loading and icon resource extraction. |
 | `dll/write.rs` | Pure resource planning and `RT_GROUP_ICON` binary writer. |
 | `dll/template.rs` | Embedded resource-only DLL template. |
@@ -195,7 +195,7 @@ Current command surface:
 
 | Command | Purpose |
 | --- | --- |
-| `add_icon_source(path)` | Import `.ico`/`.png`, create preview and cache build data. |
+| `add_icon_source(path)` | Import `.ico`/`.png`/`.jpg`/`.webp`/`.svg`, create preview and cache build data. |
 | `load_existing_dll(path)` | Extract icons from a DLL and replace build cache. |
 | `build_dll(options)` | Generate the output DLL from cached icons. |
 | `remove_preview(path)` | Remove a preview file idempotently. |
@@ -204,36 +204,23 @@ Current command surface:
 
 ## Release Workflow
 
-GitHub Actions live in:
+A single workflow file handles everything:
 
 | Workflow | Trigger | Purpose |
 | --- | --- | --- |
-| `.github/workflows/ci.yml` | push to `main`, pull request | Validate the candidate on Windows. |
-| `.github/workflows/release.yml` | push tag matching `v*.*.*` | Validate, build installers, and create a draft release. |
+| `.github/workflows/ci.yml` | push tag matching `v*.*.*` | Validate, build installers, and publish a GitHub release. |
 
-Both workflows pin Node.js to `22.14.0`, install dependencies with `npm ci`, set up the stable Rust toolchain, and cache Rust dependencies for the `src-tauri` workspace.
-The release workflow also uses a GitHub Actions concurrency group per tag, so a newer run for the same tag cancels an older in-progress run.
-
-### CI
-
-CI runs on `windows-latest` and executes:
-
-```powershell
-cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
-cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
-npm run test
-npm run test:rust
-npm run build
-```
+The workflow pins Node.js to `22.14.0`, installs dependencies with `npm ci`, sets up the stable Rust toolchain, and caches Rust dependencies for the `src-tauri` workspace.
+A GitHub Actions concurrency group per tag ensures a newer run for the same tag cancels an older in-progress run.
 
 ### Release Pipeline
 
-The release workflow is tag-driven and split into four jobs:
+The pipeline is tag-driven and split into four jobs:
 
-1. `verify-tag-on-main` runs on `ubuntu-latest`, validates the tag format, fetches `origin/main`, and fails if the tagged commit is not already reachable from `main`.
-2. `test` runs on `windows-latest`, installs dependencies, verifies release metadata, runs Rust format and clippy checks, then runs frontend tests, Rust tests, and the frontend build.
-3. `build-windows` runs on `windows-latest`, builds the Tauri bundles, collects the NSIS `.exe` and MSI `.msi` installers, generates SHA256 checksums, and uploads them as the `windows-installers` artifact.
-4. `create-release` runs on `ubuntu-latest`, downloads `windows-installers`, builds `release-notes.md` from `CHANGELOG.txt`, and creates a draft GitHub release with the installer assets attached.
+1. `test` runs on `windows-latest`: Rust fmt/clippy checks, frontend tests, Rust tests, frontend build.
+2. `verify-release` runs on `ubuntu-latest`: validates the semantic version tag, confirms the tagged commit is reachable from `main`, checks that `package.json`, `tauri.conf.json` and the tag all share the same version, and verifies `CHANGELOG.txt` is present and non-empty.
+3. `build-windows` runs on `windows-latest`: builds Tauri bundles, collects the NSIS `.exe` and MSI `.msi` installers, and uploads them as the `windows-installers` artifact.
+4. `create-release` runs on `ubuntu-latest`: downloads `windows-installers`, computes `SHA256SUMS.txt`, builds `release-notes.md` from `CHANGELOG.txt`, and publishes the GitHub release with all assets attached.
 
 Release validation checks:
 

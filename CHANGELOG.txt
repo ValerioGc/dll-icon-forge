@@ -1,3 +1,68 @@
-Initial release of DLL Icon Forge.
+DLL Icon Forge — CHANGELOG
+==========================
 
+All notable changes to this project are documented here.
+Format: https://keepachangelog.com/en/1.1.0
+
+-------------------------------------------------------------------------------
+[0.1.0] — 2026-06-01
+-------------------------------------------------------------------------------
+
+First public release of DLL Icon Forge.
+
+### Added — Create mode
+- Import icons from PNG, ICO, JPEG/JPG and WebP source files.
+  Format is detected from magic bytes; file extension is used as fallback.
+- Image cropping for imported icons before they enter the build pipeline.
+- Icon search with pagination inside the icon collection view.
+- Drag-and-drop reordering of icons within a project.
+- Additive multi-selection of icons (Shift/Ctrl-style behaviour).
+- Build a resource-only Windows DLL from the selected icon set.
+  Each icon group is encoded with RT_ICON + RT_GROUP_ICON entries at the
+  four standard sizes: 16, 32, 48 and 256 px. Missing sizes are produced
+  by Lanczos3 downscaling from the largest available source frame.
+- Non-blocking validation warnings:
+    NoAlpha          — source has no alpha channel; opaque alpha is added.
+    NonStandardSizes — ICO source contains no standard target sizes;
+                       normalisation resizes from the largest available frame.
+
+### Added — Edit mode
+- Load an existing DLL and inspect all embedded icon groups.
+- Replace the icon set while preserving every non-icon resource present
+  in the original DLL (RT_VERSION, RT_MANIFEST, string tables, etc.).
+  Old RT_ICON and RT_GROUP_ICON entries are explicitly removed before the
+  new plan is written; all other resource types are left untouched.
+- Warnings surfaced in the UI for icon groups that are unreadable or
+  missing their RT_ICON entries.
+
+### Added — UI / UX
+- Custom TitleBar component with minimize, maximize and close controls.
+- Dark / light theme toggle, persisted in localStorage across sessions.
+- Italian and English interface (vue-i18n composition mode, default: it).
+- Confirmation dialogs for destructive actions (project reset, icon delete).
+- Back navigation from ItemView to HomeView.
+- Release notes with SHA-256 checksums in the GitHub release workflow.
+
+### Added — Infrastructure
+- Tauri 2 + Vue 3 (Composition API + <script setup>) + Pinia stores.
+- Pure Rust PE resource manipulation — no external tools or Win32 resource
+  compiler required at runtime.
+  Internal PE parser handles both PE32 and PE32+ optional headers.
+  Resource writes use BeginUpdateResourceW / UpdateResourceW /
+  EndUpdateResourceW with a three-attempt retry loop and post-write
+  verification.
+- Bundled template DLL (resource-only, no code) used as the base for
+  create-mode builds.
+- CI pipeline (GitHub Actions):
+    Windows: MSI + NSIS installer artifacts.
+    Rust:    cargo fmt --check, cargo clippy.
+- Frontend tests: Vitest + Vue Test Utils + happy-dom (151 tests).
+- Rust unit tests: 74 icon-pipeline tests covering read, validate,
+  normalise, preview generation and the full import pipeline for every
+  supported format; plus integration tests for DLL read/write round-trips.
+- Coverage: v8 (frontend, lcov output) / cargo-llvm-cov (Rust).
+- SonarQube integration via docker-compose for local quality scans.
+- SVG input format support via resvg (pure-Rust, no C dependencies).
+  SVGs are automatically rasterized at >=256 px before entering the standard
+  icon pipeline. Non-square SVGs are rejected with a clear error.
 
