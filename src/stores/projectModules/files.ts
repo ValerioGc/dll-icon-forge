@@ -2,7 +2,7 @@ import { t } from '@/i18n';
 import type { IconSize, ProjectIcon, SourceKind } from '@/types/icons';
 import type { ProjectMode } from '@/types/modes';
 
-const SUPPORTED_EXTENSIONS = ['.ico', '.png', '.jpg', '.jpeg', '.webp'] as const;
+const SUPPORTED_EXTENSIONS = ['.ico', '.png', '.jpg', '.jpeg', '.webp', '.svg'] as const;
 
 export function isSupportedFile(file: File): boolean {
   const name = file.name.toLowerCase();

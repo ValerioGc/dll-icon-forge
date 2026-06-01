@@ -59,6 +59,7 @@ pub enum SourceKind {
     Ico,
     Jpeg,
     Webp,
+    Svg,
     Extracted,
 }
 
@@ -161,6 +162,7 @@ mod tests {
         assert_eq!(serde_json::to_string(&SourceKind::Ico).unwrap(), "\"ico\"");
         assert_eq!(serde_json::to_string(&SourceKind::Jpeg).unwrap(), "\"jpeg\"");
         assert_eq!(serde_json::to_string(&SourceKind::Webp).unwrap(), "\"webp\"");
+        assert_eq!(serde_json::to_string(&SourceKind::Svg).unwrap(), "\"svg\"");
         assert_eq!(
             serde_json::to_string(&SourceKind::Extracted).unwrap(),
             "\"extracted\""

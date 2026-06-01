@@ -1,4 +1,4 @@
-export type SourceKind = 'imported' | 'extracted' | 'png' | 'ico' | 'jpeg' | 'webp';
+export type SourceKind = 'imported' | 'extracted' | 'png' | 'ico' | 'jpeg' | 'webp' | 'svg';
 
 export type IconStatus = 'ready' | 'error';
 

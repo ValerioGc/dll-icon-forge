@@ -776,6 +776,33 @@ mod tests {
         assert!(result.preview_path.exists());
     }
 
+    fn make_svg(path: &Path, width: u32, height: u32) {
+        let content = format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}"><rect width="{w}" height="{h}" fill="red"/></svg>"#,
+            w = width, h = height
+        );
+        std::fs::write(path, content.as_bytes()).unwrap();
+    }
+
+    #[test]
+    fn pipeline_svg_square_produces_four_icons_no_warnings() {
+        let src_dir = tempfile::tempdir().unwrap();
+        let prev_dir = tempfile::tempdir().unwrap();
+        let src_path = src_dir.path().join("icon.svg");
+        make_svg(&src_path, 64, 64);
+
+        let result = import_icon_source(&src_path, prev_dir.path()).unwrap();
+
+        assert_eq!(result.source_kind, SourceKind::Svg);
+        assert_eq!(result.icons.len(), 4);
+        assert!(
+            result.warnings.is_empty(),
+            "SVG renders as RGBA — no warnings expected, got: {:?}",
+            result.warnings
+        );
+        assert!(result.preview_path.exists());
+    }
+
     #[test]
     fn pipeline_unsupported_format_returns_error() {
         let dir = tempfile::tempdir().unwrap();

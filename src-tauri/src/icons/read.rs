@@ -41,13 +41,15 @@ const ICO_MAGIC: &[u8] = b"\x00\x00\x01\x00";
 const JPEG_MAGIC: &[u8] = b"\xff\xd8\xff";
 const WEBP_RIFF_MAGIC: &[u8] = b"RIFF";
 const WEBP_FORM_MAGIC: &[u8] = b"WEBP";
+const SVG_MAGIC: &[u8] = b"<svg";
+const SVG_XML_MAGIC: &[u8] = b"<?xml";
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /// Detects the source format and reads the file into `IconSourceData`.
 ///
 /// Format is detected from magic bytes first, with file extension as fallback.
-/// Supports PNG, ICO, JPEG (`.jpg`/`.jpeg`) and WebP.
+/// Supports PNG, ICO, JPEG (`.jpg`/`.jpeg`), WebP, and SVG.
 pub(crate) fn read_icon_source(path: &Path) -> Result<IconSourceData, IconError> {
     let kind = detect_format(path)?;
     let frames = match kind {
@@ -55,6 +57,7 @@ pub(crate) fn read_icon_source(path: &Path) -> Result<IconSourceData, IconError>
         SourceKind::Ico => read_ico(path)?,
         SourceKind::Jpeg => read_raster(path, image::ImageFormat::Jpeg)?,
         SourceKind::Webp => read_raster(path, image::ImageFormat::WebP)?,
+        SourceKind::Svg => read_svg(path)?,
         SourceKind::Extracted => {
             return Err(IconError::UnsupportedFormat {
                 ext: "extracted".to_owned(),
@@ -85,6 +88,12 @@ fn detect_format(path: &Path) -> Result<SourceKind, IconError> {
     if n >= 12 && header.starts_with(WEBP_RIFF_MAGIC) && &header[8..12] == WEBP_FORM_MAGIC {
         return Ok(SourceKind::Webp);
     }
+    if n >= 4 && header.starts_with(SVG_MAGIC) {
+        return Ok(SourceKind::Svg);
+    }
+    if n >= 5 && header.starts_with(SVG_XML_MAGIC) {
+        return Ok(SourceKind::Svg);
+    }
 
     // Magic bytes inconclusive — fall back to extension.
     let ext = path
@@ -98,6 +107,7 @@ fn detect_format(path: &Path) -> Result<SourceKind, IconError> {
         "ico" => Ok(SourceKind::Ico),
         "jpg" | "jpeg" => Ok(SourceKind::Jpeg),
         "webp" => Ok(SourceKind::Webp),
+        "svg" => Ok(SourceKind::Svg),
         other => Err(IconError::UnsupportedFormat {
             ext: other.to_owned(),
         }),
@@ -152,6 +162,61 @@ fn read_ico(path: &Path) -> Result<Vec<IconFrame>, IconError> {
     Ok(frames)
 }
 
+fn read_svg(path: &Path) -> Result<Vec<IconFrame>, IconError> {
+    use resvg::{tiny_skia, usvg};
+
+    let bytes = std::fs::read(path)?;
+    let tree = usvg::Tree::from_data(&bytes, &usvg::Options::default())
+        .map_err(|e| IconError::Corrupted(e.to_string()))?;
+
+    let size = tree.size();
+    let natural_w = size.width();
+    let natural_h = size.height();
+
+    // Scale up to at least 256px on the short axis so normalise can downscale cleanly.
+    let scale = (256.0f32 / natural_w.min(natural_h)).max(1.0);
+    let render_w = (natural_w * scale).ceil() as u32;
+    let render_h = (natural_h * scale).ceil() as u32;
+
+    if render_w == 0 || render_h == 0 || render_w > 4096 || render_h > 4096 {
+        return Err(IconError::Corrupted(format!(
+            "SVG render dimensions {render_w}x{render_h} are out of range"
+        )));
+    }
+
+    let mut pixmap = tiny_skia::Pixmap::new(render_w, render_h)
+        .ok_or_else(|| IconError::Corrupted("SVG pixmap allocation failed".to_owned()))?;
+
+    resvg::render(
+        &tree,
+        tiny_skia::Transform::from_scale(scale, scale),
+        &mut pixmap.as_mut(),
+    );
+
+    // De-premultiply tiny-skia's premultiplied RGBA into straight RGBA.
+    let mut rgba = Vec::with_capacity((render_w * render_h * 4) as usize);
+    for px in pixmap.pixels() {
+        let a = px.alpha();
+        if a == 0 {
+            rgba.extend_from_slice(&[0, 0, 0, 0]);
+        } else {
+            rgba.push((px.red() as u16 * 255 / a as u16) as u8);
+            rgba.push((px.green() as u16 * 255 / a as u16) as u8);
+            rgba.push((px.blue() as u16 * 255 / a as u16) as u8);
+            rgba.push(a);
+        }
+    }
+
+    let buf = RgbaImage::from_raw(render_w, render_h, rgba)
+        .ok_or_else(|| IconError::Corrupted("SVG pixel buffer size mismatch".to_owned()))?;
+
+    Ok(vec![IconFrame {
+        width: render_w,
+        height: render_h,
+        image: DynamicImage::ImageRgba8(buf),
+    }])
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -178,6 +243,14 @@ mod tests {
             ImageBuffer::from_pixel(width, height, Rgba([128, 64, 32, 200]));
         img.save_with_format(path, image::ImageFormat::WebP)
             .unwrap();
+    }
+
+    fn make_svg(path: &Path, width: u32, height: u32) {
+        let content = format!(
+            r#"<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}"><rect width="{w}" height="{h}" fill="red"/></svg>"#,
+            w = width, h = height
+        );
+        std::fs::write(path, content.as_bytes()).unwrap();
     }
 
     fn make_ico(path: &Path, sizes: &[u32]) {
@@ -318,6 +391,56 @@ mod tests {
         let path = dir.path().join("garbled.ico");
         // ICO magic + count=0xFFFF, then no directory data.
         std::fs::write(&path, b"\x00\x00\x01\x00\xff\xff").unwrap();
+
+        let err = read_icon_source(&path).unwrap_err();
+        assert!(matches!(err, IconError::Corrupted(_)));
+    }
+
+    // ── SVG ───────────────────────────────────────────────────────────────────
+
+    #[test]
+    fn reads_valid_svg_small_upscales_to_256() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("icon.svg");
+        make_svg(&path, 32, 32);
+
+        let data = read_icon_source(&path).unwrap();
+        assert!(matches!(data.kind, SourceKind::Svg));
+        assert_eq!(data.frames.len(), 1);
+        assert_eq!(data.frames[0].width, 256);
+        assert_eq!(data.frames[0].height, 256);
+    }
+
+    #[test]
+    fn reads_svg_with_xml_declaration() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("icon.svg");
+        let content = "<?xml version=\"1.0\"?><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"48\" height=\"48\"><rect width=\"48\" height=\"48\" fill=\"blue\"/></svg>";
+        std::fs::write(&path, content.as_bytes()).unwrap();
+
+        let data = read_icon_source(&path).unwrap();
+        assert!(matches!(data.kind, SourceKind::Svg));
+        assert!(data.frames[0].width >= 256);
+    }
+
+    #[test]
+    fn reads_svg_via_magic_bytes_ignoring_extension() {
+        let dir = tempfile::tempdir().unwrap();
+        let svg_path = dir.path().join("icon.svg");
+        make_svg(&svg_path, 32, 32);
+        let disguised = dir.path().join("disguised.xyz");
+        std::fs::copy(&svg_path, &disguised).unwrap();
+
+        let data = read_icon_source(&disguised).unwrap();
+        assert!(matches!(data.kind, SourceKind::Svg));
+    }
+
+    #[test]
+    fn returns_corrupted_for_truncated_svg() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("bad.svg");
+        // Valid SVG magic, then truncated — unclosed tag is invalid XML
+        std::fs::write(&path, b"<svg xmlns=\"http://www.w3.org/2000/svg\"><rect").unwrap();
 
         let err = read_icon_source(&path).unwrap_err();
         assert!(matches!(err, IconError::Corrupted(_)));
