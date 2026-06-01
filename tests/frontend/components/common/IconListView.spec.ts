@@ -51,10 +51,10 @@ describe('IconListView', () => {
     });
 
     await wrapper.get('.icon_list_view_select').trigger('click');
-    expect(wrapper.emitted('select')?.[0]).toEqual(['a', false]);
+    expect(wrapper.emitted('select')?.[0]).toEqual(['a', false, false]);
 
     await wrapper.get('.icon_list_view_select').trigger('click', { ctrlKey: true });
-    expect(wrapper.emitted('select')?.[1]).toEqual(['a', true]);
+    expect(wrapper.emitted('select')?.[1]).toEqual(['a', true, false]);
   });
 
   it('emits select with additive=true when metaKey is pressed', async () => {
@@ -65,7 +65,7 @@ describe('IconListView', () => {
     });
 
     await wrapper.get('.icon_list_view_select').trigger('click', { metaKey: true });
-    expect(wrapper.emitted('select')?.[0]).toEqual(['a', true]);
+    expect(wrapper.emitted('select')?.[0]).toEqual(['a', true, false]);
   });
 
   it('does not emit select when disabled', async () => {

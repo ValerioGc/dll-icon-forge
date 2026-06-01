@@ -38,7 +38,7 @@ describe('IconGridView', () => {
     });
 
     await wrapper.get('.icon_grid_view_select').trigger('click', { ctrlKey: true });
-    expect(wrapper.emitted('select')?.[0]).toEqual(['a', true]);
+    expect(wrapper.emitted('select')?.[0]).toEqual(['a', true, false]);
 
     await wrapper.get('.icon_grid_view_delete').trigger('click');
     expect(wrapper.emitted('delete')?.[0]).toEqual(['a']);

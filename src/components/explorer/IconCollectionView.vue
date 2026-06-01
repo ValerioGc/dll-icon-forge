@@ -117,6 +117,7 @@ function handleViewMode(next: ViewMode): void {
 function handlePageSize(next: PageSize): void {
     settings.setPageSize(next);
     localPage.value = 0;
+    project.resetPage();
 }
 
 </script>
