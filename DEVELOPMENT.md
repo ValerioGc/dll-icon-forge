@@ -319,4 +319,3 @@ Components import placeholders with:
 @use '@/styles/partials/placeholders' as *;
 ```
 
-Use BEM naming and `is-*` state classes. No Tailwind, no CSS-in-JS.
