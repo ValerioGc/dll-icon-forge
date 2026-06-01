@@ -2,6 +2,7 @@ import { describe, expect, it, beforeEach, vi } from 'vitest';
 import IconCollectionView from '@/components/explorer/IconCollectionView.vue';
 import { useProjectStore } from '@/stores/project';
 import { useSettingsStore } from '@/stores/settings';
+import type { ProjectIcon } from '@/types/icons';
 import { mountComponent, resetFrontendTestState } from '../../helpers/mount';
 
 function makePng(name: string): File {
@@ -101,5 +102,98 @@ describe('IconCollectionView', () => {
 
     expect(settings.pageSize).toBe(40);
     expect(project.page).toBe(0);
+  });
+
+  it('filters icons by name matching the search query', async () => {
+    const wrapper = mountComponent(IconCollectionView);
+    const project = useProjectStore();
+
+    project.addFiles([makePng('apple.png'), makePng('banana.png'), makePng('cherry.png')]);
+    await wrapper.vm.$nextTick();
+    await vi.dynamicImportSettled();
+
+    await wrapper.get('.icon_collection_view_search_input').setValue('ban');
+    await wrapper.vm.$nextTick();
+
+    const view = wrapper.findComponent({ name: 'IconGridView' });
+    const items = view.props('items') as ProjectIcon[];
+    expect(items).toHaveLength(1);
+    expect(items[0].name).toBe('banana.png');
+  });
+
+  it('shows the no-results message when the search query matches nothing', async () => {
+    const wrapper = mountComponent(IconCollectionView);
+    const project = useProjectStore();
+
+    project.addFiles([makePng('apple.png')]);
+    await wrapper.vm.$nextTick();
+    await vi.dynamicImportSettled();
+
+    await wrapper.get('.icon_collection_view_search_input').setValue('zzz');
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.find('.icon_collection_empty').exists()).toBe(true);
+    expect(wrapper.findComponent({ name: 'IconGridView' }).exists()).toBe(false);
+    expect(wrapper.findComponent({ name: 'IconListView' }).exists()).toBe(false);
+  });
+
+  it('Ctrl+A selects all icons visible under the current filter', async () => {
+    const wrapper = mountComponent(IconCollectionView);
+    const project = useProjectStore();
+
+    project.addFiles([makePng('a.png'), makePng('b.png'), makePng('c.png')]);
+    await wrapper.vm.$nextTick();
+
+    globalThis.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey: true, key: 'a', bubbles: true }));
+    await wrapper.vm.$nextTick();
+
+    expect(project.selectedIconIds).toHaveLength(3);
+  });
+
+  it('shift-range selects a contiguous block between anchor and target', async () => {
+    const wrapper = mountComponent(IconCollectionView);
+    const project = useProjectStore();
+
+    project.addFiles([makePng('a.png'), makePng('b.png'), makePng('c.png'), makePng('d.png')]);
+    await wrapper.vm.$nextTick();
+    await vi.dynamicImportSettled();
+
+    const view = wrapper.findComponent({ name: 'IconGridView' });
+
+    view.vm.$emit('select', project.icons[0].id, false, false);
+    view.vm.$emit('select', project.icons[3].id, false, true);
+
+    expect(project.selectedIconIds).toHaveLength(4);
+  });
+
+  it('forwards the edit event emitted by the child view', async () => {
+    const wrapper = mountComponent(IconCollectionView);
+    const project = useProjectStore();
+
+    project.addFiles([makePng('a.png')]);
+    await wrapper.vm.$nextTick();
+    await vi.dynamicImportSettled();
+
+    const view = wrapper.findComponent({ name: 'IconGridView' });
+    view.vm.$emit('edit', project.icons[0].id);
+
+    expect(wrapper.emitted('edit')?.[0]).toEqual([project.icons[0].id]);
+  });
+
+  it('delegates the reorder event to project.reorderIcon', async () => {
+    const wrapper = mountComponent(IconCollectionView);
+    const project = useProjectStore();
+
+    project.addFiles([makePng('a.png'), makePng('b.png')]);
+    await wrapper.vm.$nextTick();
+    await vi.dynamicImportSettled();
+
+    const spy = vi.spyOn(project, 'reorderIcon');
+    const view = wrapper.findComponent({ name: 'IconGridView' });
+    const [id0, id1] = [project.icons[0].id, project.icons[1].id];
+
+    view.vm.$emit('reorder', id0, id1);
+
+    expect(spy).toHaveBeenCalledWith(id0, id1);
   });
 });
