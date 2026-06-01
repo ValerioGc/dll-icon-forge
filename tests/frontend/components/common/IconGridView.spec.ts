@@ -3,11 +3,11 @@ import IconGridView from '@/components/explorer/IconGridView.vue';
 import type { ProjectIcon } from '@/types/icons';
 import { mountComponent, resetFrontendTestState } from '../../helpers/mount';
 
-function makeIcon(id: string): ProjectIcon {
+function makeIcon(id: string, status: ProjectIcon['status'] = 'ready'): ProjectIcon {
   return {
     id,
     preview: 'data:image/png;base64,AA==',
-    status: 'ready',
+    status,
     sourceKind: 'imported',
     availableSizes: [{ width: 32, height: 32 }],
   };
@@ -53,6 +53,21 @@ describe('IconGridView', () => {
     });
 
     await wrapper.get('.icon_grid_view_select').trigger('click');
+    expect(wrapper.emitted('select')).toBeUndefined();
+  });
+
+  it('shows edit button only for error items and emits edit', async () => {
+    const wrapper = mountComponent(IconGridView, {
+      props: {
+        items: [makeIcon('a'), makeIcon('b', 'error')],
+      },
+    });
+
+    const editButtons = wrapper.findAll('.icon_grid_view_edit');
+    expect(editButtons).toHaveLength(1);
+
+    await editButtons[0].trigger('click');
+    expect(wrapper.emitted('edit')?.[0]).toEqual(['b']);
     expect(wrapper.emitted('select')).toBeUndefined();
   });
 

@@ -92,4 +92,19 @@ describe('IconListView', () => {
     expect(wrapper.emitted('delete')?.[0]).toEqual(['a']);
     expect(wrapper.emitted('select')).toBeUndefined();
   });
+
+  it('shows edit button only for error items and emits edit', async () => {
+    const wrapper = mountComponent(IconListView, {
+      props: {
+        items: [makeIcon('a'), makeIcon('b', 'error')],
+      },
+    });
+
+    const editButtons = wrapper.findAll('.icon_list_view_edit');
+    expect(editButtons).toHaveLength(1);
+
+    await editButtons[0].trigger('click');
+    expect(wrapper.emitted('edit')?.[0]).toEqual(['b']);
+    expect(wrapper.emitted('select')).toBeUndefined();
+  });
 });
