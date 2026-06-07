@@ -63,4 +63,6 @@ pub struct LoadedDll {
     pub build_icons: Vec<CachedBuildIcon>,
     /// Non-blocking issues encountered during loading.
     pub warnings: Vec<DllWarning>,
+    /// Size of the source DLL file in bytes, if available.
+    pub file_size: Option<u64>,
 }

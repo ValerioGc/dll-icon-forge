@@ -20,6 +20,7 @@ export type DllWarning =
 export interface BackendLoadedDll {
   icons: BackendProjectIcon[];
   warnings: DllWarning[];
+  fileSize?: number;
 }
 
 export interface IpcErrorPayload {

@@ -77,16 +77,19 @@ fn add_icon_source(path: String, cache: State<'_, BuildCache>) -> Result<Project
 fn load_existing_dll(path: String, cache: State<'_, BuildCache>) -> Result<LoadedDll, IpcError> {
     let preview_dir = ensure_preview_dir()?;
     let loaded = dll::load_dll_icons(Path::new(&path), &preview_dir)?;
+    let file_size = fs::metadata(&path).map(|m| m.len()).ok();
     let LoadedDll {
         icons,
         build_icons,
         warnings,
+        ..
     } = loaded;
     cache.replace_all(build_icons)?;
     Ok(LoadedDll {
         icons,
         build_icons: Vec::new(),
         warnings,
+        file_size,
     })
 }
 
@@ -168,6 +171,7 @@ fn import_icon_data(
 pub fn run() {
     tauri::Builder::default()
         .manage(BuildCache::default())
+        .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .invoke_handler(tauri::generate_handler![

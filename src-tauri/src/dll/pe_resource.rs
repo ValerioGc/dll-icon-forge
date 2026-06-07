@@ -99,6 +99,7 @@ pub(super) fn load_dll_icons_from_file(
             icons: Vec::new(),
             build_icons: Vec::new(),
             warnings: vec![DllWarning::NoIcons],
+            file_size: None,
         });
     }
 
@@ -181,6 +182,7 @@ pub(super) fn load_dll_icons_from_file(
         icons,
         build_icons,
         warnings,
+        file_size: None,
     })
 }
 

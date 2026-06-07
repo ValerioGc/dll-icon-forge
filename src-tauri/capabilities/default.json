@@ -15,6 +15,7 @@
     "core:event:default",
     "core:app:default",
     "notification:default",
-    "dialog:default"
+    "dialog:default",
+    "opener:default"
   ]
 }

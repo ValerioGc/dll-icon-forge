@@ -314,6 +314,7 @@ fn load_dll_icons_once(
             icons: Vec::new(),
             build_icons: Vec::new(),
             warnings: vec![DllWarning::NoIcons],
+            file_size: None,
         });
     }
 
@@ -353,6 +354,7 @@ fn load_dll_icons_once(
         icons,
         build_icons,
         warnings,
+        file_size: None,
     })
 }
 
