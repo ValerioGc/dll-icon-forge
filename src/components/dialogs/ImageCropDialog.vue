@@ -1,8 +1,8 @@
 <script lang="ts" setup>
 
-import { onMounted, onUnmounted, ref } from 'vue';
-import Cropper from 'cropperjs';
+import { ref } from 'vue';
 import { useI18n } from 'vue-i18n';
+import SquareCropper from '@/components/crop/SquareCropper.vue';
 import checkIcon from '@/assets/icons/actions/check.svg';
 import closeIcon from '@/assets/icons/actions/close.svg';
 
@@ -21,58 +21,13 @@ const emit = defineEmits<{
     (e: 'cancel'): void;
 }>();
 
-// Template with aspect-ratio="1" locked on the selection element.
-const CROP_TEMPLATE = [
-    '<cropper-canvas background>',
-    '<cropper-image rotatable scalable skewable translatable></cropper-image>',
-    '<cropper-shade hidden></cropper-shade>',
-    '<cropper-handle action="select" plain></cropper-handle>',
-    '<cropper-selection aspect-ratio="1" initial-coverage="0.9" movable resizable>',
-    '<cropper-grid role="grid" bordered covered></cropper-grid>',
-    '<cropper-crosshair centered></cropper-crosshair>',
-    '<cropper-handle action="move" theme-color="rgba(255,255,255,0.35)"></cropper-handle>',
-    '<cropper-handle action="n-resize"></cropper-handle>',
-    '<cropper-handle action="e-resize"></cropper-handle>',
-    '<cropper-handle action="s-resize"></cropper-handle>',
-    '<cropper-handle action="w-resize"></cropper-handle>',
-    '<cropper-handle action="ne-resize"></cropper-handle>',
-    '<cropper-handle action="nw-resize"></cropper-handle>',
-    '<cropper-handle action="se-resize"></cropper-handle>',
-    '<cropper-handle action="sw-resize"></cropper-handle>',
-    '</cropper-selection>',
-    '</cropper-canvas>',
-].join('');
-
-const imgRef = ref<HTMLImageElement | null>(null);
-let cropper: Cropper | null = null;
-
-onMounted(() => {
-    if (imgRef.value) 
-        cropper = new Cropper(imgRef.value, { template: CROP_TEMPLATE });
-});
-
-onUnmounted(() => {
-    cropper?.destroy();
-    cropper = null;
-});
+const cropperRef = ref<InstanceType<typeof SquareCropper> | null>(null);
 
 async function handleApply(): Promise<void> {
-    if (!cropper) 
+    const data = await cropperRef.value?.exportCrop();
+    if (!data)
         return;
-    
-    const selection = cropper.getCropperSelection();
-    if (!selection) 
-        return;
-    
-    const canvas = await selection.$toCanvas();
-    const blob = await new Promise<Blob | null>((resolve) => {
-        canvas.toBlob(resolve, 'image/png');
-    });
-    if (!blob) 
-        return;
-    
-    const buffer = await blob.arrayBuffer();
-    emit('confirm', props.iconId, new Uint8Array(buffer), props.iconName);
+    emit('confirm', props.iconId, data, props.iconName);
 }
 
 </script>
@@ -85,7 +40,11 @@ async function handleApply(): Promise<void> {
                 <p class="crop_dialog_hint">{{ t('crop.hint') }}</p>
 
                 <div class="crop_dialog_canvas">
-                    <img ref="imgRef" :src="previewSrc" :alt="iconName" />
+                    <SquareCropper ref="cropperRef"
+                        :src="previewSrc"
+                        :alt="iconName"
+                        :max-display-size="520"
+                    />
                 </div>
 
                 <div class="crop_dialog_actions">
@@ -150,17 +109,10 @@ async function handleApply(): Promise<void> {
     }
 
     &_canvas {
-        height: 380px;
         border-radius: .4rem;
         background: var(--color-placeholder);
         margin-bottom: 1.25rem;
         overflow: hidden;
-
-        :deep(cropper-canvas) {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
     }
 
     &_actions {
