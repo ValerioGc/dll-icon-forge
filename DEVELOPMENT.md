@@ -12,6 +12,7 @@ Technical notes for working on **DLL Icon Forge**. Product-facing information li
 | Build | Vite |
 | Styling | SCSS, shared partials, CSS variables |
 | i18n | vue-i18n (`it`, `en`, `fr`, `es`, `de`) |
+| Image crop UI | Custom Vue canvas cropper |
 | Native backend | Rust |
 | Packaging | Tauri bundle targets: `nsis`, `msi` (Windows) |
 
@@ -96,10 +97,11 @@ npm run test:watch
 npm run test:coverage
 ```
 
-Run a single spec file:
+Run one or more spec files:
 
 ```powershell
 npx vitest run tests/frontend/stores/project.spec.ts
+npm run test -- tests/frontend/components/common/IconGridView.spec.ts tests/frontend/components/common/IconListView.spec.ts
 ```
 
 Rust:
@@ -121,11 +123,18 @@ Combined coverage:
 npm run coverage
 ```
 
-Current known automatic checks:
+Recommended checks before opening a PR:
 
-- `npm run build`: green.
-- `npm run test`: 151 frontend tests green.
-- `cargo test`: 128 Rust tests green, 1 manual DLL inspection test ignored.
+- `npm run build`
+- `npm run test`
+- `npm run test:rust`
+
+Useful focused frontend checks for the icon workspace:
+
+```powershell
+npm run test -- tests/frontend/components/ItemView.spec.ts
+npm run test -- tests/frontend/components/common/IconCollectionView.spec.ts tests/frontend/components/common/IconGridView.spec.ts tests/frontend/components/common/IconListView.spec.ts
+```
 
 The ignored manual Rust test can generate a repeatable DLL for inspection:
 
@@ -149,7 +158,8 @@ src/
 |-- assets/         <- SVG icons, flag images, logo
 |-- components/
 |   |-- buttons/    <- LanguageButton, ThemeButton
-|   |-- dialogs/    <- ConfirmDialog
+|   |-- crop/       <- reusable canvas crop components
+|   |-- dialogs/    <- ConfirmDialog, ImageCropDialog
 |   |-- explorer/   <- IconCollectionView, IconListView, IconGridView, MenuTab
 |   |-- layout/     <- PageHeader, PageFooter
 |   |-- pagination/ <- PaginationControls, PageSizeSelector
@@ -164,6 +174,36 @@ src/
 ```
 
 State lives in Pinia stores. Components stay mostly presentational and call store actions or service wrappers.
+
+### Icon Workspace Behavior
+
+The main create/edit workspace is split between [ItemView.vue](src/views/ItemView.vue), [IconCollectionView.vue](src/components/explorer/IconCollectionView.vue), [IconGridView.vue](src/components/explorer/IconGridView.vue), and [IconListView.vue](src/components/explorer/IconListView.vue).
+
+Important behavior:
+
+- `ItemView` owns the page shell, upload/drop zones, toolbar, invalid-icon notice, save/reset actions, and crop dialog wiring.
+- `IconCollectionView` owns local filtering and pagination over `project.icons`. Search is currently index-based and disables sorting while active.
+- `IconGridView` and `IconListView` are presentational views for selection, delete, crop, move up/down, and pointer-based drag reorder.
+- Reordering emits `reorder(fromId, toId, insertBefore)` and is applied by `project.reorderIcon`.
+- Move buttons call `project.moveIconUp` / `project.moveIconDown`; crossing a page boundary adjusts the visible page.
+- Drag handles and move buttons are hidden when there is only one icon. Drag reorder is also disabled when sorting is disabled by a search filter.
+- Pointer events are used instead of native HTML5 drag/drop for icon reordering, avoiding browser drop-deny cursor issues.
+- During drag, grid/list render a local ghost preview and emit `dragPageEdge('previous' | 'next' | null)` when the pointer is close to a pageable edge.
+- `IconCollectionView` starts a 2 second timer for drag page changes. If the pointer remains on a valid edge, the page changes and the timer can repeat until there are no more pages in that direction.
+
+### Crop And Validation
+
+Imported icons must be square before save/build. Frontend file imports call `detectInitialSizes`; non-square images are marked with `status: 'error'`, shown in red, and block submit through `submitProjectBuild`.
+
+Cropping is always available per icon from the preview actions. The toolbar crop action is enabled only when exactly one icon is selected. `ImageCropDialog` wraps the reusable `SquareCropper` canvas component, which keeps a locked `1:1` selection and returns PNG bytes to `project.cropIcon`, which sends them through `importIconData`.
+
+The invalid-icon notice in `ItemView` is the user-facing save blocker. Keep its copy, visual state, and `project.canBuild` / `submitProjectBuild` behavior in sync when changing validation rules.
+
+### Pagination And View Settings
+
+View mode and page size live in `useSettingsStore` and persist to local storage. Valid page sizes are defined by `PAGE_SIZE_OPTIONS` in [settings.ts](src/stores/settings.ts), currently `10`, `20`, `30`, `40`, and `50`.
+
+`IconCollectionView` uses local pagination over the filtered icon list so index search, reorder, and page controls operate on the same visible collection. The older store-level pagination helpers still exist for shared store behavior and tests.
 
 ### Backend
 
@@ -198,6 +238,7 @@ Current command surface:
 | `add_icon_source(path)` | Import `.ico`/`.png`/`.jpg`/`.webp`/`.svg`, create preview and cache build data. |
 | `load_existing_dll(path)` | Extract icons from a DLL and replace build cache. |
 | `build_dll(options)` | Generate the output DLL from cached icons. |
+| `import_icon_data(id, data, name)` | Import cropped image bytes, replace one cached icon, and return updated frontend icon data. |
 | `remove_preview(path)` | Remove a preview file idempotently. |
 | `drop_build_icon(id)` | Remove one icon from build cache. |
 | `clear_build_cache()` | Clear build cache. |
@@ -318,4 +359,3 @@ Components import placeholders with:
 ```scss
 @use '@/styles/partials/placeholders' as *;
 ```
-
