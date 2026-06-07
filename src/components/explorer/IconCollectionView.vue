@@ -11,6 +11,10 @@ import PageSizeSelector from '@/components/pagination/PageSizeSelector.vue';
 const IconListView = defineAsyncComponent(() => import('@/components/explorer/IconListView.vue'));
 const IconGridView = defineAsyncComponent(() => import('@/components/explorer/IconGridView.vue'));
 
+type DragPageDirection = 'previous' | 'next';
+
+const DRAG_PAGE_DELAY_MS = 2000;
+
 const { t } = useI18n();
 const project = useProjectStore();
 const settings = useSettingsStore();
@@ -22,9 +26,11 @@ const { icons, selectedIconIds } = storeToRefs(project);
 const searchQuery = ref('');
 
 const filteredIcons = computed(() => {
-    const q = searchQuery.value.trim().toLowerCase();
+    const q = searchQuery.value.trim();
     if (!q) return icons.value;
-    return icons.value.filter((i) => i.name?.toLowerCase().includes(q));
+    const n = parseInt(q, 10);
+    if (isNaN(n) || n < 1 || n > icons.value.length) return [];
+    return [icons.value[n - 1]];
 });
 
 // ── Local pagination (operates on filteredIcons) ──────────────────────────────
@@ -42,9 +48,19 @@ const localPaginatedIcons = computed(() => {
 
 const localCanGoPrevious = computed(() => localPage.value > 0);
 const localCanGoNext = computed(() => localPage.value < localTotalPages.value - 1);
-const localStartIndex = computed(() => localPage.value * settings.pageSize);
 
-watch(searchQuery, () => { localPage.value = 0; });
+const localStartIndex = computed(() => {
+    const q = searchQuery.value.trim();
+    if (!q) return localPage.value * settings.pageSize;
+    const n = parseInt(q, 10);
+    return isNaN(n) || n < 1 ? 0 : n - 1;
+});
+
+watch(searchQuery, () => {
+    clearDragPageTimer();
+    localPage.value = 0;
+    project.clearSelection();
+});
 
 watch(localTotalPages, (newTotal) => {
     if (localPage.value >= newTotal)
@@ -58,7 +74,64 @@ function goToNextPage(): void {
 
 function goToPreviousPage(): void {
     if (localCanGoPrevious.value) 
-    localPage.value -= 1;
+        localPage.value -= 1;
+}
+
+const dragPageEdge = ref<DragPageDirection | null>(null);
+let dragPageTimer: ReturnType<typeof globalThis.setTimeout> | null = null;
+
+function handleDragPageEdge(direction: DragPageDirection | null): void {
+    if (!direction || !canChangeDragPage(direction)) {
+        clearDragPageTimer();
+        return;
+    }
+
+    if (dragPageEdge.value !== direction) {
+        clearDragPageTimer(false);
+        dragPageEdge.value = direction;
+    }
+
+    scheduleDragPageChange();
+}
+
+function scheduleDragPageChange(): void {
+    if (dragPageTimer || !dragPageEdge.value)
+        return;
+
+    dragPageTimer = globalThis.setTimeout(() => {
+        dragPageTimer = null;
+        const direction = dragPageEdge.value;
+        if (!direction)
+            return;
+
+        if (!canChangeDragPage(direction)) {
+            clearDragPageTimer();
+            return;
+        }
+
+        if (direction === 'previous')
+            goToPreviousPage();
+        else
+            goToNextPage();
+
+        if (canChangeDragPage(direction))
+            scheduleDragPageChange();
+        else
+            clearDragPageTimer();
+    }, DRAG_PAGE_DELAY_MS);
+}
+
+function canChangeDragPage(direction: DragPageDirection): boolean {
+    return direction === 'previous' ? localCanGoPrevious.value : localCanGoNext.value;
+}
+
+function clearDragPageTimer(resetEdge = true): void {
+    if (dragPageTimer) {
+        globalThis.clearTimeout(dragPageTimer);
+        dragPageTimer = null;
+    }
+    if (resetEdge)
+        dragPageEdge.value = null;
 }
 
 // ── View state ────────────────────────────────────────────────────────────────
@@ -93,8 +166,24 @@ function handleDelete(id: string): void {
     project.removeIcon(id);
 }
 
-function handleReorder(fromId: string, toId: string): void {
-    project.reorderIcon(fromId, toId);
+function handleReorder(fromId: string, toId: string, insertBefore: boolean): void {
+    project.reorderIcon(fromId, toId, insertBefore);
+}
+
+function handleMoveUp(id: string): void {
+    const globalIndex = filteredIcons.value.findIndex((i) => i.id === id);
+    const pageStart = localStartIndex.value;
+    project.moveIconUp(id);
+    if (globalIndex === pageStart && localPage.value > 0)
+        localPage.value -= 1;
+}
+
+function handleMoveDown(id: string): void {
+    const globalIndex = filteredIcons.value.findIndex((i) => i.id === id);
+    const pageLastIndex = localStartIndex.value + localPaginatedIcons.value.length - 1;
+    project.moveIconDown(id);
+    if (globalIndex === pageLastIndex && localPage.value < localTotalPages.value - 1)
+        localPage.value += 1;
 }
 
 // ── Keyboard ──────────────────────────────────────────────────────────────────
@@ -109,7 +198,10 @@ function handleKeydown(e: KeyboardEvent): void {
 }
 
 onMounted(() => globalThis.addEventListener('keydown', handleKeydown));
-onUnmounted(() => globalThis.removeEventListener('keydown', handleKeydown));
+onUnmounted(() => {
+    globalThis.removeEventListener('keydown', handleKeydown);
+    clearDragPageTimer();
+});
 
 // ── Edit (crop) ───────────────────────────────────────────────────────────────
 
@@ -193,10 +285,17 @@ function handlePageSize(next: PageSize): void {
             :selected-ids="selectedIconIds"
             :start-index="localStartIndex"
             :sortable="isSortable"
+            :total-items="filteredIcons.length"
+            :can-page-previous="localCanGoPrevious"
+            :can-page-next="localCanGoNext"
             @select="handleSelect"
             @delete="handleDelete"
             @edit="handleEdit"
             @reorder="handleReorder"
+            @drag-page-edge="handleDragPageEdge"
+            @move-up="handleMoveUp"
+            @move-down="handleMoveDown"
+            @deselect="project.clearSelection()"
         />
 
         <IconGridView v-else
@@ -204,10 +303,17 @@ function handlePageSize(next: PageSize): void {
             :selected-ids="selectedIconIds"
             :start-index="localStartIndex"
             :sortable="isSortable"
+            :total-items="filteredIcons.length"
+            :can-page-previous="localCanGoPrevious"
+            :can-page-next="localCanGoNext"
             @select="handleSelect"
             @delete="handleDelete"
             @edit="handleEdit"
             @reorder="handleReorder"
+            @drag-page-edge="handleDragPageEdge"
+            @move-up="handleMoveUp"
+            @move-down="handleMoveDown"
+            @deselect="project.clearSelection()"
         />
 
         <footer v-if="!isEmpty" class="icon_collection_view_footer">
@@ -238,6 +344,7 @@ function handlePageSize(next: PageSize): void {
     @extend %grid_stack;
     min-height: 18rem;
     overflow: hidden;
+    background: var(--color-preview-background);
 
     &_toolbar {
         @extend %fx_between_center;

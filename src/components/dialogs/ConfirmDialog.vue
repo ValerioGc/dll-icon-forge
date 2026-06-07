@@ -2,8 +2,8 @@
 
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import checkIcon from '@/assets/icons/actions/check.svg';
 import closeIcon from '@/assets/icons/actions/close.svg';
-import saveIcon from '@/assets/icons/actions/save.svg';
 
 const { t } = useI18n();
 
@@ -50,7 +50,7 @@ const cancelButtonLabel = computed(() => props.cancelLabel ?? t('confirm.cancelL
                         :title="confirmButtonLabel"
                         @click="emit('confirm')"
                     >
-                        <img class="ui_icon themed_icon confirm_dialog_confirm_icon" :src="saveIcon" alt="" aria-hidden="true" />
+                        <img class="ui_icon confirm_dialog_confirm_icon" :src="checkIcon" alt="" aria-hidden="true" />
                     </button>
                 </div>
             </dialog>
@@ -109,21 +109,18 @@ const cancelButtonLabel = computed(() => props.cancelLabel ?? t('confirm.cancelL
     }
 
     &_btn_confirm {
-        border-color: var(--color-danger);
-        color: var(--color-danger);
+        border-color: var(--color-accent);
+        background: var(--color-accent);
+        color: var(--color-on-accent);
 
         &:hover:not(:disabled),
         &:focus-visible:not(:disabled) {
-            background: var(--color-danger);
-            border-color: var(--color-danger);
-            color: #fff;
+            background: var(--color-accent-hover);
+            border-color: var(--color-accent-hover);
             outline: none;
         }
 
-        &:hover:not(:disabled) .confirm_dialog_confirm_icon,
-        &:focus-visible:not(:disabled) .confirm_dialog_confirm_icon {
-            filter: brightness(0) invert(1);
-        }
+        .confirm_dialog_confirm_icon { filter: var(--icon-on-accent-filter); }
     }
 }
 

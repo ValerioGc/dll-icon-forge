@@ -3,8 +3,8 @@
 import { onMounted, onUnmounted, ref } from 'vue';
 import Cropper from 'cropperjs';
 import { useI18n } from 'vue-i18n';
+import checkIcon from '@/assets/icons/actions/check.svg';
 import closeIcon from '@/assets/icons/actions/close.svg';
-import saveIcon from '@/assets/icons/actions/save.svg';
 
 defineOptions({ name: 'ImageCropDialog' });
 
@@ -103,7 +103,7 @@ async function handleApply(): Promise<void> {
                         :title="t('crop.apply')"
                         @click="handleApply"
                     >
-                        <img class="ui_icon themed_icon" :src="saveIcon" alt="" aria-hidden="true" />
+                        <img class="ui_icon crop_dialog_apply_icon" :src="checkIcon" alt="" aria-hidden="true" />
                     </button>
                 </div>
             </dialog>
@@ -186,6 +186,10 @@ async function handleApply(): Promise<void> {
                 outline: none;
             }
         }
+    }
+
+    &_apply_icon {
+        filter: var(--icon-on-accent-filter);
     }
 }
 

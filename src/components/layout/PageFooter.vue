@@ -6,6 +6,16 @@ const { t } = useI18n();
 const appVersion = import.meta.env.VITE_APP_VERSION ?? 'undefined';
 const githubUrl = import.meta.env.VITE_GITHUB_URL ?? 'https://github.com/ValerioGc/dll-icon-forge';
 
+async function openGithub(event: MouseEvent): Promise<void> {
+    event.preventDefault();
+    try {
+        const { openUrl } = await import('@tauri-apps/plugin-opener');
+        await openUrl(githubUrl);
+    } catch {
+        window.open(githubUrl, '_blank', 'noopener,noreferrer');
+    }
+}
+
 </script>
 
 <template>
@@ -13,7 +23,7 @@ const githubUrl = import.meta.env.VITE_GITHUB_URL ?? 'https://github.com/Valerio
         <div class="page_footer_inner">
             <p>{{ t('footerText', { version: appVersion }) }}</p>
 
-            <a :href="githubUrl" target="_blank" rel="noreferrer">
+            <a :href="githubUrl" rel="noreferrer" @click="openGithub">
                 {{ t('footerGithub') }}
             </a>
         </div>

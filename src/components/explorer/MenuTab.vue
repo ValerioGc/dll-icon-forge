@@ -2,6 +2,7 @@
 
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import cropIcon from '@/assets/icons/actions/scissors.svg';
 import trash from '@/assets/icons/actions/trash.svg';
 
 const { t } = useI18n();
@@ -16,9 +17,11 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
     (e: 'delete'): void;
+    (e: 'edit'): void;
 }>();
 
 const isDisabled = computed(() => props.disabled || props.selectedCount === 0);
+const isEditDisabled = computed(() => props.disabled || props.selectedCount !== 1);
 
 const deleteLabel = computed(() => {
     return props.selectedCount > 0
@@ -31,6 +34,15 @@ const deleteLabel = computed(() => {
 <template>
     <div class="menu_tab surface">
         <ul>
+            <li>
+                <button type="button" class="menu_button action_button"
+                    :disabled="isEditDisabled"
+                    @click.prevent="emit('edit')"
+                >
+                    <img class="ui_icon themed_icon" :src="cropIcon" alt="" aria-hidden="true" />
+                    {{ t('menu.crop') }}
+                </button>
+            </li>
             <li>
                 <button type="button" class="menu_button action_button"
                     :disabled="isDisabled"
