@@ -1,10 +1,23 @@
-import { describe, expect, it, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { nextTick } from 'vue';
 import IconListView from '@/components/explorer/IconListView.vue';
 import type { ProjectIcon } from '@/types/icons';
 import { mountComponent, resetFrontendTestState } from '../../helpers/mount';
 
 function getItem(wrapper: ReturnType<typeof mountComponent>, index: number) {
   return wrapper.findAll('.icon_list_view_item')[index];
+}
+
+function dispatchPointer(type: string, target: EventTarget, x = 0, y = 0) {
+  const event = new Event(type, { bubbles: true, cancelable: true }) as PointerEvent;
+  Object.defineProperties(event, {
+    button: { value: 0 },
+    clientX: { value: x },
+    clientY: { value: y },
+    pointerType: { value: 'mouse' },
+  });
+  target.dispatchEvent(event);
+  return event;
 }
 
 function makeIcon(id: string, status: ProjectIcon['status'] = 'ready'): ProjectIcon {
@@ -17,8 +30,23 @@ function makeIcon(id: string, status: ProjectIcon['status'] = 'ready'): ProjectI
   };
 }
 
+function mockRect(element: Element, top = 0, height = 20): void {
+  vi.spyOn(element, 'getBoundingClientRect').mockReturnValue({
+    bottom: top + height,
+    height,
+    left: 0,
+    right: 20,
+    top,
+    width: 20,
+    x: 0,
+    y: top,
+    toJSON: () => ({}),
+  });
+}
+
 describe('IconListView', () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
     resetFrontendTestState();
   });
 
@@ -97,7 +125,7 @@ describe('IconListView', () => {
     expect(wrapper.emitted('select')).toBeUndefined();
   });
 
-  it('shows edit button only for error items and emits edit', async () => {
+  it('shows edit buttons for every item and emits edit', async () => {
     const wrapper = mountComponent(IconListView, {
       props: {
         items: [makeIcon('a'), makeIcon('b', 'error')],
@@ -105,9 +133,9 @@ describe('IconListView', () => {
     });
 
     const editButtons = wrapper.findAll('.icon_list_view_edit');
-    expect(editButtons).toHaveLength(1);
+    expect(editButtons).toHaveLength(2);
 
-    await editButtons[0].trigger('click');
+    await editButtons[1].trigger('click');
     expect(wrapper.emitted('edit')?.[0]).toEqual(['b']);
     expect(wrapper.emitted('select')).toBeUndefined();
   });
@@ -127,28 +155,83 @@ describe('IconListView', () => {
     const wrapper = mountComponent(IconListView, {
       props: {
         items: [makeIcon('a'), makeIcon('b')],
+        totalItems: 2,
       },
     });
+    mockRect(getItem(wrapper, 1).element);
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(getItem(wrapper, 1).element);
 
-    await getItem(wrapper, 0).trigger('dragstart');
-    await getItem(wrapper, 1).trigger('dragenter');
-    await getItem(wrapper, 1).trigger('drop');
+    dispatchPointer('pointerdown', wrapper.findAll('.icon_list_view_handle')[0].element);
+    dispatchPointer('pointermove', document, 10, 0);
+    dispatchPointer('pointerup', document, 10, 0);
 
-    expect(wrapper.emitted('reorder')?.[0]).toEqual(['a', 'b']);
+    expect(wrapper.emitted('reorder')?.[0]).toEqual(['a', 'b', true]);
   });
 
-  it('sets is-dragging on the source and is-drag-over on the target during drag', async () => {
+  it('uses pointer events instead of native drag and drop', async () => {
     const wrapper = mountComponent(IconListView, {
       props: {
         items: [makeIcon('a'), makeIcon('b')],
+        totalItems: 2,
+      },
+    });
+    mockRect(getItem(wrapper, 1).element);
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(getItem(wrapper, 1).element);
+
+    dispatchPointer('pointerdown', wrapper.findAll('.icon_list_view_handle')[0].element);
+    const move = dispatchPointer('pointermove', document, 10, 0);
+    await nextTick();
+
+    expect(move.defaultPrevented).toBe(true);
+    expect(getItem(wrapper, 0).classes()).toContain('is-dragging');
+    expect(getItem(wrapper, 1).classes()).toContain('is-drop-before');
+    expect(wrapper.get('.icon_list_view_drag_ghost img').attributes('src')).toBe('data:image/png;base64,AA==');
+  });
+
+  it('emits a page-edge request while dragging near a pageable edge', async () => {
+    const wrapper = mountComponent(IconListView, {
+      props: {
+        items: [makeIcon('a'), makeIcon('b')],
+        totalItems: 4,
+        canPageNext: true,
+      },
+    });
+    mockRect(wrapper.get('.icon_list_view').element, 0, 100);
+    mockRect(getItem(wrapper, 1).element);
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(getItem(wrapper, 1).element);
+
+    dispatchPointer('pointerdown', wrapper.findAll('.icon_list_view_handle')[0].element);
+    dispatchPointer('pointermove', document, 18, 10);
+    dispatchPointer('pointerup', document, 18, 10);
+    await nextTick();
+
+    expect(wrapper.emitted('dragPageEdge')?.[0]).toEqual(['next']);
+    expect(wrapper.emitted('dragPageEdge')?.at(-1)).toEqual([null]);
+  });
+
+  it('does not enable native item or image dragging', () => {
+    const wrapper = mountComponent(IconListView, {
+      props: {
+        items: [makeIcon('a')],
       },
     });
 
-    await getItem(wrapper, 0).trigger('dragstart');
-    await getItem(wrapper, 1).trigger('dragenter');
+    expect(getItem(wrapper, 0).attributes('draggable')).toBeUndefined();
+    expect(wrapper.get('.icon_list_view_thumb img').attributes('draggable')).toBe('false');
+  });
+
+  it('sets is-dragging on the source during drag', async () => {
+    const wrapper = mountComponent(IconListView, {
+      props: {
+        items: [makeIcon('a'), makeIcon('b')],
+        totalItems: 2,
+      },
+    });
+
+    dispatchPointer('pointerdown', wrapper.findAll('.icon_list_view_handle')[0].element);
+    await nextTick();
 
     expect(getItem(wrapper, 0).classes()).toContain('is-dragging');
-    expect(getItem(wrapper, 1).classes()).toContain('is-drag-over');
   });
 
   it('does not emit reorder when sortable is false', async () => {
@@ -156,13 +239,28 @@ describe('IconListView', () => {
       props: {
         items: [makeIcon('a'), makeIcon('b')],
         sortable: false,
+        totalItems: 2,
+      },
+    });
+    mockRect(getItem(wrapper, 1).element);
+    vi.spyOn(document, 'elementFromPoint').mockReturnValue(getItem(wrapper, 1).element);
+
+    dispatchPointer('pointerdown', getItem(wrapper, 0).element);
+    dispatchPointer('pointermove', document, 10, 0);
+    dispatchPointer('pointerup', document, 10, 0);
+
+    expect(wrapper.emitted('reorder')).toBeUndefined();
+  });
+
+  it('hides reorder controls when there is only one icon', () => {
+    const wrapper = mountComponent(IconListView, {
+      props: {
+        items: [makeIcon('a')],
+        totalItems: 1,
       },
     });
 
-    await getItem(wrapper, 0).trigger('dragstart');
-    await getItem(wrapper, 1).trigger('dragenter');
-    await getItem(wrapper, 1).trigger('drop');
-
-    expect(wrapper.emitted('reorder')).toBeUndefined();
+    expect(wrapper.find('.icon_list_view_handle').exists()).toBe(false);
+    expect(wrapper.find('.icon_list_view_order_btn').exists()).toBe(false);
   });
 });

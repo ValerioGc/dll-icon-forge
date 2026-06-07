@@ -41,6 +41,26 @@ describe('ItemView', () => {
     expect(buildButton()?.attributes('disabled')).toBeUndefined();
   });
 
+  it('shows a styled invalid-icons notice when errors block saving', async () => {
+    const wrapper = mountComponent(ItemView, {
+      props: {
+        mode: 'create',
+      },
+    });
+    const project = useProjectStore();
+
+    project.addFiles([new File(['txt'], 'bad.txt', { type: 'text/plain' })]);
+    await wrapper.vm.$nextTick();
+
+    const notice = wrapper.get('.item_view_invalid_notice');
+    const buildButton = wrapper.findAll('button').find((button) => button.text().includes('Genera DLL'));
+
+    expect(notice.text()).toContain('1 icone da correggere');
+    expect(notice.text()).toContain('Le icone evidenziate in rosso');
+    expect(notice.find('img').exists()).toBe(true);
+    expect(buildButton?.attributes('disabled')).toBeDefined();
+  });
+
   it('hides edit tools until an existing file is selected by input', async () => {
     const wrapper = mountComponent(ItemView, {
       props: {
@@ -162,6 +182,19 @@ describe('ItemView', () => {
 
     expect(project.icons).toHaveLength(0);
     expect(wrapper.findComponent({ name: 'ConfirmDialog' }).exists()).toBe(false);
+  });
+
+  it('opens the crop dialog from the toolbar when exactly one icon is selected', async () => {
+    const wrapper = mountComponent(ItemView, { props: { mode: 'create' } });
+    const project = useProjectStore();
+
+    project.addFiles([new File(['png'], 'icon.png', { type: 'image/png' })]);
+    await wrapper.vm.$nextTick();
+
+    await wrapper.findAll('button').find((button) => button.text().includes('Ritaglia'))?.trigger('click');
+    await vi.dynamicImportSettled();
+
+    expect(wrapper.findComponent({ name: 'ImageCropDialog' }).exists()).toBe(true);
   });
 
   it('hides confirm dialog when cancelled without removing icons', async () => {

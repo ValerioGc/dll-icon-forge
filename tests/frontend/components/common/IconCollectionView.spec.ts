@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, vi } from 'vitest';
+import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest';
 import IconCollectionView from '@/components/explorer/IconCollectionView.vue';
 import { useProjectStore } from '@/stores/project';
 import { useSettingsStore } from '@/stores/settings';
@@ -12,6 +12,10 @@ function makePng(name: string): File {
 describe('IconCollectionView', () => {
   beforeEach(() => {
     resetFrontendTestState();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('shows the empty state when there are no icons', () => {
@@ -104,7 +108,7 @@ describe('IconCollectionView', () => {
     expect(project.page).toBe(0);
   });
 
-  it('filters icons by name matching the search query', async () => {
+  it('filters icons by index matching the search query', async () => {
     const wrapper = mountComponent(IconCollectionView);
     const project = useProjectStore();
 
@@ -112,7 +116,8 @@ describe('IconCollectionView', () => {
     await wrapper.vm.$nextTick();
     await vi.dynamicImportSettled();
 
-    await wrapper.get('.icon_collection_view_search_input').setValue('ban');
+    // Search is index-based: '2' returns the second icon (banana.png)
+    await wrapper.get('.icon_collection_view_search_input').setValue('2');
     await wrapper.vm.$nextTick();
 
     const view = wrapper.findComponent({ name: 'IconGridView' });
@@ -192,8 +197,35 @@ describe('IconCollectionView', () => {
     const view = wrapper.findComponent({ name: 'IconGridView' });
     const [id0, id1] = [project.icons[0].id, project.icons[1].id];
 
-    view.vm.$emit('reorder', id0, id1);
+    view.vm.$emit('reorder', id0, id1, true);
 
-    expect(spy).toHaveBeenCalledWith(id0, id1);
+    expect(spy).toHaveBeenCalledWith(id0, id1, true);
+  });
+
+  it('changes page after holding a dragged icon on a page edge', async () => {
+    const wrapper = mountComponent(IconCollectionView);
+    const project = useProjectStore();
+    const settings = useSettingsStore();
+    settings.load();
+    settings.setPageSize(10);
+
+    project.addFiles(Array.from({ length: 25 }, (_, i) => makePng(`icon-${i}.png`)));
+    await wrapper.vm.$nextTick();
+    await vi.dynamicImportSettled();
+
+    expect(wrapper.findComponent({ name: 'IconGridView' }).props('startIndex')).toBe(0);
+
+    vi.useFakeTimers();
+    wrapper.findComponent({ name: 'IconGridView' }).vm.$emit('dragPageEdge', 'next');
+
+    await vi.advanceTimersByTimeAsync(1999);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.findComponent({ name: 'IconGridView' }).props('startIndex')).toBe(0);
+
+    await vi.advanceTimersByTimeAsync(1);
+    await wrapper.vm.$nextTick();
+    expect(wrapper.findComponent({ name: 'IconGridView' }).props('startIndex')).toBe(10);
+
+    wrapper.findComponent({ name: 'IconGridView' }).vm.$emit('dragPageEdge', null);
   });
 });

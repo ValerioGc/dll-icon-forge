@@ -48,7 +48,7 @@ describe('ConfirmDialog', () => {
     expect(buttons[1].attributes('aria-label')).toBe('Si');
   });
 
-  it('renders close and save icons inside the action buttons', () => {
+  it('renders close and confirm icons inside the action buttons', () => {
     const wrapper = mountDialog();
     const buttons = wrapper.findAll('button');
 
