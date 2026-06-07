@@ -47,6 +47,7 @@ export const useProjectStore = defineStore('project', () => {
 
   const sourceLabel = ref<string | null>(null);
   const sourcePath = ref<string | null>(null);
+  const sourceSize = ref<number | null>(null);
   const outputPath = ref<string | null>(null);
   const dirty = ref(false);
   const buildState = ref<BuildState>('idle');
@@ -86,6 +87,7 @@ export const useProjectStore = defineStore('project', () => {
     clearIcons();
     sourceLabel.value = null;
     sourcePath.value = null;
+    sourceSize.value = null;
     buildState.value = 'idle';
     lastError.value = null;
     lastWarnings.value = [];
@@ -128,6 +130,7 @@ export const useProjectStore = defineStore('project', () => {
     }
 
     sourceLabel.value = file.name;
+    sourceSize.value = file.size;
     lastError.value = null;
     lastNotice.value = null;
     dirty.value = true;
@@ -154,6 +157,7 @@ export const useProjectStore = defineStore('project', () => {
       const loaded = await loadExistingDll(path);
       sourcePath.value = path;
       sourceLabel.value = basename(path);
+      sourceSize.value = loaded.fileSize ?? null;
       icons.value = loaded.icons.map(fromBackendIcon);
       selectedIconIds.value = icons.value[0] ? [icons.value[0].id] : [];
       lastError.value = null;
@@ -195,12 +199,13 @@ export const useProjectStore = defineStore('project', () => {
     void Promise.all(
       newIcons.map(async (icon, index) => {
         const sizes = await detectInitialSizes(fileArray[index]);
-        if (sizes.length > 0) {
-          icon.availableSizes = sizes;
-          if (sizes[0].width !== sizes[0].height) {
-            icon.status = 'error';
-            icon.error = t('notifications.notSquare');
-          }
+        if (sizes.length === 0) return;
+        const live = icons.value.find((i) => i.id === icon.id);
+        if (!live) return;
+        live.availableSizes = sizes;
+        if (sizes[0].width !== sizes[0].height) {
+          live.status = 'error';
+          live.error = t('notifications.notSquare');
         }
       }),
     );
@@ -315,12 +320,30 @@ export const useProjectStore = defineStore('project', () => {
     lastWarnings.value = warnings;
   }
 
-  function reorderIcon(fromId: string, toId: string): void {
+  function moveIconUp(id: string): void {
+    const idx = icons.value.findIndex((i) => i.id === id);
+    if (idx <= 0) return;
+    const [item] = icons.value.splice(idx, 1);
+    icons.value.splice(idx - 1, 0, item);
+    dirty.value = true;
+  }
+
+  function moveIconDown(id: string): void {
+    const idx = icons.value.findIndex((i) => i.id === id);
+    if (idx === -1 || idx >= icons.value.length - 1) return;
+    const [item] = icons.value.splice(idx, 1);
+    icons.value.splice(idx + 1, 0, item);
+    dirty.value = true;
+  }
+
+  function reorderIcon(fromId: string, toId: string, insertBefore: boolean): void {
     const fromIdx = icons.value.findIndex((i) => i.id === fromId);
     const toIdx = icons.value.findIndex((i) => i.id === toId);
     if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return;
     const [moved] = icons.value.splice(fromIdx, 1);
-    const insertAt = fromIdx < toIdx ? toIdx - 1 : toIdx;
+    // After splice, toIdx shifts left by 1 if fromIdx was before it
+    const adjustedToIdx = fromIdx < toIdx ? toIdx - 1 : toIdx;
+    const insertAt = insertBefore ? adjustedToIdx : adjustedToIdx + 1;
     icons.value.splice(insertAt, 0, moved);
     dirty.value = true;
   }
@@ -380,6 +403,7 @@ export const useProjectStore = defineStore('project', () => {
     isDraggingFiles,
     sourceLabel,
     sourcePath,
+    sourceSize,
     outputPath,
     dirty,
     buildState,
@@ -414,6 +438,8 @@ export const useProjectStore = defineStore('project', () => {
     setLastError,
     setLastNotice,
     setLastWarnings,
+    moveIconUp,
+    moveIconDown,
     reorderIcon,
     selectAllIcons,
     setSelectedIconIds,
