@@ -17,6 +17,24 @@ export function useItemMeta(getMode: () => ProjectMode) {
         getMode() === 'create' ? t('itemViewCreateDesc') : t('itemViewEditDesc'),
     );
 
+    const kicker = computed(() =>
+        getMode() === 'create' ? t('itemViewCreateKicker') : t('itemViewEditKicker'),
+    );
+
+    const highlights = computed(() =>
+        getMode() === 'create'
+            ? [
+                t('itemViewCreateHighlight1'),
+                t('itemViewCreateHighlight2'),
+                t('itemViewCreateHighlight3'),
+            ]
+            : [
+                t('itemViewEditHighlight1'),
+                t('itemViewEditHighlight2'),
+                t('itemViewEditHighlight3'),
+            ],
+    );
+
     const isEditLocked = computed(() =>
         getMode() === 'edit' && sourceLabel.value === null,
     );
@@ -31,5 +49,5 @@ export function useItemMeta(getMode: () => ProjectMode) {
         return t('itemCount', { count: icons.value.length });
     });
 
-    return { title, description, isEditLocked, itemCountLabel };
+    return { title, description, kicker, highlights, isEditLocked, itemCountLabel };
 }

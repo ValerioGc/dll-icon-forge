@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n';
 import IconCollectionView from '@/components/explorer/IconCollectionView.vue';
 import MenuTab from '@/components/explorer/MenuTab.vue';
 import FileDropZone from '@/components/upload/FileDropZone.vue';
+import warningIcon from '@/assets/icons/actions/warning.svg';
 
 import { useProjectStore } from '@/stores/project';
 import type { ProjectMode } from '@/types/modes';
@@ -25,7 +26,20 @@ defineOptions({
 
 const { t } = useI18n();
 const project = useProjectStore();
-const { sourcePath, selectedCount, buildState, lastError, lastWarnings } = storeToRefs(project);
+const { sourcePath, sourceSize, selectedCount, selectedIconIds, buildState, lastError, lastWarnings } = storeToRefs(project);
+
+function formatFileSize(bytes: number): string {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+const editSourceDescription = computed(() => {
+    if (!project.sourceLabel) return t('editSourceEmpty');
+    if (sourceSize.value !== null)
+        return `${project.sourceLabel} · ${formatFileSize(sourceSize.value)}`;
+    return project.sourceLabel;
+});
 
 const props = defineProps<{
     mode: ProjectMode;
@@ -35,10 +49,10 @@ const emit = defineEmits<{
     (e: 'home'): void;
 }>();
 
-const { title, description, isEditLocked, itemCountLabel } = useItemMeta(() => props.mode);
+const { title, description, kicker, highlights, isEditLocked, itemCountLabel } = useItemMeta(() => props.mode);
 const { showCropDialog, cropTargetIcon, handleEdit, handleCropConfirm, handleCropCancel } = useCrop();
 const { showConfirmDelete, showConfirmReset, deleteConfirmMessage, handleDeleteClick, handleConfirmDelete, handleConfirmReset } = useConfirmDialogs();
-const { handleEditSourceFiles, handleIconFiles, handleChooseEditSource, handleChooseIconSources } = useFileUpload();
+const { handleEditSourceFiles, handleIconFiles, handleChooseEditSource } = useFileUpload();
 
 const isBuilding = computed(() =>
     buildState.value === 'validating' || buildState.value === 'building',
@@ -48,10 +62,20 @@ const isSubmitDisabled = computed(() =>
     !project.canBuild || isBuilding.value,
 );
 
+const invalidIconCount = computed(() =>
+    project.icons.filter((i) => i.status === 'error').length,
+);
+
 async function handleSubmit(): Promise<void> {
     const submitted = await project.submitProject();
     if (submitted && props.mode === 'create')
         emit('home');
+}
+
+function handleEditSelectedIcon(): void {
+    if (selectedIconIds.value.length !== 1)
+        return;
+    handleEdit(selectedIconIds.value[0]);
 }
 
 </script>
@@ -82,14 +106,18 @@ async function handleSubmit(): Promise<void> {
         />
         
         <header class="item_view_header">
+            <span class="item_view_header_kicker">{{ kicker }}</span>
             <h1>{{ title }}</h1>
             <p>{{ description }}</p>
+            <ul class="item_view_header_highlights" :aria-label="t('itemViewHighlightsLabel')">
+                <li v-for="highlight in highlights" :key="highlight">{{ highlight }}</li>
+            </ul>
         </header>
 
         <!-- Existing file drop zones -->
         <FileDropZone v-if="props.mode === 'edit'"
             :title="t('editSourceTitle')"
-            :description="project.sourceLabel ?? t('editSourceEmpty')"
+            :description="editSourceDescription"
             :button-text="t('common.chooseExistingFile')"
             accept=".dll"
             primary
@@ -106,9 +134,7 @@ async function handleSubmit(): Promise<void> {
             accept=".ico,.png,image/png,image/x-icon"
             multiple
             primary
-            native-picker
             @files="handleIconFiles"
-            @browse="handleChooseIconSources"
         />
 
         <!-- Item view content -->
@@ -116,6 +142,7 @@ async function handleSubmit(): Promise<void> {
             <MenuTab
                 :selected-count="selectedCount"
                 :disabled="isBuilding"
+                @edit="handleEditSelectedIcon"
                 @delete="handleDeleteClick"
             />
 
@@ -159,6 +186,16 @@ async function handleSubmit(): Promise<void> {
 
         <footer v-if="!isEditLocked" class="item_view_footer">
             <p>{{ itemCountLabel }}</p>
+
+            <div v-if="invalidIconCount > 0" class="item_view_invalid_notice" role="status">
+                <span class="item_view_invalid_notice_icon" aria-hidden="true">
+                    <img class="ui_icon themed_icon" :src="warningIcon" alt="" />
+                </span>
+                <span class="item_view_invalid_notice_copy">
+                    <strong>{{ t('invalidIconsTitle', { count: invalidIconCount }) }}</strong>
+                    <span>{{ t('invalidIconsHint') }}</span>
+                </span>
+            </div>
 
             <div class="item_view_footer_actions">
                 <button v-if="props.mode === 'edit' && sourcePath !== null"
@@ -213,6 +250,39 @@ async function handleSubmit(): Promise<void> {
             max-width: 760px;
             color: var(--color-muted);
             line-height: 1.55;
+        }
+
+        &_kicker {
+            width: fit-content;
+            padding: .25rem .55rem;
+            border: 1px solid var(--color-border);
+            border-radius: 999px;
+            background: var(--color-control-background);
+            color: var(--color-muted);
+            font-size: .75rem;
+            font-weight: 800;
+            letter-spacing: 0;
+            text-transform: uppercase;
+        }
+
+        &_highlights {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .45rem;
+            margin: .25rem 0 0;
+            padding: 0;
+            list-style: none;
+
+            li {
+                padding: .35rem .55rem;
+                border: 1px solid var(--color-border);
+                border-radius: 999px;
+                background: var(--color-control-background);
+                color: var(--color-text);
+                font-size: .82rem;
+                font-weight: 700;
+                line-height: 1.2;
+            }
         }
     }
 
@@ -359,7 +429,8 @@ async function handleSubmit(): Promise<void> {
 
     &_footer {
         @extend %fx_between_center;
-        gap: 1rem;
+        flex-wrap: wrap;
+        gap: .5rem 1rem;
         padding-top: .75rem;
         border-top: 1px solid var(--color-border);
 
@@ -373,6 +444,53 @@ async function handleSubmit(): Promise<void> {
             @extend %fx_inline_center;
             gap: .5rem;
             flex-wrap: wrap;
+        }
+    }
+
+    &_invalid_notice {
+        display: flex;
+        align-items: flex-start;
+        gap: .65rem;
+        flex: 1 1 22rem;
+        min-width: 0;
+        padding: .7rem .85rem;
+        border: 1px solid color-mix(in srgb, var(--color-danger) 58%, var(--color-border));
+        border-radius: .5rem;
+        background: color-mix(in srgb, var(--color-danger) 9%, var(--color-surface));
+        color: var(--color-text);
+
+        &_icon {
+            @extend %grid_center;
+            flex: 0 0 auto;
+            width: 2rem;
+            height: 2rem;
+            border-radius: .45rem;
+            background: color-mix(in srgb, var(--color-danger) 13%, transparent);
+            color: var(--color-danger);
+
+            img {
+                width: 1rem;
+                height: 1rem;
+            }
+        }
+
+        &_copy {
+            @extend %grid_stack;
+            gap: .15rem;
+            min-width: 0;
+
+            strong {
+                color: var(--color-danger);
+                font-size: .9rem;
+                line-height: 1.25;
+            }
+
+            span {
+                color: var(--color-muted);
+                font-size: .82rem;
+                font-weight: 600;
+                line-height: 1.4;
+            }
         }
     }
 }
@@ -451,6 +569,10 @@ async function handleSubmit(): Promise<void> {
     .item_view_footer {
         align-items: stretch;
         flex-direction: column;
+    }
+
+    .item_view_invalid_notice {
+        flex-basis: auto;
     }
 }
 

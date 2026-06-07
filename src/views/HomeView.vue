@@ -16,6 +16,8 @@ interface AppMode {
     id: ProjectMode;
     title: string;
     hint: string;
+    badge: string;
+    points: string[];
     icon: string;
 }
 
@@ -27,12 +29,24 @@ const modes = computed<AppMode[]>(() => [
         id: 'create',
         title: t('common.createMode'),
         hint: t('homeViewCreateHint'),
+        badge: t('homeViewCreateBadge'),
+        points: [
+            t('homeViewCreatePoint1'),
+            t('homeViewCreatePoint2'),
+            t('homeViewCreatePoint3'),
+        ],
         icon: plus,
     },
     {
         id: 'edit',
         title: t('common.editMode'),
         hint: t('homeViewEditHint'),
+        badge: t('homeViewEditBadge'),
+        points: [
+            t('homeViewEditPoint1'),
+            t('homeViewEditPoint2'),
+            t('homeViewEditPoint3'),
+        ],
         icon: edit,
     },
 ]);
@@ -43,6 +57,7 @@ const modes = computed<AppMode[]>(() => [
     <section class="home_view">
 
         <div class="home_view_intro">
+            <span class="home_view_kicker">{{ t('homeViewKicker') }}</span>
             <h1>{{ t('homeView') }}</h1>
             <p>{{ t('homeViewDesc') }}</p>
         </div>
@@ -70,11 +85,15 @@ const modes = computed<AppMode[]>(() => [
                     type="button" class="mode_button surface" 
                     @click.prevent="emit('selectMode', mode.id)" 
             >
+                <span class="mode_button_badge">{{ mode.badge }}</span>
                 <span class="mode_button_title">
                     <img class="ui_icon mode_button_icon themed_icon" :src="mode.icon" alt="" aria-hidden="true" />
                     <span>{{ mode.title }}</span>
                 </span>
-                <small>{{ mode.hint }}</small>
+                <span class="mode_button_hint">{{ mode.hint }}</span>
+                <ul class="mode_button_points" :aria-label="t('homeViewWorkflowHighlights')">
+                    <li v-for="point in mode.points" :key="point">{{ point }}</li>
+                </ul>
             </button>
         </div>
     </section>
@@ -108,6 +127,19 @@ const modes = computed<AppMode[]>(() => [
             line-height: 1.6;
             color: var(--color-muted);
         }
+    }
+
+    &_kicker {
+        width: fit-content;
+        padding: .25rem .55rem;
+        border: 1px solid var(--color-border);
+        border-radius: 999px;
+        background: var(--color-control-background);
+        color: var(--color-muted);
+        font-size: .75rem;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
     }
 
     &_mode {
@@ -163,11 +195,12 @@ const modes = computed<AppMode[]>(() => [
 }
 
 .mode_button {
-    min-height: 7.5rem;
+    min-height: 13rem;
+    position: relative;
     @extend %grid_stack;
-    align-content: space-between;
-    gap: .75rem;
-    padding: 1.25rem;
+    align-content: start;
+    gap: .85rem;
+    padding: 1.25rem 1.25rem 1.15rem;
     text-align: left;
     color: var(--color-text);
     cursor: pointer;
@@ -187,9 +220,53 @@ const modes = computed<AppMode[]>(() => [
         line-height: 1.45;
     }
 
+    &_badge {
+        width: fit-content;
+        padding: .25rem .5rem;
+        border-radius: 999px;
+        background: var(--color-accent-soft);
+        color: var(--color-accent);
+        font-size: .72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
     &_title {
+        @extend %fx_start_center;
         font-size: 1.5rem;
         font-weight: 800;
+    }
+
+    &_hint {
+        color: var(--color-muted);
+        line-height: 1.45;
+    }
+
+    &_points {
+        @extend %grid_stack;
+        gap: .45rem;
+        margin: .15rem 0 0;
+        padding: 0;
+        list-style: none;
+        color: var(--color-text);
+        font-size: .86rem;
+        line-height: 1.35;
+
+        li {
+            position: relative;
+            padding-left: 1.05rem;
+
+            &::before {
+                content: '';
+                position: absolute;
+                top: .52rem;
+                left: 0;
+                width: .36rem;
+                height: .36rem;
+                border-radius: 50%;
+                background: var(--color-accent);
+            }
+        }
     }
     
     &_icon {
