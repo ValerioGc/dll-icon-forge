@@ -54,6 +54,16 @@ describe('App', () => {
     expect(wrapper.findComponent({ name: 'ItemView' }).exists()).toBe(true);
   });
 
+  it('has a visible loader available while the mode page is loading', async () => {
+    const { default: PageLoader } = await import('@/components/layout/PageLoader.vue');
+    const loader = mountComponent(PageLoader);
+
+    expect(loader.find('.page_loader').exists()).toBe(true);
+    expect(loader.find('.page_loader_spinner').exists()).toBe(true);
+
+    loader.unmount();
+  });
+
   it('shows back button only in mode and navigates home when clicked', async () => {
     wrapper = mountComponent(App);
     const project = useProjectStore();

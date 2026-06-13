@@ -4,13 +4,18 @@ import { defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue';
 import HomeView from '@/views/HomeView.vue';
 import PageFooter from '@/components/layout/PageFooter.vue';
 import PageHeader from '@/components/layout/PageHeader.vue';
+import PageLoader from '@/components/layout/PageLoader.vue';
 import { useProjectStore } from '@/stores/project';
 import { useSettingsStore } from '@/stores/settings';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { useI18n } from 'vue-i18n';
 import backIcon from '@/assets/icons/navigation/back.svg';
 
-const ItemView = defineAsyncComponent(() => import('@/views/ItemView.vue'));
+const ItemView = defineAsyncComponent({
+    loader: () => import('@/views/ItemView.vue'),
+    loadingComponent: PageLoader,
+    delay: 0,
+});
 const ConfirmDialog = defineAsyncComponent(() => import('@/components/dialogs/ConfirmDialog.vue'));
 
 const { t } = useI18n();
