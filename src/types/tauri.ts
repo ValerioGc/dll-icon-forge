@@ -1,4 +1,4 @@
-export type BackendSourceKind = 'png' | 'ico' | 'extracted';
+export type BackendSourceKind = 'png' | 'ico' | 'jpeg' | 'webp' | 'svg' | 'extracted';
 
 export type BackendIconStatus = 'ready' | 'error';
 

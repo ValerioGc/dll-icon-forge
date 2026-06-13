@@ -37,6 +37,7 @@ const deleteLabel = computed(() => {
             <li>
                 <button type="button" class="menu_button action_button"
                     :disabled="isEditDisabled"
+                    :title="t('tooltips.cropSelected')"
                     @click.prevent="emit('edit')"
                 >
                     <img class="ui_icon themed_icon" :src="cropIcon" alt="" aria-hidden="true" />
@@ -46,6 +47,7 @@ const deleteLabel = computed(() => {
             <li>
                 <button type="button" class="menu_button action_button"
                     :disabled="isDisabled"
+                    :title="t('tooltips.deleteSelected')"
                     @click.prevent="emit('delete')"
                 >
                     <img class="ui_icon themed_icon" :src="trash" alt="" aria-hidden="true" />

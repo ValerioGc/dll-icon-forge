@@ -12,6 +12,7 @@ const tauriProjectMocks = vi.hoisted(() => ({
   chooseOutputDll: vi.fn(),
   clearBuildCache: vi.fn(),
   dropBuildIcon: vi.fn(),
+  importIconData: vi.fn(),
   removePreview: vi.fn(),
 }));
 
@@ -26,11 +27,13 @@ vi.mock('@/services/tauriProject', () => ({
     name: icon.name,
     preview: icon.previewPath ?? '',
     previewPath: icon.previewPath,
+    previewLoading: false,
     status: icon.status,
     sourceKind: icon.sourceKind === 'extracted' ? 'extracted' : 'imported',
     availableSizes: icon.availableSizes.map((size: number) => ({ width: size, height: size })),
     error: icon.error,
   })),
+  importIconData: tauriProjectMocks.importIconData,
   ipcErrorMessage: vi.fn((error) => {
     if (typeof error === 'string') return error;
     if (error && typeof error === 'object' && 'message' in error) {
@@ -59,6 +62,15 @@ describe('project store', () => {
     tauriProjectMocks.chooseOutputDll.mockResolvedValue('C:\\out\\icons.dll');
     tauriProjectMocks.clearBuildCache.mockResolvedValue(undefined);
     tauriProjectMocks.dropBuildIcon.mockResolvedValue(undefined);
+    tauriProjectMocks.importIconData.mockImplementation(async (id: string, _data: number[], name: string) => ({
+      id,
+      name,
+      previewPath: '/tmp/cache/hydrated.png',
+      status: 'ready' as const,
+      sourceKind: 'ico' as const,
+      availableSizes: [16, 32, 48, 256],
+      error: null,
+    }));
     tauriProjectMocks.removePreview.mockResolvedValue(undefined);
   });
 
@@ -302,6 +314,30 @@ describe('project store', () => {
     project.addFiles([makePng('a.png')]);
 
     expect(project.lastError).toBeNull();
+  });
+
+  it('addFiles: hydrates local ICO files through the backend preview pipeline', async () => {
+    const project = setupProjectStore();
+
+    project.addFiles([new File(['ico'], 'app.ico', { type: 'image/x-icon' })]);
+    const originalId = project.icons[0].id;
+    expect(project.icons[0].previewLoading).toBe(true);
+
+    await vi.waitFor(() => {
+      expect(tauriProjectMocks.importIconData).toHaveBeenCalledWith(
+        originalId,
+        expect.any(Array),
+        'app.ico',
+      );
+      expect(project.icons[0]).toMatchObject({
+        id: originalId,
+        name: 'app.ico',
+        preview: '/tmp/cache/hydrated.png',
+        previewPath: '/tmp/cache/hydrated.png',
+        previewLoading: false,
+        status: 'ready',
+      });
+    });
   });
 
   it('dirty: set by addFiles, setEditSourceFile, removeIcon, and removeSelectedIcons', () => {

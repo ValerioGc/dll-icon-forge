@@ -12,6 +12,7 @@ export interface ProjectIcon {
   name?: string;
   preview: string;
   previewPath?: string | null;
+  previewLoading?: boolean;
   status: IconStatus;
   sourceKind: SourceKind;
   availableSizes: IconSize[];

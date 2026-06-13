@@ -11,7 +11,6 @@ use build_cache::{BuildCache, CachedBuildIcon};
 use dll::LoadedDll;
 use icons::{
     BuildOptions, BuildResult, IconError, IconStatus, ImportedIcon, IpcError, ProjectIcon,
-    SourceKind,
 };
 use tauri::State;
 
@@ -132,8 +131,13 @@ fn import_icon_data(
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .subsec_nanos();
+        let extension = Path::new(&name)
+            .extension()
+            .and_then(|ext| ext.to_str())
+            .filter(|ext| !ext.is_empty())
+            .unwrap_or("png");
         preview_dir.join(format!(
-            "wdp_src_{:08x}{:08x}.png",
+            "wdp_src_{:08x}{:08x}.{extension}",
             std::process::id(),
             nanos
         ))
@@ -147,6 +151,7 @@ fn import_icon_data(
     let ImportedIcon {
         icons: normalised,
         preview_path,
+        source_kind,
         ..
     } = imported;
     let available_sizes = normalised.iter().map(|icon| icon.size).collect();
@@ -159,7 +164,7 @@ fn import_icon_data(
     Ok(ProjectIcon {
         id,
         name,
-        source_kind: SourceKind::Png,
+        source_kind,
         available_sizes,
         status: IconStatus::Ready,
         error: None,

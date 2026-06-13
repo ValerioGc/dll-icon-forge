@@ -37,6 +37,7 @@ function handleNext(): void {
             class="pagination_controls_button action_button"
             :disabled="!canGoPrevious"
             :aria-label="t('pagination.previous')"
+            :title="t('tooltips.previousPage')"
             @click.prevent="handlePrevious"
         >
             <img class="ui_icon themed_icon" :src="chevronLeft" alt="" aria-hidden="true" />
@@ -50,6 +51,7 @@ function handleNext(): void {
             class="pagination_controls_button action_button"
             :disabled="!canGoNext"
             :aria-label="t('pagination.next')"
+            :title="t('tooltips.nextPage')"
             @click.prevent="handleNext"
         >
             <img class="ui_icon themed_icon" :src="chevronRight" alt="" aria-hidden="true" />

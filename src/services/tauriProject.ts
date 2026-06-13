@@ -7,7 +7,7 @@ import type { BackendLoadedDll, BackendProjectIcon, IpcErrorPayload } from '@/ty
 type DialogSelection = string | string[] | null;
 
 const DLL_FILTER = { name: 'DLL', extensions: ['dll'] };
-const ICON_SOURCE_FILTER = { name: 'Icone', extensions: ['ico', 'png'] };
+const ICON_SOURCE_FILTER = { name: 'Icone', extensions: ['ico', 'png', 'jpg', 'jpeg', 'webp', 'svg'] };
 
 function toSelectedPaths(selection: DialogSelection): string[] {
   if (!selection)
@@ -21,13 +21,7 @@ function toSize(size: number): IconSize {
 }
 
 function toUiSourceKind(kind: BackendProjectIcon['sourceKind']): SourceKind {
-  switch (kind) {
-    case 'extracted':
-      return 'extracted';
-    case 'ico':
-    case 'png':
-      return 'imported';
-  }
+  return kind === 'extracted' ? 'extracted' : 'imported';
 }
 
 export function ipcErrorMessage(error: unknown): string {
@@ -48,6 +42,7 @@ export function fromBackendIcon(icon: BackendProjectIcon): ProjectIcon {
     name: icon.name,
     preview: icon.previewPath ? convertFileSrc(icon.previewPath) : '',
     previewPath: icon.previewPath,
+    previewLoading: false,
     status: icon.status,
     sourceKind: toUiSourceKind(icon.sourceKind),
     availableSizes: icon.availableSizes.map(toSize),

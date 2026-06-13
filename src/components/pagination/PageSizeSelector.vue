@@ -38,6 +38,7 @@ function handleChange(event: Event): void {
             name="pageSize"
             :value="props.value"
             :disabled="props.disabled"
+            :title="t('tooltips.pageSize')"
             @change="handleChange"
         >
             <option v-for="option in PAGE_SIZE_OPTIONS" :key="option" :value="option">

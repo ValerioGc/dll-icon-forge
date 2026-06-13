@@ -9,6 +9,7 @@ const props = withDefaults(defineProps<{
     title: string;
     description: string;
     buttonText: string;
+    buttonTitle?: string;
     accept: string;
     multiple?: boolean;
     primary?: boolean;
@@ -102,6 +103,7 @@ function handleDrop(event: DragEvent): void {
             type="button"
             :class="{ 'file_drop_zone_button--primary': primary }"
             :disabled="disabled"
+            :title="buttonTitle ?? buttonText"
             @click.prevent="openFilePicker"
         >
             <img class="ui_icon themed_icon" :class="{ invert: primary }" :src="uploadIcon" alt="">
@@ -145,6 +147,7 @@ function handleDrop(event: DragEvent): void {
     &_copy {
         @extend %grid_stack;
         gap: .35rem;
+        min-width: 0;
 
         strong {
             color: var(--color-text);
@@ -156,11 +159,15 @@ function handleDrop(event: DragEvent): void {
     }
 
     &_button {
+        flex: 0 0 11rem;
+        width: 11rem;
+        justify-content: center;
         min-height: 2.65rem;
         gap: .5rem;
         padding: 0 1rem;
         border-radius: .45rem;
         font-weight: 800;
+        white-space: nowrap;
         transition: border-color .16s ease, background .16s ease, opacity .16s ease;
 
         &:disabled {
@@ -190,8 +197,7 @@ function handleDrop(event: DragEvent): void {
 
 @media (max-width: 760px) {
     .file_drop_zone {
-        align-items: stretch;
-        flex-direction: column;
+        align-items: center;
     }
 }
 

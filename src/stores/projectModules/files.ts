@@ -9,6 +9,12 @@ export function isSupportedFile(file: File): boolean {
   return SUPPORTED_EXTENSIONS.some((ext) => name.endsWith(ext));
 }
 
+export function isIcoFile(file: File): boolean {
+  return file.name.toLowerCase().endsWith('.ico')
+    || file.type === 'image/x-icon'
+    || file.type === 'image/vnd.microsoft.icon';
+}
+
 export function detectInitialSizes(file: File): Promise<IconSize[]> {
   if (!file.type.startsWith('image/'))
     return Promise.resolve([]);
@@ -30,13 +36,17 @@ export function detectInitialSizes(file: File): Promise<IconSize[]> {
 
 export function createProjectIcon(file: File, sourceKind: SourceKind = 'imported'): ProjectIcon {
   const supported = isSupportedFile(file);
-  const preview = file.type.startsWith('image/') ? URL.createObjectURL(file) : '';
+  const needsBackendPreview = supported && isIcoFile(file);
+  const preview = supported && !needsBackendPreview && file.type.startsWith('image/')
+    ? URL.createObjectURL(file)
+    : '';
 
   return {
     id: crypto.randomUUID(),
     name: file.name,
     preview,
     previewPath: null,
+    previewLoading: needsBackendPreview,
     status: supported ? 'ready' : 'error',
     sourceKind,
     availableSizes: [],

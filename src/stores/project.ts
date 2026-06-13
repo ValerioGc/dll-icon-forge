@@ -20,6 +20,7 @@ import {
   basename,
   createProjectIcon,
   detectInitialSizes,
+  isIcoFile,
   isSupportedFile,
 } from './projectModules/files';
 import { useProjectPagination } from './projectModules/pagination';
@@ -76,7 +77,7 @@ export const useProjectStore = defineStore('project', () => {
   });
 
   const canBuild = computed(() => {
-    return icons.value.length > 0 && icons.value.every((icon) => icon.status !== 'error');
+    return icons.value.length > 0 && icons.value.every((icon) => icon.status !== 'error' && !icon.previewLoading);
   });
 
   const canEditProject = computed(() => {
@@ -198,17 +199,68 @@ export const useProjectStore = defineStore('project', () => {
 
     void Promise.all(
       newIcons.map(async (icon, index) => {
-        const sizes = await detectInitialSizes(fileArray[index]);
-        if (sizes.length === 0) return;
+        const file = fileArray[index];
+        if (isIcoFile(file)) {
+          await hydrateLocalFileIcon(icon.id, file, { markErrors: true });
+          return;
+        }
+
+        const sizes = await detectInitialSizes(file);
         const live = icons.value.find((i) => i.id === icon.id);
         if (!live) return;
-        live.availableSizes = sizes;
-        if (sizes[0].width !== sizes[0].height) {
-          live.status = 'error';
-          live.error = t('notifications.notSquare');
+        if (sizes.length > 0) {
+          live.availableSizes = sizes;
+          if (sizes[0].width !== sizes[0].height) {
+            live.status = 'error';
+            live.error = t('notifications.notSquare');
+          }
         }
+        await hydrateLocalFileIcon(icon.id, file, { markErrors: sizes.length === 0 });
       }),
     );
+  }
+
+  async function hydrateLocalFileIcon(
+    iconId: string,
+    file: File,
+    options: { markErrors: boolean },
+  ): Promise<void> {
+    if (!isIcoFile(file) && !options.markErrors)
+      return;
+
+    if (!isSupportedFile(file))
+      return;
+
+    const liveBeforeRead = icons.value.find((i) => i.id === iconId);
+    if (liveBeforeRead)
+      liveBeforeRead.previewLoading = true;
+
+    try {
+      const data = new Uint8Array(await file.arrayBuffer());
+      const updated = await importIconData(iconId, Array.from(data), file.name);
+      const index = icons.value.findIndex((i) => i.id === iconId);
+      if (index === -1)
+        return;
+
+      const old = icons.value[index];
+      revokePreviewUrl(old);
+      if (old.previewPath)
+        void removePreview(old.previewPath).catch(() => undefined);
+      icons.value[index] = fromBackendIcon(updated);
+    } catch (error) {
+      if (!options.markErrors)
+        return;
+
+      const message = ipcErrorMessage(error);
+      const live = icons.value.find((i) => i.id === iconId);
+      if (live) {
+        live.previewLoading = false;
+        live.status = 'error';
+        live.error = message;
+      }
+      lastError.value = message;
+      lastNotice.value = null;
+    }
   }
 
   async function addIconSources(paths: string[]): Promise<void> {

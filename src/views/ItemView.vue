@@ -49,7 +49,7 @@ const emit = defineEmits<{
     (e: 'home'): void;
 }>();
 
-const { title, description, kicker, highlights, isEditLocked, itemCountLabel } = useItemMeta(() => props.mode);
+const { title, description, isEditLocked, itemCountLabel } = useItemMeta(() => props.mode);
 const { showCropDialog, cropTargetIcon, handleEdit, handleCropConfirm, handleCropCancel } = useCrop();
 const { showConfirmDelete, showConfirmReset, deleteConfirmMessage, handleDeleteClick, handleConfirmDelete, handleConfirmReset } = useConfirmDialogs();
 const { handleEditSourceFiles, handleIconFiles, handleChooseEditSource } = useFileUpload();
@@ -106,12 +106,12 @@ function handleEditSelectedIcon(): void {
         />
         
         <header class="item_view_header">
-            <span class="item_view_header_kicker">{{ kicker }}</span>
             <h1>{{ title }}</h1>
             <p>{{ description }}</p>
-            <ul class="item_view_header_highlights" :aria-label="t('itemViewHighlightsLabel')">
-                <li v-for="highlight in highlights" :key="highlight">{{ highlight }}</li>
-            </ul>
+            <section class="item_view_formats" :aria-label="t('supportedFormatsLabel')">
+                <strong>{{ t('supportedFormatsTitle') }}</strong>
+                <span>{{ t('supportedFormatsList') }}</span>
+            </section>
         </header>
 
         <!-- Existing file drop zones -->
@@ -119,6 +119,7 @@ function handleEditSelectedIcon(): void {
             :title="t('editSourceTitle')"
             :description="editSourceDescription"
             :button-text="t('common.chooseExistingFile')"
+            :button-title="t('tooltips.chooseExistingFile')"
             accept=".dll"
             primary
             native-picker
@@ -131,7 +132,8 @@ function handleEditSelectedIcon(): void {
             :title="t('dropZoneTitle')"
             :description="t('dropZoneDesc')"
             :button-text="t('common.chooseFile')"
-            accept=".ico,.png,image/png,image/x-icon"
+            :button-title="t('tooltips.chooseFile')"
+            accept=".ico,.png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon,image/vnd.microsoft.icon"
             multiple
             primary
             @files="handleIconFiles"
@@ -185,8 +187,6 @@ function handleEditSelectedIcon(): void {
         </div>
 
         <footer v-if="!isEditLocked" class="item_view_footer">
-            <p>{{ itemCountLabel }}</p>
-
             <div v-if="invalidIconCount > 0" class="item_view_invalid_notice" role="status">
                 <span class="item_view_invalid_notice_icon" aria-hidden="true">
                     <img class="ui_icon themed_icon" :src="warningIcon" alt="" />
@@ -197,26 +197,34 @@ function handleEditSelectedIcon(): void {
                 </span>
             </div>
 
-            <div class="item_view_footer_actions">
-                <button v-if="props.mode === 'edit' && sourcePath !== null"
-                    type="button"
-                    class="item_button item_button--danger"
-                    :disabled="!project.dirty || isBuilding"
-                    :aria-disabled="!project.dirty || isBuilding"
-                    @click.prevent="showConfirmReset = true"
-                >
-                    {{ t('common.reset') }}
-                </button>
+            <div class="item_view_footer_row">
+                <p>{{ itemCountLabel }}</p>
 
-                <button type="button"
-                    class="item_button item_button--primary"
-                    :disabled="isSubmitDisabled"
-                    :aria-disabled="isSubmitDisabled"
-                    @click.prevent="handleSubmit"
-                >
-                    <img class="ui_icon item_button_icon" src="@/assets/icons/actions/save.svg" alt="" />
-                    {{ t('common.submit') }}
-                </button>
+                <div class="item_view_footer_actions">
+                    <button v-if="props.mode === 'edit' && sourcePath !== null"
+                        type="button"
+                        class="item_button item_button--danger"
+                        :disabled="!project.dirty || isBuilding"
+                        :aria-disabled="!project.dirty || isBuilding"
+                        :title="t('tooltips.resetProject')"
+                        @click.prevent="showConfirmReset = true"
+                    >
+                        {{ t('common.reset') }}
+                    </button>
+
+                    <button type="button"
+                        class="item_button item_button--primary"
+                        :disabled="isSubmitDisabled"
+                        :aria-disabled="isSubmitDisabled"
+                        :title="t('tooltips.submitProject')"
+                        @click.prevent="handleSubmit"
+                    >
+                        <svg class="ui_icon item_button_icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M18.1716 1C18.702 1 19.2107 1.21071 19.5858 1.58579L22.4142 4.41421C22.7893 4.78929 23 5.29799 23 5.82843V20C23 21.6569 21.6569 23 20 23H4C2.34315 23 1 21.6569 1 20V4C1 2.34315 2.34315 1 4 1H18.1716ZM4 3C3.44772 3 3 3.44772 3 4V20C3 20.5523 3.44772 21 4 21L5 21L5 15C5 13.3431 6.34315 12 8 12L16 12C17.6569 12 19 13.3431 19 15V21H20C20.5523 21 21 20.5523 21 20V6.82843C21 6.29799 20.7893 5.78929 20.4142 5.41421L18.5858 3.58579C18.2107 3.21071 17.702 3 17.1716 3H17V5C17 6.65685 15.6569 8 14 8H10C8.34315 8 7 6.65685 7 5V3H4ZM17 21V15C17 14.4477 16.5523 14 16 14L8 14C7.44772 14 7 14.4477 7 15L7 21L17 21ZM9 3H15V5C15 5.55228 14.5523 6 14 6H10C9.44772 6 9 5.55228 9 5V3Z" />
+                        </svg>
+                        {{ t('common.submit') }}
+                    </button>
+                </div>
             </div>
         </footer>
     </div>
@@ -231,7 +239,7 @@ function handleEditSelectedIcon(): void {
 
     &_header {
         @extend %grid_stack;
-        gap: .5rem;
+        gap: .75rem;
         padding-bottom: 1rem;
         border-bottom: 1px solid var(--color-border);
 
@@ -251,38 +259,22 @@ function handleEditSelectedIcon(): void {
             color: var(--color-muted);
             line-height: 1.55;
         }
+    }
 
-        &_kicker {
-            width: fit-content;
-            padding: .25rem .55rem;
-            border: 1px solid var(--color-border);
-            border-radius: 999px;
-            background: var(--color-control-background);
-            color: var(--color-muted);
-            font-size: .75rem;
+    &_formats {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: .35rem .65rem;
+        color: var(--color-muted);
+        font-size: .9rem;
+        line-height: 1.45;
+
+        strong {
+            color: var(--color-text);
+            font-size: .86rem;
             font-weight: 800;
-            letter-spacing: 0;
             text-transform: uppercase;
-        }
-
-        &_highlights {
-            display: flex;
-            flex-wrap: wrap;
-            gap: .45rem;
-            margin: .25rem 0 0;
-            padding: 0;
-            list-style: none;
-
-            li {
-                padding: .35rem .55rem;
-                border: 1px solid var(--color-border);
-                border-radius: 999px;
-                background: var(--color-control-background);
-                color: var(--color-text);
-                font-size: .82rem;
-                font-weight: 700;
-                line-height: 1.2;
-            }
         }
     }
 
@@ -428,9 +420,8 @@ function handleEditSelectedIcon(): void {
     }
 
     &_footer {
-        @extend %fx_between_center;
-        flex-wrap: wrap;
-        gap: .5rem 1rem;
+        @extend %grid_stack;
+        gap: .75rem;
         padding-top: .75rem;
         border-top: 1px solid var(--color-border);
 
@@ -438,6 +429,12 @@ function handleEditSelectedIcon(): void {
             margin: 0;
             color: var(--color-muted);
             font-weight: 700;
+        }
+
+        &_row {
+            @extend %fx_between_center;
+            gap: 1rem;
+            min-width: 0;
         }
 
         &_actions {
@@ -451,7 +448,8 @@ function handleEditSelectedIcon(): void {
         display: flex;
         align-items: flex-start;
         gap: .65rem;
-        flex: 1 1 22rem;
+        width: min(44rem, 100%);
+        justify-self: center;
         min-width: 0;
         padding: .7rem .85rem;
         border: 1px solid color-mix(in srgb, var(--color-danger) 58%, var(--color-border));
@@ -541,7 +539,7 @@ function handleEditSelectedIcon(): void {
         }
 
         &:disabled .item_button_icon {
-            filter: var(--icon-filter);
+            color: currentColor;
         }
     }
 
@@ -557,7 +555,9 @@ function handleEditSelectedIcon(): void {
     }
 
     &_icon {
-        filter: var(--icon-on-accent-filter);
+        flex: 0 0 auto;
+        color: currentColor;
+        fill: currentColor;
     }
 }
 
@@ -566,7 +566,7 @@ function handleEditSelectedIcon(): void {
 }
 
 @media (max-width: 760px) {
-    .item_view_footer {
+    .item_view_footer_row {
         align-items: stretch;
         flex-direction: column;
     }

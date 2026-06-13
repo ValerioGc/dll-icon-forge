@@ -193,17 +193,20 @@ onUnmounted(clearPointerDrag);
             <span v-if="canReorder"
                 class="icon_list_view_handle"
                 aria-hidden="true"
+                :title="$t('tooltips.moveIcon')"
                 @pointerdown.stop="handlePointerDown(item.id, $event)"
             >
                 <img class="ui_icon icon_list_view_handle_icon themed_icon" :src="moveIcon" alt="" aria-hidden="true" />
             </span>
             <button type="button" class="icon_list_view_select"
                 :disabled="disabled"
+                :title="$t('tooltips.selectIcon')"
                 @click="handleSelect(item.id, $event)"
             >
                 <span class="icon_list_view_index" aria-hidden="true">{{ startIndex + index + 1 }}</span>
                 <span class="icon_list_view_thumb">
-                    <img v-if="item.preview" :src="item.preview" alt="" draggable="false">
+                    <span v-if="item.previewLoading" class="icon_list_view_spinner" aria-hidden="true"></span>
+                    <img v-else-if="item.preview" :src="item.preview" alt="" draggable="false">
                 </span>
             </button>
 
@@ -213,7 +216,7 @@ onUnmounted(clearPointerDrag);
                         class="icon_list_view_order_btn action_button"
                         :disabled="startIndex + index === 0"
                         :aria-label="$t('menu.moveUp')"
-                        :title="$t('menu.moveUp')"
+                        :title="$t('tooltips.moveUp')"
                         @click.stop="emit('moveUp', item.id)"
                     >
                         <img class="ui_icon icon_list_view_order_icon themed_icon icon_list_view_order_icon--up"
@@ -223,7 +226,7 @@ onUnmounted(clearPointerDrag);
                         class="icon_list_view_order_btn action_button"
                         :disabled="startIndex + index >= totalItems - 1"
                         :aria-label="$t('menu.moveDown')"
-                        :title="$t('menu.moveDown')"
+                        :title="$t('tooltips.moveDown')"
                         @click.stop="emit('moveDown', item.id)"
                     >
                         <img class="ui_icon icon_list_view_order_icon themed_icon"
@@ -234,6 +237,7 @@ onUnmounted(clearPointerDrag);
                     class="icon_list_view_edit action_button"
                     :disabled="disabled"
                     :aria-label="$t('menu.crop')"
+                    :title="$t('tooltips.cropIcon')"
                     @click.stop="emit('edit', item.id)"
                 >
                     <img class="ui_icon icon_list_view_edit_icon themed_icon" :src="cropIcon" alt="" aria-hidden="true" />
@@ -241,6 +245,7 @@ onUnmounted(clearPointerDrag);
                 <button type="button" class="icon_list_view_delete action_button"
                     :disabled="disabled"
                     :aria-label="$t('menu.delete')"
+                    :title="$t('tooltips.deleteIcon')"
                     @click.stop="emit('delete', item.id)"
                 >
                     <img class="ui_icon icon_list_view_delete_icon themed_icon" :src="closeIcon" alt="" aria-hidden="true" />
@@ -433,6 +438,7 @@ onUnmounted(clearPointerDrag);
 
     &_thumb {
         @extend %grid_center;
+        position: relative;
         width: 3rem;
         height: 3rem;
         flex: 0 0 auto;
@@ -447,6 +453,15 @@ onUnmounted(clearPointerDrag);
             -webkit-user-drag: none;
             user-select: none;
         }
+    }
+
+    &_spinner {
+        width: 1.35rem;
+        height: 1.35rem;
+        border: 3px solid color-mix(in srgb, var(--color-muted) 26%, transparent);
+        border-top-color: var(--color-accent);
+        border-radius: 50%;
+        animation: spin .8s linear infinite;
     }
 
     &_actions {
@@ -515,6 +530,10 @@ onUnmounted(clearPointerDrag);
             height: 1rem;
         }
     }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
 }
 
 </style>
