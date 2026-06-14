@@ -750,7 +750,10 @@ mod tests {
         assert_eq!(result.source_kind, SourceKind::Jpeg);
         assert_eq!(result.icons.len(), 4);
         assert!(
-            result.warnings.iter().any(|w| matches!(w, ValidationWarning::NoAlpha)),
+            result
+                .warnings
+                .iter()
+                .any(|w| matches!(w, ValidationWarning::NoAlpha)),
             "JPEG has no alpha — expected NoAlpha warning, got: {:?}",
             result.warnings
         );
@@ -779,7 +782,8 @@ mod tests {
     fn make_svg(path: &Path, width: u32, height: u32) {
         let content = format!(
             r#"<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}"><rect width="{w}" height="{h}" fill="red"/></svg>"#,
-            w = width, h = height
+            w = width,
+            h = height
         );
         std::fs::write(path, content.as_bytes()).unwrap();
     }

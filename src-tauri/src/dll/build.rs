@@ -1,4 +1,4 @@
-﻿use std::{
+use std::{
     path::{Path, PathBuf},
     thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
@@ -532,8 +532,12 @@ mod tests {
                 &BuildOptions {
                     output_path: source.to_string_lossy().into_owned(),
                     icons: vec![
-                        BuildIconInput { id: "orig-a".to_owned() },
-                        BuildIconInput { id: "orig-b".to_owned() },
+                        BuildIconInput {
+                            id: "orig-a".to_owned(),
+                        },
+                        BuildIconInput {
+                            id: "orig-b".to_owned(),
+                        },
                     ],
                     source_path: None,
                 },
@@ -552,7 +556,9 @@ mod tests {
             build_dll(
                 &BuildOptions {
                     output_path: output.to_string_lossy().into_owned(),
-                    icons: vec![BuildIconInput { id: "new-x".to_owned() }],
+                    icons: vec![BuildIconInput {
+                        id: "new-x".to_owned(),
+                    }],
                     source_path: Some(source.to_string_lossy().into_owned()),
                 },
                 &edit_cache,
@@ -560,9 +566,16 @@ mod tests {
             .unwrap();
 
             let loaded = load_generated_dll_icons(&output, &preview_dir);
-            assert!(loaded.warnings.is_empty(), "warnings: {:?}", loaded.warnings);
+            assert!(
+                loaded.warnings.is_empty(),
+                "warnings: {:?}",
+                loaded.warnings
+            );
             assert_eq!(loaded.icons.len(), 1);
-            assert_eq!(loaded.icons[0].available_sizes, vec![IconSize::S16, IconSize::S48]);
+            assert_eq!(
+                loaded.icons[0].available_sizes,
+                vec![IconSize::S16, IconSize::S48]
+            );
         }
 
         fn icon_sizes(loaded: &crate::dll::LoadedDll) -> Vec<Vec<IconSize>> {
@@ -600,4 +613,3 @@ mod tests {
         }
     }
 }
-

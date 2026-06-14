@@ -160,8 +160,14 @@ mod tests {
     fn source_kind_serialises_lowercase() {
         assert_eq!(serde_json::to_string(&SourceKind::Png).unwrap(), "\"png\"");
         assert_eq!(serde_json::to_string(&SourceKind::Ico).unwrap(), "\"ico\"");
-        assert_eq!(serde_json::to_string(&SourceKind::Jpeg).unwrap(), "\"jpeg\"");
-        assert_eq!(serde_json::to_string(&SourceKind::Webp).unwrap(), "\"webp\"");
+        assert_eq!(
+            serde_json::to_string(&SourceKind::Jpeg).unwrap(),
+            "\"jpeg\""
+        );
+        assert_eq!(
+            serde_json::to_string(&SourceKind::Webp).unwrap(),
+            "\"webp\""
+        );
         assert_eq!(serde_json::to_string(&SourceKind::Svg).unwrap(), "\"svg\"");
         assert_eq!(
             serde_json::to_string(&SourceKind::Extracted).unwrap(),
@@ -277,13 +283,13 @@ mod tests {
         assert!(recovered.source_path.is_none());
 
         let with_source: BuildOptions = serde_json::from_str(
-            r#"{"outputPath":"out.dll","icons":[],"sourcePath":"C:\\src.dll"}"#
-        ).unwrap();
+            r#"{"outputPath":"out.dll","icons":[],"sourcePath":"C:\\src.dll"}"#,
+        )
+        .unwrap();
         assert_eq!(with_source.source_path.as_deref(), Some("C:\\src.dll"));
 
-        let without_source: BuildOptions = serde_json::from_str(
-            r#"{"outputPath":"out.dll","icons":[]}"#
-        ).unwrap();
+        let without_source: BuildOptions =
+            serde_json::from_str(r#"{"outputPath":"out.dll","icons":[]}"#).unwrap();
         assert!(without_source.source_path.is_none());
     }
 

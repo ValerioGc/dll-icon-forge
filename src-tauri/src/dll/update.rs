@@ -99,7 +99,12 @@ fn write_resource_plan_preserve_once(
         for icon in &group.icons {
             update_resource(&mut update, RT_ICON_ID, icon.icon_id, &icon.bytes)?;
         }
-        update_resource(&mut update, RT_GROUP_ICON_ID, group.group_id, &group.group_bytes)?;
+        update_resource(
+            &mut update,
+            RT_GROUP_ICON_ID,
+            group.group_id,
+            &group.group_bytes,
+        )?;
     }
 
     update.commit()
@@ -405,7 +410,11 @@ mod tests {
 
         let loaded =
             crate::dll::load_dll_icons_from_file_for_test(&dll_path, &preview_dir).unwrap();
-        assert!(loaded.warnings.is_empty(), "warnings: {:?}", loaded.warnings);
+        assert!(
+            loaded.warnings.is_empty(),
+            "warnings: {:?}",
+            loaded.warnings
+        );
         assert_eq!(loaded.icons.len(), 1);
         assert_eq!(
             loaded.icons[0].available_sizes,
@@ -444,7 +453,11 @@ mod tests {
 
         let loaded =
             crate::dll::load_dll_icons_from_file_for_test(&dll_path, &preview_dir).unwrap();
-        assert!(loaded.warnings.is_empty(), "warnings: {:?}", loaded.warnings);
+        assert!(
+            loaded.warnings.is_empty(),
+            "warnings: {:?}",
+            loaded.warnings
+        );
         assert_eq!(loaded.icons.len(), 1, "old icons should have been removed");
         assert_eq!(loaded.icons[0].available_sizes, vec![IconSize::S48]);
     }
@@ -456,11 +469,9 @@ mod tests {
         let dll_path = dir.path().join("icons.dll");
         copy_template_dll(&dll_path).unwrap();
 
-        let err = apply_resource_plan_preserve_unlocked(
-            &dll_path,
-            &ResourcePlan { groups: Vec::new() },
-        )
-        .unwrap_err();
+        let err =
+            apply_resource_plan_preserve_unlocked(&dll_path, &ResourcePlan { groups: Vec::new() })
+                .unwrap_err();
 
         assert!(matches!(err, IconError::Internal(_)));
     }
