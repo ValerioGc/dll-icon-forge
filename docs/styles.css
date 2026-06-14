@@ -65,10 +65,15 @@ main,
   width: 2.25rem;
   height: 2.25rem;
   border-radius: .5rem;
-  background: var(--accent);
-  color: #ffffff;
-  font-size: .78rem;
-  letter-spacing: 0;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.brand_mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .nav_links {

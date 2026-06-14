@@ -5,6 +5,7 @@ const rootDir = join(__dirname, '..');
 const docsDir = join(rootDir, 'docs');
 const contentPath = join(docsDir, 'site-content.json');
 const i18nPath = join(rootDir, 'src', 'i18n', 'index.ts');
+const logoPath = join(rootDir, 'src', 'assets', 'logo.svg');
 const checkOnly = process.argv.includes('--check');
 
 const content = JSON.parse(readFileSync(contentPath, 'utf8'));
@@ -21,8 +22,10 @@ if (!siteLocales.includes(defaultLocale)) {
 }
 
 const generatedFiles = new Map();
+const logoSvg = readFileSync(logoPath, 'utf8');
 
 generatedFiles.set(join(docsDir, 'index.html'), renderRootPage());
+generatedFiles.set(join(docsDir, 'logo.svg'), logoSvg);
 
 for (const locale of siteLocales) {
   generatedFiles.set(join(docsDir, locale, 'index.html'), renderLocalePage(locale));
@@ -102,6 +105,7 @@ function renderRootPage() {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${escapeHtml(defaultPage.pageTitle)}</title>
     <meta name="description" content="${escapeHtml(defaultPage.metaDescription)}">
+    <link rel="icon" href="./logo.svg" type="image/svg+xml">
     <link rel="stylesheet" href="./styles.css">
 ${indent(alternates, 4)}
     <script>
@@ -117,7 +121,7 @@ ${indent(alternates, 4)}
   <body>
     <main class="locale_gate" aria-labelledby="language-title">
       <a class="brand" href="./${defaultLocale}/" aria-label="${escapeHtml(site.name)}">
-        <span class="brand_mark" aria-hidden="true">DIF</span>
+        <span class="brand_mark" aria-hidden="true"><img src="./logo.svg" alt=""></span>
         <span>${escapeHtml(site.name)}</span>
       </a>
       <section>
@@ -159,6 +163,7 @@ function renderLocalePage(locale) {
     <title>${escapeHtml(page.pageTitle)}</title>
     <meta name="description" content="${escapeHtml(page.metaDescription)}">
     <link rel="canonical" href="${escapeHtml(site.basePath)}${locale}/">
+    <link rel="icon" href="../logo.svg" type="image/svg+xml">
     <link rel="stylesheet" href="../styles.css">
 ${indent(alternates, 4)}
   </head>
@@ -166,7 +171,7 @@ ${indent(alternates, 4)}
     <header class="site_header">
       <nav class="site_nav" aria-label="${escapeHtml(page.navLabel)}">
         <a class="brand" href="#top" aria-label="${escapeHtml(site.name)}">
-          <span class="brand_mark" aria-hidden="true">DIF</span>
+          <span class="brand_mark" aria-hidden="true"><img src="../logo.svg" alt=""></span>
           <span>${escapeHtml(site.name)}</span>
         </a>
         <div class="nav_cluster">
