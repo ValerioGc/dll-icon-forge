@@ -51,6 +51,9 @@ jobs:
       - name: Run frontend tests
         run: npm run test
 
+      - name: Check GitHub Pages output
+        run: npm run check:pages
+
       - name: Run Rust tests
         run: npm run test:rust
 

@@ -7,6 +7,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
+    "build:pages": "node scripts/build-pages.cjs",
+    "check:pages": "node scripts/build-pages.cjs --check",
     "preview": "vite preview",
     "tauri": "tauri",
     "analyze": "vue-tsc --noEmit && vite build --mode analyze",

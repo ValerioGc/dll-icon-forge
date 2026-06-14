@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DLL Icon Forge - Guide</title>
+    <meta name="description" content="Quick guide to DLL Icon Forge: features, supported formats, and workflows for Windows icon DLL files.">
+    <link rel="canonical" href="/dll-icon-forge/en/">
+    <link rel="stylesheet" href="../styles.css">
+    <link rel="alternate" hreflang="it" href="../it/">
+    <link rel="alternate" hreflang="en" href="../en/">
+    <link rel="alternate" hreflang="fr" href="../fr/">
+    <link rel="alternate" hreflang="es" href="../es/">
+    <link rel="alternate" hreflang="de" href="../de/">
+    <link rel="alternate" hreflang="x-default" href="../en/">
+  </head>
+  <body>
+    <header class="site_header">
+      <nav class="site_nav" aria-label="Main navigation">
+        <a class="brand" href="#top" aria-label="DLL Icon Forge">
+          <span class="brand_mark" aria-hidden="true">DIF</span>
+          <span>DLL Icon Forge</span>
+        </a>
+        <div class="nav_cluster">
+          <div class="nav_links">
+            <a href="#features">Features</a>
+            <a href="#guides">Guides</a>
+            <a href="#formats">Formats</a>
+            <a href="https://github.com/ValerioGc/dll-icon-forge">GitHub</a>
+          </div>
+          <nav class="language_switcher" aria-label="Language">
+            <a href="../it/" lang="it" hreflang="it" title="Italiano">ITA</a>
+            <a class="active" aria-current="page" href="../en/" lang="en" hreflang="en" title="English">ENG</a>
+            <a href="../fr/" lang="fr" hreflang="fr" title="Francais">FRA</a>
+            <a href="../es/" lang="es" hreflang="es" title="Espanol">ESP</a>
+            <a href="../de/" lang="de" hreflang="de" title="Deutsch">DEU</a>
+          </nav>
+        </div>
+      </nav>
+
+      <section id="top" class="hero">
+        <div class="hero_copy">
+          <p class="eyebrow">User guide</p>
+          <h1>DLL Icon Forge</h1>
+          <p class="lead">
+            A desktop tool for creating, editing, and reordering Windows icon DLL libraries from images and ICO files.
+          </p>
+          <div class="hero_actions">
+            <a class="button button_primary" href="https://github.com/ValerioGc/dll-icon-forge">Go to repository</a>
+            <a class="button" href="#guides">Read the guides</a>
+          </div>
+        </div>
+        <aside class="hero_panel" aria-label="Summary">
+          <dl>
+            <div>
+              <dt>Input</dt>
+              <dd>ICO, PNG, JPEG, WebP, SVG, DLL</dd>
+            </div>
+            <div>
+              <dt>Output</dt>
+              <dd>Windows resource DLL</dd>
+            </div>
+            <div>
+              <dt>Privacy</dt>
+              <dd>Local processing, no upload</dd>
+            </div>
+          </dl>
+        </aside>
+      </section>
+    </header>
+
+    <main>
+      <section id="features" class="section">
+        <div class="section_header">
+          <p class="eyebrow">What you can do</p>
+          <h2>Main features</h2>
+        </div>
+        <div class="card_grid">
+          <article class="card">
+            <h3>Create new DLLs</h3>
+            <p>Import images, review previews, fix invalid resources, and generate a ready-to-use icon DLL.</p>
+          </article>
+          <article class="card">
+            <h3>Edit existing DLLs</h3>
+            <p>Open an icon library DLL, extract readable icons, add or remove resources, and save a new version.</p>
+          </article>
+          <article class="card">
+            <h3>Check previews</h3>
+            <p>View icons in grid or list mode, search by number, change pagination, and quickly inspect quality.</p>
+          </article>
+          <article class="card">
+            <h3>Crop and validate</h3>
+            <p>Non-square images are highlighted. You can crop them with a locked 1:1 selection before saving.</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="guides" class="section section_tinted">
+        <div class="section_header">
+          <p class="eyebrow">File operations</p>
+          <h2>Quick guides</h2>
+        </div>
+        <div class="guide_layout">
+          <article class="guide">
+            <h3>Create a new DLL</h3>
+            <ol>
+              <li>Open the app and choose Create.</li>
+              <li>Drop images into the app or select them from disk.</li>
+              <li>Review the generated previews.</li>
+              <li>Crop or remove any images highlighted in red.</li>
+              <li>Reorder icons if needed.</li>
+              <li>Press Build DLL and choose where to save the file.</li>
+            </ol>
+          </article>
+          <article class="guide">
+            <h3>Edit an existing DLL</h3>
+            <ol>
+              <li>Open the app and choose Edit.</li>
+              <li>Select the source DLL.</li>
+              <li>Review the icons extracted from the library.</li>
+              <li>Add, delete, crop, or reorder icons.</li>
+              <li>Generate a new output DLL.</li>
+              <li>Keep the original DLL: the app does not overwrite it directly.</li>
+            </ol>
+          </article>
+        </div>
+      </section>
+
+      <section id="formats" class="section">
+        <div class="section_header">
+          <p class="eyebrow">Compatibility</p>
+          <h2>Supported formats</h2>
+        </div>
+        <div class="format_list" aria-label="Supported image formats">
+          <span>ICO</span>
+          <span>PNG</span>
+          <span>JPEG / JPG</span>
+          <span>WebP</span>
+          <span>SVG</span>
+          <span>DLL</span>
+        </div>
+        <p class="note">
+          Images must be square before the DLL can be generated. If they are not, DLL Icon Forge flags them and lets you crop them.
+        </p>
+      </section>
+
+      <section class="section section_split">
+        <div>
+          <p class="eyebrow">Security and privacy</p>
+          <h2>Files processed locally</h2>
+          <p>
+            DLL Icon Forge works on the user&#39;s computer. Imported files are not uploaded to external servers, and the app does not include cloud services or telemetry.
+          </p>
+        </div>
+        <div class="callout">
+          <h3>Windows SmartScreen</h3>
+          <p>
+            If Windows reports an unknown publisher, it is because the app is not signed with a commercial certificate. The source code is available on GitHub.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site_footer">
+      <span>DLL Icon Forge</span>
+      <a href="https://github.com/ValerioGc/dll-icon-forge">GitHub repository</a>
+    </footer>
+  </body>
+</html>
