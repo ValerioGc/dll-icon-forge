@@ -18,6 +18,7 @@ services:
       - ../:/usr/src
     environment:
       SONAR_HOST_URL: http://sonarqube:9000
+      SONAR_TOKEN: ${SONAR_TOKEN:?Set SONAR_TOKEN before running npm run sonar}
 
 volumes:
   sonarqube_data:
