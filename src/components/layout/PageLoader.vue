@@ -7,9 +7,9 @@ defineOptions({
 </script>
 
 <template>
-    <div class="page_loader" role="status" aria-live="polite">
+    <output class="page_loader" aria-live="polite">
         <span class="page_loader_spinner" aria-hidden="true"></span>
-    </div>
+    </output>
 </template>
 
 <style lang="scss" scoped>

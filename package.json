@@ -14,7 +14,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:rust": "cd src-tauri && cargo test",
-    "test:rust:coverage": "node -e \"require('fs').mkdirSync('src-tauri/target/llvm-cov', { recursive: true })\" && cd src-tauri && cargo llvm-cov --lcov --output-path target/llvm-cov/lcov.info -- --include-ignored",
+    "test:rust:coverage": "node -e \"require('fs').mkdirSync('src-tauri/target/llvm-cov', { recursive: true })\" && cd src-tauri && cargo llvm-cov --lcov --output-path target/llvm-cov/lcov.info -- --include-ignored && node ../scripts/normalize-rust-lcov.cjs",
     "coverage": "npm run test:coverage && npm run test:rust:coverage",
     "sonar": "docker compose -f .docker/docker-compose.sonar.yml --profile scan run --rm scanner",
     "sonar:coverage": "npm run coverage && npm run sonar",

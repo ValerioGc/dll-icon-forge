@@ -11,6 +11,8 @@ defineOptions({
     name: 'IconGridView',
 });
 
+type PageEdgeDirection = 'previous' | 'next';
+
 const props = withDefaults(defineProps<{
     items?: ProjectIcon[];
     selectedIds?: string[];
@@ -39,14 +41,14 @@ const emit = defineEmits<{
     (e: 'moveUp', id: string): void;
     (e: 'moveDown', id: string): void;
     (e: 'deselect'): void;
-    (e: 'dragPageEdge', direction: 'previous' | 'next' | null): void;
+    (e: 'dragPageEdge', direction: PageEdgeDirection | null): void;
 }>();
 
 const PAGE_EDGE_THRESHOLD = 56;
 const draggedId = ref<string | null>(null);
 const dragOverId = ref<string | null>(null);
 const dragGhost = ref<{ preview: string; x: number; y: number } | null>(null);
-const pageEdge = ref<'previous' | 'next' | null>(null);
+const pageEdge = ref<PageEdgeDirection | null>(null);
 const rootRef = ref<HTMLElement | null>(null);
 const canReorder = computed(() => props.sortable && !props.disabled && props.totalItems > 1);
 let pendingDrop: { id: string; insertBefore: boolean } | null = null;
@@ -139,7 +141,7 @@ function updatePageEdge(event: PointerEvent): void {
     setPageEdge(canChangePage ? direction : null);
 }
 
-function resolvePageEdge(event: PointerEvent): 'previous' | 'next' | null {
+function resolvePageEdge(event: PointerEvent): PageEdgeDirection | null {
     const rect = rootRef.value?.getBoundingClientRect();
     if (!rect)
         return null;
@@ -158,7 +160,7 @@ function resolvePageEdge(event: PointerEvent): 'previous' | 'next' | null {
     return previousDistance < nextDistance ? 'previous' : 'next';
 }
 
-function setPageEdge(direction: 'previous' | 'next' | null): void {
+function setPageEdge(direction: PageEdgeDirection | null): void {
     if (pageEdge.value === direction)
         return;
     pageEdge.value = direction;

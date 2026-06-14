@@ -151,8 +151,8 @@ function startDrag(mode: DragMode, event: PointerEvent): void {
         selection: { ...selection.value },
     };
     isDragging.value = true;
-    window.addEventListener('pointermove', updateDrag);
-    window.addEventListener('pointerup', stopDrag, { once: true });
+    globalThis.addEventListener('pointermove', updateDrag);
+    globalThis.addEventListener('pointerup', stopDrag, { once: true });
 }
 
 function updateDrag(event: PointerEvent): void {
@@ -177,8 +177,8 @@ function updateDrag(event: PointerEvent): void {
 }
 
 function stopDrag(): void {
-    window.removeEventListener('pointermove', updateDrag);
-    window.removeEventListener('pointerup', stopDrag);
+    globalThis.removeEventListener('pointermove', updateDrag);
+    globalThis.removeEventListener('pointerup', stopDrag);
     dragStart = null;
     isDragging.value = false;
 }

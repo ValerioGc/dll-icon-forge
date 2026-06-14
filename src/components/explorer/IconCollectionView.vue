@@ -28,8 +28,8 @@ const searchQuery = ref('');
 const filteredIcons = computed(() => {
     const q = searchQuery.value.trim();
     if (!q) return icons.value;
-    const n = parseInt(q, 10);
-    if (isNaN(n) || n < 1 || n > icons.value.length) return [];
+    const n = Number.parseInt(q, 10);
+    if (Number.isNaN(n) || n < 1 || n > icons.value.length) return [];
     return [icons.value[n - 1]];
 });
 
@@ -52,8 +52,8 @@ const localCanGoNext = computed(() => localPage.value < localTotalPages.value - 
 const localStartIndex = computed(() => {
     const q = searchQuery.value.trim();
     if (!q) return localPage.value * settings.pageSize;
-    const n = parseInt(q, 10);
-    return isNaN(n) || n < 1 ? 0 : n - 1;
+    const n = Number.parseInt(q, 10);
+    return Number.isNaN(n) || n < 1 ? 0 : n - 1;
 });
 
 watch(searchQuery, () => {

@@ -187,7 +187,7 @@ function handleEditSelectedIcon(): void {
         </div>
 
         <footer v-if="!isEditLocked" class="item_view_footer">
-            <div v-if="invalidIconCount > 0" class="item_view_invalid_notice" role="status">
+            <output v-if="invalidIconCount > 0" class="item_view_invalid_notice">
                 <span class="item_view_invalid_notice_icon" aria-hidden="true">
                     <img class="ui_icon themed_icon" :src="warningIcon" alt="" />
                 </span>
@@ -195,7 +195,7 @@ function handleEditSelectedIcon(): void {
                     <strong>{{ t('invalidIconsTitle', { count: invalidIconCount }) }}</strong>
                     <span>{{ t('invalidIconsHint') }}</span>
                 </span>
-            </div>
+            </output>
 
             <div class="item_view_footer_row">
                 <p>{{ itemCountLabel }}</p>

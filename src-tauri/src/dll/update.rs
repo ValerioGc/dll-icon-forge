@@ -55,10 +55,15 @@ pub(super) fn apply_resource_plan_preserve_unlocked(
         ));
     }
 
+    let original_bytes = std::fs::read(path)?;
     let existing = super::pe_resource::list_existing_icon_ids(path)?;
 
     let mut last_error = None;
     for attempt in 0..RESOURCE_WRITE_ATTEMPTS {
+        if attempt > 0 {
+            std::fs::write(path, &original_bytes)?;
+        }
+
         write_resource_plan_preserve_once(path, plan, &existing)?;
         match verify_written_resources(path, plan.groups.len()) {
             Ok(()) => return Ok(()),
@@ -70,6 +75,7 @@ pub(super) fn apply_resource_plan_preserve_unlocked(
         }
     }
 
+    let _ = std::fs::write(path, &original_bytes);
     Err(last_error.unwrap_or_else(|| {
         IconError::Internal("resource write retry failed without an error".to_owned())
     }))
